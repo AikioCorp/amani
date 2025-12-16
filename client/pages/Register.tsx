@@ -1,10 +1,15 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, UserPlus, Mail, Lock, User } from "lucide-react";
+import { supabase } from "../lib/supabase";
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -28,14 +33,69 @@ export default function Register() {
     "Commerce international",
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Empêcher les soumissions multiples
+    if (isLoading) return;
+    
+    setError("");
+    setSuccess(false);
+    
+    // Validation
     if (formData.password !== formData.confirmPassword) {
-      alert("Les mots de passe ne correspondent pas");
+      setError("Les mots de passe ne correspondent pas");
       return;
     }
-    // Handle registration logic here
-    console.log("Registration attempt:", formData);
+    
+    if (formData.password.length < 6) {
+      setError("Le mot de passe doit contenir au moins 6 caractères");
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      // Inscription avec Supabase (sans créer le profil manuellement)
+      // Le profil sera créé automatiquement par un trigger Supabase
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login`,
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            full_name: `${formData.firstName} ${formData.lastName}`,
+            organization: formData.organization || "",
+          },
+        },
+      });
+      
+      if (signUpError) {
+        // Gérer les erreurs spécifiques
+        if (signUpError.message.includes("already registered")) {
+          setError("Cet email est déjà utilisé. Veuillez vous connecter.");
+        } else {
+          setError(signUpError.message || "Erreur lors de l'inscription.");
+        }
+        return;
+      }
+      
+      if (authData.user) {
+        setSuccess(true);
+        
+        // Rediriger après 2 secondes
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
+      }
+    } catch (err: any) {
+      console.error("Erreur d'inscription:", err);
+      setError(err.message || "Erreur lors de l'inscription. Veuillez réessayer.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,6 +137,16 @@ export default function Register() {
 
         {/* Registration Form */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="mb-4 p-3 bg-green-100 border border-green-300 text-green-700 rounded-lg text-sm">
+              ✅ Compte créé avec succès ! Redirection vers la page de connexion...
+            </div>
+          )}
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* Name fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -295,10 +365,11 @@ export default function Register() {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm text-white bg-amani-primary hover:bg-amani-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amani-primary transition-colors font-medium"
+              disabled={isLoading || success}
+              className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm text-white bg-amani-primary hover:bg-amani-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amani-primary transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <UserPlus className="w-5 h-5" />
-              Créer mon compte
+              {isLoading ? "Création en cours..." : success ? "Compte créé !" : "Créer mon compte"}
             </button>
           </form>
 

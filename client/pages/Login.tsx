@@ -1,10 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, LogIn, Mail, Lock, Users } from "lucide-react";
+import { Eye, EyeOff, LogIn, Mail, Lock } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { demoAccounts, getRoleDisplayName } from "../lib/demoAccounts";
-import { supabase } from "../lib/supabase";
-import EnvTest from "@/components/EnvTest";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -19,61 +16,23 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Test de connexion Supabase au chargement
-  useEffect(() => {
-    const testSupabaseConnection = async () => {
-      console.log("🧪 Test de connexion Supabase...");
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("count")
-          .limit(1);
-        if (error) {
-          console.error("❌ Test Supabase échoué:", error);
-        } else {
-          console.log("✅ Connexion Supabase OK");
-        }
-      } catch (err) {
-        console.error("💥 Erreur de test Supabase:", err);
-      }
-    };
-
-    testSupabaseConnection();
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("🚀 Début du handleSubmit");
     setIsLoading(true);
     setError("");
 
     try {
-      console.log("🔑 Appel de la fonction login...");
       const success = await login(formData.email, formData.password);
-      console.log("✅ Résultat login:", success);
 
       if (success) {
-        console.log("🎯 Navigation vers /dashboard...");
         navigate("/dashboard");
-        console.log("🎯 Navigation terminée");
       } else {
-        console.log("❌ Login a échoué");
         setError("Email ou mot de passe incorrect");
       }
     } catch (err) {
-      console.log("💥 Erreur dans handleSubmit:", err);
       setError("Erreur de connexion");
     } finally {
-      console.log("🏁 Finally - setIsLoading(false)");
       setIsLoading(false);
-    }
-  };
-
-  const handleDemoLogin = async (email: string, password: string) => {
-    setFormData({ email, password, rememberMe: false });
-    const success = await login(email, password);
-    if (success) {
-      navigate("/dashboard");
     }
   };
 
@@ -100,45 +59,9 @@ export default function Login() {
           <h2 className="mt-8 text-3xl font-bold text-amani-primary">
             Connexion
           </h2>
-          <div className="mt-4">
-            <EnvTest />
-          </div>
           <p className="mt-2 text-gray-600">
             Accédez à votre compte pour suivre l'économie du Sahel
           </p>
-        </div>
-
-        {/* Demo Accounts */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Users className="w-5 h-5 text-amani-primary" />
-            <h2 className="text-lg font-semibold text-amani-primary">
-              Comptes de démonstration
-            </h2>
-          </div>
-          <p className="text-sm text-gray-600 mb-4">
-            Cliquez sur un rôle pour vous connecter automatiquement :
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {demoAccounts.map((account) => (
-              <button
-                key={account.id}
-                onClick={() => handleDemoLogin(account.email, account.password)}
-                className="p-3 text-left border border-gray-200 rounded-lg hover:border-amani-primary hover:bg-amani-secondary/10 transition-colors"
-                disabled={isLoading}
-              >
-                <div className="font-medium text-amani-primary text-sm">
-                  {getRoleDisplayName(account.role)}
-                </div>
-                <div className="text-xs text-gray-600">
-                  {account.firstName} {account.lastName}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  {account.organization}
-                </div>
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Login Form */}
@@ -267,35 +190,6 @@ export default function Login() {
               >
                 Créer un compte
               </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Features */}
-        <div className="text-center">
-          <p className="text-sm text-gray-600 mb-4">
-            Avec votre compte Amani, accédez à :
-          </p>
-          <div className="grid grid-cols-2 gap-4 text-xs text-gray-600">
-            <div className="bg-white/50 rounded-lg p-3">
-              <div className="font-medium text-amani-primary">
-                Alertes personnalisées
-              </div>
-              <div>Indices économiques</div>
-            </div>
-            <div className="bg-white/50 rounded-lg p-3">
-              <div className="font-medium text-amani-primary">
-                Contenu exclusif
-              </div>
-              <div>Analyses premium</div>
-            </div>
-            <div className="bg-white/50 rounded-lg p-3">
-              <div className="font-medium text-amani-primary">Favoris</div>
-              <div>Articles sauvegardés</div>
-            </div>
-            <div className="bg-white/50 rounded-lg p-3">
-              <div className="font-medium text-amani-primary">Newsletter</div>
-              <div>Résumé hebdomadaire</div>
             </div>
           </div>
         </div>
