@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, LogIn, Mail, Lock } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -13,8 +13,15 @@ export default function Login() {
     rememberMe: false,
   });
 
-  const { login } = useAuth();
+  const { login, isLoading: authLoading, user } = useAuth();
   const navigate = useNavigate();
+
+  // Rediriger automatiquement si déjà connecté (évite de rester bloqué sur /login)
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
+import { useUsers } from "../hooks/useUsers";
 import {
-  demoAccounts,
   getRoleDisplayName,
   getRoleColor,
 } from "../lib/demoAccounts";
@@ -31,6 +31,7 @@ import {
 export default function Users() {
   const { user, hasPermission } = useAuth();
   const { success, error, warning, info } = useToast();
+  const { users, isLoading, error: usersError, stats, deleteUser: deleteUserFn, updateUserRoles } = useUsers();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState("all");
@@ -40,7 +41,7 @@ export default function Users() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [userToDelete, setUserToDelete] = useState<any>(null);
   const [showBulkRoleModal, setShowBulkRoleModal] = useState(false);
-  const [newBulkRole, setNewBulkRole] = useState("visiteur");
+  const [newBulkRole, setNewBulkRole] = useState("user");
 
   // Check permissions
   if (!user || !hasPermission("manage_users")) {
@@ -65,14 +66,14 @@ export default function Users() {
     );
   }
 
-  const filteredUsers = demoAccounts.filter((u) => {
+  const filteredUsers = users.filter((u) => {
     const matchesSearch =
-      u.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.organization.toLowerCase().includes(searchTerm.toLowerCase());
+      u.organization?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesRole = selectedRole === "all" || u.role === selectedRole;
+    const matchesRole = selectedRole === "all" || u.roles?.includes(selectedRole);
 
     return matchesSearch && matchesRole;
   });
@@ -94,30 +95,30 @@ export default function Users() {
   };
 
   const handleViewUser = (userId: string) => {
-    const userToView = demoAccounts.find((u) => u.id === userId);
+    const userToView = users.find((u) => u.id === userId);
     if (userToView) {
       setSelectedUser(userToView);
       setShowUserModal(true);
       info(
         "Détails de l'utilisateur",
-        `Affichage des informations de ${userToView.firstName} ${userToView.lastName}`,
+        `Affichage des informations de ${userToView.first_name} ${userToView.last_name}`,
       );
     }
   };
 
   const handleEditUser = (userId: string) => {
-    const userToEdit = demoAccounts.find((u) => u.id === userId);
+    const userToEdit = users.find((u) => u.id === userId);
     if (userToEdit) {
       navigate(`/dashboard/users/edit/${userId}`);
       info(
         "Modification",
-        `Redirection vers l'édition de ${userToEdit.firstName} ${userToEdit.lastName}`,
+        `Redirection vers l'édition de ${userToEdit.first_name} ${userToEdit.last_name}`,
       );
     }
   };
 
   const handleDeleteUser = (userId: string) => {
-    const userToDelete = demoAccounts.find((u) => u.id === userId);
+    const userToDelete = users.find((u) => u.id === userId);
     if (userToDelete) {
       setUserToDelete(userToDelete);
       setShowDeleteConfirm(true);
@@ -130,16 +131,17 @@ export default function Users() {
 
   const confirmDeleteUser = async () => {
     if (userToDelete) {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      console.log("Deleting user:", userToDelete.id);
-      success(
-        "Utilisateur supprimé",
-        `${userToDelete.firstName} ${userToDelete.lastName} a été supprimé avec succès`,
-      );
-      setShowDeleteConfirm(false);
-      setUserToDelete(null);
+      try {
+        await deleteUserFn(userToDelete.id);
+        success(
+          "Utilisateur supprimé",
+          `${userToDelete.first_name} ${userToDelete.last_name} a été supprimé avec succès`,
+        );
+        setShowDeleteConfirm(false);
+        setUserToDelete(null);
+      } catch (err) {
+        error("Erreur", "Impossible de supprimer l'utilisateur");
+      }
     }
   };
 
@@ -194,7 +196,7 @@ export default function Users() {
   };
 
   const handleSendPasswordReset = async (userId: string) => {
-    const userToReset = demoAccounts.find((u) => u.id === userId);
+    const userToReset = users.find((u) => u.id === userId);
     if (userToReset) {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -207,21 +209,21 @@ export default function Users() {
   };
 
   const handleSendMessage = (userId: string) => {
-    const userToMessage = demoAccounts.find((u) => u.id === userId);
+    const userToMessage = users.find((u) => u.id === userId);
     if (userToMessage) {
       info(
         "Message",
-        `Fonctionnalité de messagerie avec ${userToMessage.firstName} ${userToMessage.lastName} en développement`,
+        `Fonctionnalité de messagerie avec ${userToMessage.first_name} ${userToMessage.last_name} en développement`,
       );
     }
   };
 
   const handleSuspendUser = async (userId: string) => {
-    const userToSuspend = demoAccounts.find((u) => u.id === userId);
+    const userToSuspend = users.find((u) => u.id === userId);
     if (userToSuspend) {
       if (
         confirm(
-          `Êtes-vous sûr de vouloir suspendre le compte de ${userToSuspend.firstName} ${userToSuspend.lastName} ?`,
+          `Êtes-vous sûr de vouloir suspendre le compte de ${userToSuspend.first_name} ${userToSuspend.last_name} ?`,
         )
       ) {
         // Simulate API call
@@ -229,7 +231,7 @@ export default function Users() {
 
         warning(
           "Compte suspendu",
-          `Le compte de ${userToSuspend.firstName} ${userToSuspend.lastName} a été suspendu`,
+          `Le compte de ${userToSuspend.first_name} ${userToSuspend.last_name} a été suspendu`,
         );
       }
     }
@@ -255,15 +257,43 @@ export default function Users() {
     "visiteur",
   ];
 
+  // Utiliser les stats du hook useUsers
   const userStats = {
-    total: demoAccounts.length,
-    active: demoAccounts.filter(
-      (u) =>
-        new Date(u.lastLogin) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    ).length,
-    admins: demoAccounts.filter((u) => u.role === "admin").length,
-    premium: demoAccounts.filter((u) => u.role === "abonne").length,
+    total: stats.total,
+    active: users.length, // Tous les utilisateurs sont considérés actifs
+    admins: stats.admins,
+    premium: stats.users,
   };
+
+  // Afficher un loader pendant le chargement
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amani-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement des utilisateurs...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Afficher une erreur si nécessaire
+  if (usersError) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="bg-red-50 rounded-2xl shadow-lg p-8 max-w-md">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Erreur</h2>
+          <p className="text-gray-600 mb-6">{usersError}</p>
+          <Link
+            to="/dashboard"
+            className="bg-amani-primary text-white px-6 py-2 rounded-lg hover:bg-amani-primary/90 transition-colors"
+          >
+            Retour au tableau de bord
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -446,9 +476,8 @@ export default function Users() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredUsers.map((u) => {
-                  const isRecent =
-                    new Date(u.lastLogin) >
-                    new Date(Date.now() - 24 * 60 * 60 * 1000);
+                  const isRecent = new Date(u.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                  const userRole = u.roles?.[0] || 'user';
                   return (
                     <tr key={u.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -462,12 +491,12 @@ export default function Users() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="w-10 h-10 bg-gradient-to-br from-amani-primary to-amani-primary/80 rounded-full flex items-center justify-center text-white font-semibold">
-                            {u.firstName.charAt(0)}
-                            {u.lastName.charAt(0)}
+                            {u.first_name?.charAt(0) || 'U'}
+                            {u.last_name?.charAt(0) || ''}
                           </div>
                           <div className="ml-4">
                             <div className="font-medium text-amani-primary">
-                              {u.firstName} {u.lastName}
+                              {u.first_name} {u.last_name}
                             </div>
                             <div className="text-sm text-gray-600 flex items-center gap-1">
                               <Mail className="w-3 h-3" />
@@ -478,18 +507,18 @@ export default function Users() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(u.role)}`}
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(userRole)}`}
                         >
-                          {getRoleDisplayName(u.role)}
+                          {getRoleDisplayName(userRole)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {u.organization}
+                        {u.organization || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Calendar className="w-4 h-4" />
-                          {u.lastLogin}
+                          {new Date(u.created_at).toLocaleDateString('fr-FR')}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -572,7 +601,7 @@ export default function Users() {
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {roles.map((role) => {
-              const roleUsers = demoAccounts.filter((u) => u.role === role);
+              const roleUsers = users.filter((u) => u.roles?.includes(role));
               const sampleUser = roleUsers[0];
 
               return (
@@ -593,30 +622,32 @@ export default function Users() {
                   {sampleUser && (
                     <div className="space-y-2">
                       <h4 className="text-sm font-medium text-gray-700 mb-2">
-                        Permissions principales:
+                        Informations:
                       </h4>
                       <div className="space-y-1">
-                        {sampleUser.permissions
-                          .slice(0, 4)
-                          .map((permission, i) => (
-                            <div
-                              key={i}
-                              className="flex items-center gap-2 text-xs"
-                            >
-                              <CheckCircle className="w-3 h-3 text-green-500" />
-                              <span className="text-gray-600">
-                                {permission.replace(/_/g, " ")}
-                              </span>
-                            </div>
-                          ))}
-                        {sampleUser.permissions.length > 4 && (
-                          <div className="text-xs text-gray-500">
-                            +{sampleUser.permissions.length - 4} autres...
+                        <div className="flex items-center gap-2 text-xs">
+                          <CheckCircle className="w-3 h-3 text-green-500" />
+                          <span className="text-gray-600">
+                            {sampleUser.first_name} {sampleUser.last_name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <Mail className="w-3 h-3 text-gray-500" />
+                          <span className="text-gray-600">
+                            {sampleUser.email}
+                          </span>
+                        </div>
+                        {sampleUser.organization && (
+                          <div className="flex items-center gap-2 text-xs">
+                            <Shield className="w-3 h-3 text-gray-500" />
+                            <span className="text-gray-600">
+                              {sampleUser.organization}
+                            </span>
                           </div>
                         )}
                       </div>
                       <button className="w-full mt-4 text-amani-primary text-sm font-medium hover:underline">
-                        Modifier les permissions
+                        Voir tous les utilisateurs
                       </button>
                     </div>
                   )}

@@ -1,6 +1,25 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { supabase, getCurrentUser } from "../lib/supabase";
 
+// Type sécurisé pour les données de profil
+type ProfileData = { 
+  roles?: string[], 
+  first_name?: string, 
+  last_name?: string, 
+  organization?: string, 
+  avatar_url?: string 
+};
+
+// Fonction utilitaire pour accéder aux propriétés de profileData de manière sécurisée
+function safeProfileAccess<K extends keyof ProfileData>(profileData: any | null, key: K, typeCheck?: string): ProfileData[K] | undefined {
+  if (!profileData) return undefined;
+  
+  const value = profileData[key];
+  if (typeCheck && typeof value !== typeCheck) return undefined;
+  
+  return value;
+}
+
 interface User {
   id: string;
   email: string;
@@ -61,10 +80,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (session?.user) {
-          // Récupérer les informations du profil (ne jette pas d'exception si aucune ligne)
+          // Récupérer les informations du profil (optimisé - seulement les champs nécessaires)
           const { data: profileData, error: profileError } = await supabase
             .from("profiles")
-            .select("*")
+            .select("first_name, last_name, organization, avatar_url, roles")
             .eq("id", session.user.id)
             .maybeSingle();
 
@@ -75,26 +94,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             );
           }
 
-          const profileRoles: string[] = Array.isArray(profileData?.roles)
-            ? (profileData!.roles as string[])
+          // Utiliser safeProfileAccess pour éviter les erreurs TypeScript
+          const profileRoles: string[] = Array.isArray(safeProfileAccess(profileData, 'roles'))
+            ? (safeProfileAccess(profileData, 'roles') as string[])
             : [];
           const isAdmin =
             profileRoles.includes("admin") || session.user.role === "admin";
           const safePermissions: string[] = Array.isArray(
             session.user.user_metadata?.permissions,
           )
-            ? (session.user.user_metadata!.permissions as string[])
+            ? (session.user.user_metadata?.permissions as string[] || [])
             : [];
           const userData = {
             id: session.user.id,
             email: session.user.email || "",
             firstName:
-              profileData?.first_name ||
+              safeProfileAccess(profileData, 'first_name') ||
               session.user.user_metadata?.first_name ||
               session.user.user_metadata?.full_name?.split(" ")[0] ||
               "Utilisateur",
             lastName:
-              profileData?.last_name ||
+              safeProfileAccess(profileData, 'last_name') ||
               session.user.user_metadata?.last_name ||
               session.user.user_metadata?.full_name
                 ?.split(" ")
@@ -102,13 +122,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 .join(" ") ||
               "",
             organization:
-              typeof profileData?.organization === "string"
-                ? profileData.organization
-                : "",
+              safeProfileAccess(profileData, 'organization') || "",
             avatarUrl:
-              (typeof profileData?.avatar_url === "string"
-                ? profileData.avatar_url
-                : undefined) || session.user.user_metadata?.avatar_url || "",
+              safeProfileAccess(profileData, 'avatar_url') || session.user.user_metadata?.avatar_url || "",
             user_metadata: session.user.user_metadata,
             role: isAdmin ? "admin" : session.user.role || "user",
             roles:
@@ -172,31 +188,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Recharger les données utilisateur (sans jeter en cas d'absence)
           const { data: profileData } = await supabase
             .from("profiles")
-            .select("*")
+            .select("first_name, last_name, organization, avatar_url, roles")
             .eq("id", session.user.id)
             .maybeSingle();
-
-          const profileRoles: string[] = Array.isArray(profileData?.roles)
-            ? (profileData!.roles as string[])
+            
+          // Utiliser safeProfileAccess pour éviter les erreurs TypeScript
+          const profileRoles: string[] = Array.isArray(safeProfileAccess(profileData, 'roles'))
+            ? (safeProfileAccess(profileData, 'roles') as string[])
             : [];
           const isAdmin =
             profileRoles.includes("admin") || session.user.role === "admin";
           const safePermissions: string[] = Array.isArray(
             session.user.user_metadata?.permissions,
           )
-            ? (session.user.user_metadata!.permissions as string[])
+            ? (session.user.user_metadata?.permissions as string[] || [])
             : [];
 
           const userData = {
             id: session.user.id,
             email: session.user.email || "",
             firstName:
-              profileData?.first_name ||
+              safeProfileAccess(profileData, 'first_name') ||
               session.user.user_metadata?.first_name ||
               session.user.user_metadata?.full_name?.split(" ")[0] ||
               "Utilisateur",
             lastName:
-              profileData?.last_name ||
+              safeProfileAccess(profileData, 'last_name') ||
               session.user.user_metadata?.last_name ||
               session.user.user_metadata?.full_name
                 ?.split(" ")
@@ -204,13 +221,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 .join(" ") ||
               "",
             organization:
-              typeof profileData?.organization === "string"
-                ? profileData.organization
-                : "",
+              safeProfileAccess(profileData, 'organization') || "",
             avatarUrl:
-              (typeof profileData?.avatar_url === "string"
-                ? profileData.avatar_url
-                : undefined) || session.user.user_metadata?.avatar_url || "",
+              safeProfileAccess(profileData, 'avatar_url') || session.user.user_metadata?.avatar_url || "",
             user_metadata: session.user.user_metadata,
             role: isAdmin ? "admin" : session.user.role || "user",
             roles:
@@ -297,98 +310,83 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data?.user) {
-        console.log("✅ Connexion réussie, récupération du profil...");
-        console.log("🔄 Mise à jour de l'état utilisateur avec les informations de base...");
-        // On ne met pas à jour l'état ici, on attend d'avoir toutes les données
-
-        console.log("🔄 Récupération des informations du profil...");
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", data.user.id)
-          .maybeSingle();
-
-        console.log("📋 Profil data:", profileData);
-        if (profileError) {
-          console.error(
-            "⚠️ Erreur lors de la récupération du profil:",
-            profileError,
-          );
-          console.log("🔄 Continuons sans profil...");
-        }
-
-        // Vérifier si l'utilisateur est admin
-        const isAdmin =
-          profileData?.role === "admin" ||
-          data.user.user_metadata?.role === "admin";
-        console.log("🛡️ Est admin?", isAdmin);
-
-        // Définir les permissions en fonction du rôle
-        let userPermissions = [];
-        if (isAdmin) {
-          userPermissions = [
-            "view_dashboard",
-            "create_articles",
-            "edit_articles",
-            "delete_articles",
-            "publish_articles",
-            "create_podcasts",
-            "edit_podcasts",
-            "delete_podcasts",
-            "publish_podcasts",
-            "create_economic_reports",
-            "create_indices",
-            "manage_users",
-            "view_analytics",
-            "manage_settings",
-          ];
-        } else {
-          // Permissions par défaut pour les utilisateurs non-admins
-          userPermissions = [
-            "view_dashboard",
-            "create_articles",
-            "edit_own_articles",
-            "view_analytics",
-          ];
-        }
-
-        const computedRole: string = (profileData?.role ||
-          data.user.user_metadata?.role ||
-          "user") as string;
-        const userData = {
+        const baseRole = (data.user.user_metadata?.role || "user") as string;
+        const baseUser = {
           id: data.user.id,
           email: data.user.email || "",
           firstName:
-            profileData?.first_name ||
             data.user.user_metadata?.first_name ||
             data.user.user_metadata?.full_name?.split(" ")[0] ||
             "Utilisateur",
           lastName:
-            profileData?.last_name ||
             data.user.user_metadata?.last_name ||
-            data.user.user_metadata?.full_name
-              ?.split(" ")
-              .slice(1)
-              .join(" ") ||
+            data.user.user_metadata?.full_name?.split(" ").slice(1).join(" ") ||
             "",
-          organization:
-            typeof profileData?.organization === "string"
-              ? profileData.organization
-              : "",
-          avatarUrl:
-            (typeof profileData?.avatar_url === "string"
-              ? profileData.avatar_url
-              : undefined) || data.user.user_metadata?.avatar_url || "",
+          organization: "",
+          avatarUrl: data.user.user_metadata?.avatar_url || "",
           user_metadata: data.user.user_metadata,
-          role: isAdmin
-            ? "admin"
-            : computedRole,
-          roles: [computedRole],
-          permissions: userPermissions,
+          role: baseRole,
+          roles: [baseRole],
+          permissions: ["view_dashboard"],
         };
+        setUser(baseUser);
+        // Sortir de l'état de chargement immédiatement pour permettre à l'UI de s'afficher
+        setIsLoading(false);
+        
+        // Récupérer les informations complètes du profil en arrière-plan
+        ;(async () => {
+          try {
+            const { data: profileData } = await supabase
+              .from("profiles")
+              .select("first_name, last_name, organization, avatar_url, roles")
+              .eq("id", data.user.id)
+              .maybeSingle();
+            if (profileData) {
+              const rolesArr = Array.isArray(profileData.roles)
+                ? (profileData.roles as string[])
+                : (baseUser.roles || [baseRole]);
+              const isAdmin = rolesArr.includes("admin") || baseRole === "admin";
+              const perms = isAdmin
+                ? [
+                    "view_dashboard",
+                    "create_articles",
+                    "edit_articles",
+                    "delete_articles",
+                    "publish_articles",
+                    "create_podcasts",
+                    "edit_podcasts",
+                    "delete_podcasts",
+                    "publish_podcasts",
+                    "create_economic_reports",
+                    "create_indices",
+                    "manage_users",
+                    "view_analytics",
+                    "manage_settings",
+                  ]
+                : ["view_dashboard", "create_articles", "edit_own_articles", "view_analytics"];
+              setUser((prev) => ({
+                ...prev!,
+                firstName: profileData.first_name || prev?.firstName || "",
+                lastName: profileData.last_name || prev?.lastName || "",
+                organization:
+                  (typeof profileData.organization === "string" && profileData.organization) ||
+                  prev?.organization ||
+                  "",
+                avatarUrl:
+                  (typeof profileData.avatar_url === "string" && profileData.avatar_url) ||
+                  prev?.avatarUrl ||
+                  "",
+                role: isAdmin ? "admin" : prev?.role || baseRole,
+                roles: rolesArr,
+                permissions: perms,
+              }));
+            }
+          } catch (err) {
+            console.error('Erreur lors de la récupération du profil après login:', err);
+            // Garder l'utilisateur de base en cas d'échec
+          }
+        })();
 
-        console.log("✅ Utilisateur connecté avec les données:", userData);
-        setUser(userData);
         return true;
       }
 
@@ -424,7 +422,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Vérifier si l'utilisateur a la permission spécifique
-    return user.permissions?.includes(permission) || false;
+    if (!Array.isArray(user.permissions)) {
+      return false;
+    }
+    
+    return user.permissions.includes(permission) || false;
   };
 
   const value = {

@@ -1,6 +1,7 @@
 // Configuration et services Supabase pour Amani Finance
 import { Database } from "../types/database";
 import { supabase } from "../lib/supabase";
+const DEBUG = import.meta.env.DEV === true;
 
 // Utilise le client singleton défini dans ../lib/supabase pour éviter plusieurs instances
 
@@ -69,6 +70,11 @@ export class ContentService {
     search?: string;
   } = {}) {
     try {
+      if (DEBUG) {
+        console.group("[Supabase][ContentService.getContents]");
+        console.log("params:", { type, category, status, limit, offset, country, author_id, search });
+      }
+      const t0 = Date.now();
       let query = supabase
         .from("contents")
         .select(
@@ -100,6 +106,12 @@ export class ContentService {
 
       const { data, error, count } = await query;
 
+      if (DEBUG) {
+        console.log(`duration: ${Date.now() - t0}ms`, { count: count || 0, rows: data?.length || 0, error });
+        if (error) console.warn("getContents error:", error);
+        console.groupEnd();
+      }
+
       if (error) throw error;
 
       return {
@@ -116,6 +128,11 @@ export class ContentService {
   // Récupérer un contenu par slug
   static async getContentBySlug(slug: string) {
     try {
+      if (DEBUG) {
+        console.group("[Supabase][ContentService.getContentBySlug]");
+        console.log("slug:", slug);
+      }
+      const t0 = Date.now();
       const { data, error } = await supabase
         .from("contents")
         .select(
@@ -136,6 +153,12 @@ export class ContentService {
         .eq("slug", slug)
         .eq("status", "published")
         .single();
+
+      if (DEBUG) {
+        console.log(`duration: ${Date.now() - t0}ms`, { hasData: !!data, error });
+        if (error) console.warn("getContentBySlug error:", error);
+        console.groupEnd();
+      }
 
       if (error) throw error;
 
@@ -159,6 +182,11 @@ export class ContentService {
     limit = 3,
   ) {
     try {
+      if (DEBUG) {
+        console.group("[Supabase][ContentService.getSimilarContent]");
+        console.log("params:", { contentId, category, limit });
+      }
+      const t0 = Date.now();
       const { data, error } = await supabase
         .from("contents")
         .select(
@@ -179,6 +207,12 @@ export class ContentService {
         .neq("id", contentId)
         .order("published_at", { ascending: false })
         .limit(limit);
+
+      if (DEBUG) {
+        console.log(`duration: ${Date.now() - t0}ms`, { rows: data?.length || 0, error });
+        if (error) console.warn("getSimilarContent error:", error);
+        console.groupEnd();
+      }
 
       if (error) throw error;
       return data || [];
