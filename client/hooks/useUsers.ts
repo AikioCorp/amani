@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 
 export interface User {
   id: string;
@@ -8,12 +7,11 @@ export interface User {
   last_name: string;
   organization?: string;
   avatar_url?: string;
-  roles: string[];
+  role: string;
+  permissions: string[];
   phone?: string;
-  location?: string;
-  linkedin?: string;
-  twitter?: string;
   bio?: string;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -25,6 +23,12 @@ export interface UserStats {
   users: number;
   newThisMonth: number;
 }
+
+const isLocal =
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1'));
+
+const API_BASE = isLocal ? 'http://localhost:5000/api' : '/api';
 
 export function useUsers() {
   const [users, setUsers] = useState<User[]>([]);
@@ -43,16 +47,11 @@ export function useUsers() {
       setIsLoading(true);
       setError(null);
 
-      // Optimisation : limiter les champs récupérés et ajouter une limite
-      const { data, error: fetchError } = await supabase
-        .from('profiles')
-        .select('id, email, first_name, last_name, organization, roles, created_at, updated_at')
-        .order('created_at', { ascending: false })
-        .limit(100); // Limiter à 100 utilisateurs pour améliorer les performances
+      const resp = await fetch(`${API_BASE}/users?limit=100`);
+      if (!resp.ok) throw new Error('Erreur lors de la récupération des utilisateurs');
+      const result = await resp.json();
 
-      if (fetchError) throw fetchError;
-
-      const usersData = (data || []) as User[];
+      const usersData: User[] = result.data || [];
       setUsers(usersData);
 
       // Calculer les statistiques
@@ -61,9 +60,9 @@ export function useUsers() {
 
       const calculatedStats: UserStats = {
         total: usersData.length,
-        admins: usersData.filter(u => u.roles?.includes('admin')).length,
-        editors: usersData.filter(u => u.roles?.includes('editor')).length,
-        users: usersData.filter(u => u.roles?.includes('user') && !u.roles?.includes('admin') && !u.roles?.includes('editor')).length,
+        admins: usersData.filter(u => u.role === 'admin').length,
+        editors: usersData.filter(u => u.role === 'editor').length,
+        users: usersData.filter(u => u.role === 'subscriber').length,
         newThisMonth: usersData.filter(u => new Date(u.created_at) >= startOfMonth).length,
       };
 
@@ -82,16 +81,8 @@ export function useUsers() {
 
   const deleteUser = async (userId: string) => {
     try {
-      // Note: La suppression d'un utilisateur dans auth.users nécessite des permissions admin
-      // Pour l'instant, on peut juste désactiver le profil
-      const { error: deleteError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
-
-      if (deleteError) throw deleteError;
-
-      // Rafraîchir la liste
+      const resp = await fetch(`${API_BASE}/users/${userId}`, { method: 'DELETE' });
+      if (!resp.ok) throw new Error('Erreur lors de la suppression');
       await fetchUsers();
       return true;
     } catch (err: any) {
@@ -100,16 +91,14 @@ export function useUsers() {
     }
   };
 
-  const updateUserRoles = async (userId: string, roles: string[]) => {
+  const updateUserRoles = async (userId: string, role: string) => {
     try {
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ roles, updated_at: new Date().toISOString() } as any)
-        .eq('id', userId);
-
-      if (updateError) throw updateError;
-
-      // Rafraîchir la liste
+      const resp = await fetch(`${API_BASE}/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role }),
+      });
+      if (!resp.ok) throw new Error('Erreur lors de la mise à jour des rôles');
       await fetchUsers();
       return true;
     } catch (err: any) {
@@ -120,14 +109,12 @@ export function useUsers() {
 
   const updateUser = async (userId: string, updates: Partial<User>) => {
     try {
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ ...updates, updated_at: new Date().toISOString() } as any)
-        .eq('id', userId);
-
-      if (updateError) throw updateError;
-
-      // Rafraîchir la liste
+      const resp = await fetch(`${API_BASE}/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      if (!resp.ok) throw new Error('Erreur lors de la mise à jour');
       await fetchUsers();
       return true;
     } catch (err: any) {

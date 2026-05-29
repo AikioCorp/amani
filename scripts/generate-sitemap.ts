@@ -1,11 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
+// generate-sitemap.ts — Migré vers l'API REST standalone
+// Utilise l'API backend pour récupérer les slugs des contenus publiés
 
+const API_BASE = process.env.VITE_API_URL || 'http://localhost:5000/api';
 const BASE_URL = 'https://amani-finance.vercel.app';
 
 interface SitemapUrl {
@@ -33,59 +32,50 @@ const staticPages: SitemapUrl[] = [
   { loc: '/contact', lastmod: new Date().toISOString().split('T')[0], changefreq: 'monthly', priority: 0.5 },
 ];
 
+async function fetchContentsFromAPI(type: string): Promise<Array<{ slug: string; updated_at: string }>> {
+  try {
+    const resp = await fetch(`${API_BASE}/contents?type=${type}&status=published&limit=500`);
+    if (!resp.ok) {
+      console.warn(`⚠️ API inaccessible pour le type ${type}, génération du sitemap avec les pages statiques uniquement`);
+      return [];
+    }
+    const result = await resp.json();
+    return result.data || [];
+  } catch (err) {
+    console.warn(`⚠️ Impossible de joindre l'API (${API_BASE}): ${err}. Sitemap statique uniquement.`);
+    return [];
+  }
+}
+
 async function generateSitemap() {
   console.log('🚀 Génération du sitemap...');
-  
+
   const urls: SitemapUrl[] = [...staticPages];
-  
-  try {
-    // Récupérer tous les articles publiés
-    const { data: articles, error: articlesError } = await supabase
-      .from('contents')
-      .select('slug, updated_at, type')
-      .eq('status', 'published')
-      .eq('type', 'article')
-      .order('updated_at', { ascending: false });
-    
-    if (articlesError) {
-      console.warn('⚠️ Erreur lors de la récupération des articles:', articlesError);
-    } else if (articles) {
-      articles.forEach((article) => {
-        urls.push({
-          loc: `/article/${article.slug}`,
-          lastmod: new Date(article.updated_at).toISOString().split('T')[0],
-          changefreq: 'weekly',
-          priority: 0.8,
-        });
-      });
-      console.log(`✅ ${articles.length} articles ajoutés au sitemap`);
-    }
-    
-    // Récupérer tous les podcasts publiés
-    const { data: podcasts, error: podcastsError } = await supabase
-      .from('contents')
-      .select('slug, updated_at, type')
-      .eq('status', 'published')
-      .eq('type', 'podcast')
-      .order('updated_at', { ascending: false });
-    
-    if (podcastsError) {
-      console.warn('⚠️ Erreur lors de la récupération des podcasts:', podcastsError);
-    } else if (podcasts) {
-      podcasts.forEach((podcast) => {
-        urls.push({
-          loc: `/podcast/${podcast.slug}`,
-          lastmod: new Date(podcast.updated_at).toISOString().split('T')[0],
-          changefreq: 'monthly',
-          priority: 0.7,
-        });
-      });
-      console.log(`✅ ${podcasts.length} podcasts ajoutés au sitemap`);
-    }
-  } catch (error) {
-    console.error('❌ Erreur lors de la récupération du contenu:', error);
-  }
-  
+
+  // Récupérer les articles
+  const articles = await fetchContentsFromAPI('article');
+  articles.forEach((article) => {
+    urls.push({
+      loc: `/article/${article.slug}`,
+      lastmod: new Date(article.updated_at).toISOString().split('T')[0],
+      changefreq: 'weekly',
+      priority: 0.8,
+    });
+  });
+  if (articles.length) console.log(`✅ ${articles.length} articles ajoutés au sitemap`);
+
+  // Récupérer les podcasts
+  const podcasts = await fetchContentsFromAPI('podcast');
+  podcasts.forEach((podcast) => {
+    urls.push({
+      loc: `/podcast/${podcast.slug}`,
+      lastmod: new Date(podcast.updated_at).toISOString().split('T')[0],
+      changefreq: 'monthly',
+      priority: 0.7,
+    });
+  });
+  if (podcasts.length) console.log(`✅ ${podcasts.length} podcasts ajoutés au sitemap`);
+
   // Générer le XML
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -98,11 +88,11 @@ ${urls.map(url => `  <url>
     <priority>${url.priority}</priority>
   </url>`).join('\n')}
 </urlset>`;
-  
+
   // Écrire le fichier
   const sitemapPath = path.join(process.cwd(), 'public', 'sitemap.xml');
   fs.writeFileSync(sitemapPath, xml, 'utf-8');
-  
+
   console.log(`✅ Sitemap généré avec succès: ${urls.length} URLs`);
   console.log(`📄 Fichier: ${sitemapPath}`);
 }

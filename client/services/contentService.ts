@@ -1,5 +1,4 @@
-import { supabase } from '@/lib/supabase';
-
+// Service de contenu refactorisé pour utiliser l'API standalone Amani
 export type Content = {
   id: string;
   title: string;
@@ -17,94 +16,102 @@ export type Content = {
   published_at?: string;
 };
 
-export const getContents = async (type?: Content['type']) => {
-  let query = supabase
-    .from('contents')
-    .select('*')
-    .order('created_at', { ascending: false });
+const isLocal =
+  window.location.hostname === "localhost" ||
+  window.location.hostname.includes("127.0.0.1");
 
-  if (type) {
-    query = query.eq('type', type);
-  }
+const API_BASE_URL = isLocal ? "http://localhost:5000/api" : "/api";
 
-  const { data, error } = await query;
-  
-  if (error) {
+export const getContents = async (options: {
+  type?: Content['type'];
+  category?: string;
+  status?: string;
+  limit?: number;
+  offset?: number;
+  authorId?: string;
+  search?: string;
+} = {}) => {
+  try {
+    const params = new URLSearchParams();
+    if (options.type) params.append("type", options.type);
+    if (options.category) params.append("category", options.category);
+    if (options.status) params.append("status", options.status);
+    if (options.limit !== undefined) params.append("limit", options.limit.toString());
+    if (options.offset !== undefined) params.append("offset", options.offset.toString());
+    if (options.authorId) params.append("author_id", options.authorId);
+    if (options.search) params.append("search", options.search);
+
+    const url = `${API_BASE_URL}/contents?${params.toString()}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Erreur de récupération des contenus");
+    const result = await response.json();
+    return {
+      data: result.data as Content[],
+      count: result.count || 0,
+    };
+  } catch (error) {
     console.error('Error fetching contents:', error);
     throw error;
   }
-  
-  return data as Content[];
 };
 
 export const getContentBySlug = async (slug: string) => {
-  const { data, error } = await supabase
-    .from('contents')
-    .select('*')
-    .eq('slug', slug)
-    .single();
-
-  if (error) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/contents/${slug}`);
+    if (!response.ok) throw new Error("Contenu introuvable via l'API");
+    const result = await response.json();
+    return result.data as Content;
+  } catch (error) {
     console.error('Error fetching content:', error);
     throw error;
   }
-
-  return data as Content;
 };
 
 export const createContent = async (content: Omit<Content, 'id' | 'created_at' | 'updated_at' | 'status' | 'author_id'>) => {
-  const user = await supabase.auth.getUser();
-  
-  if (!user.data.user?.id) {
-    throw new Error('User not authenticated');
-  }
-
-  const { data, error } = await supabase
-    .from('contents')
-    .insert([
-      {
-        ...content,
-        author_id: user.data.user.id,
-        status: 'draft',
+  try {
+    const response = await fetch(`${API_BASE_URL}/contents`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-    ])
-    .select()
-    .single();
-
-  if (error) {
+      body: JSON.stringify(content),
+    });
+    if (!response.ok) throw new Error("Erreur de création de contenu via l'API");
+    const result = await response.json();
+    return result.data as Content;
+  } catch (error) {
     console.error('Error creating content:', error);
     throw error;
   }
-
-  return data as Content;
 };
 
 export const updateContent = async (id: string, updates: Partial<Content>) => {
-  const { data, error } = await supabase
-    .from('contents')
-    .update({
-      ...updates,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/contents/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updates),
+    });
+    if (!response.ok) throw new Error("Erreur de mise à jour de contenu via l'API");
+    const result = await response.json();
+    return result.data as Content;
+  } catch (error) {
     console.error('Error updating content:', error);
     throw error;
   }
-
-  return data as Content;
 };
 
 export const deleteContent = async (id: string) => {
-  const { error } = await supabase.from('contents').delete().eq('id', id);
-  
-  if (error) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/contents/${id}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) throw new Error("Erreur de suppression de contenu via l'API");
+    return true;
+  } catch (error) {
     console.error('Error deleting content:', error);
     throw error;
   }
-  
-  return true;
 };

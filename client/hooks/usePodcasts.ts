@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '../lib/supabase';
-import type { Database } from '../types/database';
- 
+import { getSessionToken } from '../services/authService';
 
 export type PodcastStatus = 'draft' | 'published' | 'archived' | 'scheduled';
 
@@ -66,112 +64,77 @@ interface UsePodcastsOptions {
   authorId?: string;
 }
 
+const isLocal =
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1'));
+
+const API_BASE = isLocal ? 'http://localhost:5000/api' : '/api';
+
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .substring(0, 100);
+}
+
+function formatPodcast(item: any): Podcast {
+  return {
+    ...item,
+    type: 'podcast',
+    author: item.author || {
+      id: item.author_id,
+      first_name: 'Animateur',
+      last_name: 'Podcast',
+      avatar_url: null,
+    },
+    categories: item.category || {
+      id: item.category_id,
+      name: 'Catégorie Podcast',
+      slug: 'podcast',
+      color: '#8B5CF6',
+    },
+  };
+}
+
 export const usePodcasts = ({
   status = 'published',
   limit = 10,
   offset = 0,
   category,
-  authorId
+  authorId,
 }: UsePodcastsOptions = {}) => {
   const [podcasts, setPodcasts] = useState<Podcast[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [count, setCount] = useState<number>(0);
-  // Attendre readiness auth pour éviter fetch à vide sous RLS
-  const [authReady, setAuthReady] = useState(false);
-  // Eviter double-fetch en StrictMode
   const didInitialFetch = useRef(false);
 
   const fetchPodcasts = useCallback(async () => {
     try {
-      const t0 = Date.now();
-      console.log('🎧 Début récupération podcasts...', { status, limit, offset, category, authorId });
       setLoading(true);
       setError(null);
-      
-      console.log('🔗 Requête podcasts...');
-      
-      let query = supabase
-        .from('contents')
-        // Use planned count to avoid heavy exact count on large tables
-        .select('*', { count: 'planned' })
-        .eq('type', 'podcast');
 
-      console.log('🎯 Filtres appliqués:');
-      
-      if (status !== 'all') {
-        console.log('  - Status:', status);
-        query = query.eq('status', status);
-      } else {
-        console.log('  - Status: tous');
-      }
-      
-      if (category) {
-        console.log('  - Catégorie:', category);
-        query = query.eq('category_id', category);
-      }
-      
-      if (authorId) {
-        console.log('  - Auteur:', authorId);
-        query = query.eq('author_id', authorId);
-      }
+      const params = new URLSearchParams();
+      params.set('type', 'podcast');
+      if (status !== 'all') params.set('status', status);
+      params.set('limit', String(limit));
+      params.set('offset', String(offset));
+      if (category) params.set('category', category);
+      if (authorId) params.set('author_id', authorId);
 
-      console.log('🚀 Exécution de la requête podcasts...');
-      
-      const result = await query
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
-      
-      console.log('🔍 Résultat brut Supabase (podcasts):', result);
-      const { data, error, count } = result;
+      const resp = await fetch(`${API_BASE}/contents?${params}`);
+      if (!resp.ok) throw new Error('Erreur lors de la récupération des podcasts');
+      const result = await resp.json();
 
-      console.log('📊 Résultat requête podcasts:', { 
-        dataLength: data?.length || 0, 
-        error: error?.message || 'Aucune erreur', 
-        count,
-        firstItem: (data as any)?.[0]?.title || 'Aucun'
-      });
-
-      if (error) {
-        console.error('❌ Erreur Supabase (podcasts):', error);
-        setError(error as Error);
-        setPodcasts([]);
-        setCount(0);
-        return [];
-      }
-
-      if (!data || data.length === 0) {
-        console.log('⚠️ Aucun podcast trouvé');
-        setPodcasts([]);
-        setCount(0);
-        return [];
-      }
-
-      console.log('🔄 Formatage des données podcasts...');
-      const formattedData: Podcast[] = data.map((item: any) => ({
-        ...(item as Podcast),
-        author: {
-          id: item.author_id,
-          first_name: 'Animateur',
-          last_name: 'Podcast',
-          avatar_url: null
-        },
-        categories: {
-          id: item.category_id,
-          name: 'Catégorie Podcast',
-          slug: 'podcast',
-          color: '#8B5CF6'
-        }
-      }));
-
-      console.log('✅ Podcasts récupérés avec succès:', formattedData.length);
-      setPodcasts(formattedData);
-      if (count !== null) setCount(count);
-      const dt = Date.now() - t0;
-      console.log(`⏱️ fetchPodcasts terminé en ${dt} ms`);
-      return formattedData;
+      const formatted: Podcast[] = (result.data || []).map(formatPodcast);
+      setPodcasts(formatted);
+      setCount(result.count || 0);
+      return formatted;
     } catch (err) {
-      console.error('💥 Erreur dans fetchPodcasts:', err);
+      console.error('Erreur fetchPodcasts:', err);
       setError(err as Error);
       setPodcasts([]);
       setCount(0);
@@ -181,67 +144,15 @@ export const usePodcasts = ({
     }
   }, [status, limit, offset, category, authorId]);
 
-  // Auth readiness + refetch on session change
-  useEffect(() => {
-    let unsub: { subscription?: { unsubscribe?: () => void } } | null = null;
-    supabase.auth.getSession().then(() => setAuthReady(true));
-    const sub = supabase.auth.onAuthStateChange((_event, _session) => {
-      setAuthReady(true);
-      fetchPodcasts().catch((e) => console.warn('Refetch podcasts après changement de session échoué:', e));
-    });
-    unsub = sub?.data as any;
-    return () => {
-      try { unsub?.subscription?.unsubscribe?.(); } catch {}
-    };
-  }, [fetchPodcasts]);
-
   const fetchPodcastBySlug = useCallback(async (slug: string): Promise<Podcast> => {
     try {
       setLoading(true);
-      
-      const { data, error } = await supabase
-        .from('contents')
-        .select(`
-          *,
-          content_categories!inner(id, name, slug, color)
-        `)
-        .eq('slug', slug)
-        .eq('type', 'podcast')
-        .single();
-
-      if (error) throw error;
-      if (!data) throw new Error('Podcast not found');
-      
-      // Format the response to match Podcast type
-      const row = data as any;
-      const { content_categories, ...restData } = row as any;
-      const formattedData: Podcast = {
-        ...(restData as Podcast),
-        published_at: row.published_at ? new Date(row.published_at).toISOString() : null,
-        created_at: new Date(row.created_at).toISOString(),
-        updated_at: new Date(row.updated_at).toISOString(),
-        author: {
-          id: row.author_id,
-          first_name: 'Animateur',
-          last_name: 'Podcast',
-          avatar_url: null
-        },
-        categories: content_categories ? {
-          id: content_categories.id,
-          name: content_categories.name,
-          slug: content_categories.slug,
-          color: content_categories.color
-        } : {
-          id: row.category_id,
-          name: 'Catégorie Podcast',
-          slug: 'podcast',
-          color: '#8B5CF6'
-        }
-      };
-
-      return formattedData;
+      const resp = await fetch(`${API_BASE}/contents/${slug}`);
+      if (!resp.ok) throw new Error('Podcast introuvable');
+      const result = await resp.json();
+      return formatPodcast(result.data);
     } catch (err) {
-      console.error('Error fetching podcast:', err);
+      console.error('Erreur fetchPodcastBySlug:', err);
       setError(err as Error);
       throw err;
     } finally {
@@ -249,161 +160,43 @@ export const usePodcasts = ({
     }
   }, []);
 
-  const createPodcast = useCallback(async (podcastData: Omit<Podcast, 'id' | 'created_at' | 'updated_at' | 'views' | 'likes' | 'shares'>) => {
+  const createPodcast = useCallback(async (
+    podcastData: Omit<Podcast, 'id' | 'created_at' | 'updated_at' | 'views' | 'likes' | 'shares'>
+  ) => {
     try {
-      console.log('🚀 Début création podcast:', podcastData);
-      console.log('🔍 Type de podcastData:', typeof podcastData);
-      console.log('🔍 Clés disponibles:', Object.keys(podcastData));
-      console.log('🔍 Valeurs importantes:', {
-        title: podcastData.title,
-        category_id: podcastData.category_id,
-        author_id: podcastData.author_id, 
-        type: podcastData.type
-      });
       setLoading(true);
       setError(null);
-      
-      // Vérifier que l'utilisateur est connecté
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('Aucun utilisateur connecté');
-      }
-      console.log('✅ Utilisateur connecté:', user.id);
-      console.log('🔄 Continuons avec la création...');
-      
-      // Générer un slug si pas fourni
-      const slug = podcastData.slug || podcastData.title
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .substring(0, 200);
-      
-      console.log('🔧 Slug généré:', slug);
-      
-      // Vérifier que category_id est valide
-      if (!podcastData.category_id) {
-        console.warn('⚠️ Aucune catégorie fournie, utilisation de la catégorie par défaut');
-      }
-      
-      // Résoudre la catégorie texte (schéma legacy) à partir de category_id si nécessaire
-      let legacyCategoryText: string = 'general';
-      try {
-        if (podcastData.category_id) {
-          const { data: catRow, error: catErr } = await supabase
-            .from('content_categories')
-            .select('slug')
-            .eq('id', podcastData.category_id)
-            .single();
-          if (catErr) {
-            console.warn('⚠️ Impossible de récupérer le slug de catégorie, fallback sur "general"', catErr);
-          } else if (catRow && typeof (catRow as any).slug === 'string') {
-            legacyCategoryText = (catRow as { slug: string }).slug;
-          }
-        }
-      } catch (catLookupErr) {
-        console.warn('⚠️ Erreur lors de la résolution du slug de catégorie, fallback sur "general"', catLookupErr);
-        legacyCategoryText = 'general';
-      }
-      console.log('🏷️ Catégorie (legacy text) utilisée pour insertion:', legacyCategoryText);
 
-      // Préparer les données du podcast (respecter Database[contents].Insert)
-      const dbStatus: Database['public']['Tables']['contents']['Row']['status'] =
-        (['draft', 'published', 'archived'] as const).includes(
-          (podcastData.status as unknown as Database['public']['Tables']['contents']['Row']['status']) || 'draft'
-        )
-          ? ((podcastData.status as unknown) as Database['public']['Tables']['contents']['Row']['status'])
-          : 'draft';
+      const token = getSessionToken();
+      const slug = podcastData.slug || generateSlug(podcastData.title);
 
-      const podcastToCreate: Database['public']['Tables']['contents']['Insert'] = {
-        title: podcastData.title,
-        slug: slug,
-        summary: podcastData.summary,
-        description: podcastData.description ?? undefined,
-        content: podcastData.content ?? undefined,
-        type: 'podcast',
-        status: dbStatus,
-        // `category` (legacy texte) + `category_id` (clé étrangère)
-        category: legacyCategoryText,
-        category_id: podcastData.category_id,
-        country: podcastData.country || 'mali',
-        tags: podcastData.tags || [],
-        author_id: user.id,
-        meta_title: podcastData.meta_title ?? undefined,
-        meta_description: podcastData.meta_description ?? undefined,
-        featured_image: podcastData.featured_image ?? undefined,
-        featured_image_alt: podcastData.featured_image_alt ?? undefined,
-        published_at: dbStatus === 'published' ? new Date().toISOString() : undefined,
-        podcast_data: (podcastData as any).podcast_data ?? undefined
-      };
-      
-      console.log('🔍 Validation des données avant insertion:');
-      console.log('  - Title:', podcastToCreate.title);
-      console.log('  - Slug:', podcastToCreate.slug);
-      console.log('  - Category ID:', podcastToCreate.category_id);
-      console.log('  - Author ID:', podcastToCreate.author_id);
-      
-      console.log('📝 Données podcast à insérer:', JSON.stringify(podcastToCreate, null, 2));
-      
-      // Insérer le podcast avec un garde-fou de timeout pour détecter un éventuel blocage
-      const insertStart = Date.now();
-      const insertPromise = supabase
-        .from('contents')
-        .insert<Database['public']['Tables']['contents']['Insert']>([
-          podcastToCreate as Database['public']['Tables']['contents']['Insert']
-        ])
-        .select()
-        .single();
-      const timeoutMs = 15000; // 15s timeout
-      let insertResult: any;
-      try {
-        insertResult = await Promise.race([
-          insertPromise,
-          new Promise((_, reject) => setTimeout(() => reject(new Error(`Insert timeout après ${timeoutMs} ms`)), timeoutMs))
-        ]);
-      } catch (e) {
-        console.error('⏳ Timeout ou échec pendant l\'insertion:', e);
-        throw e;
-      }
-      const insertDuration = Date.now() - insertStart;
-      const { data, error } = insertResult || {};
-      console.log(`📥 Insertion terminée en ${insertDuration} ms`, { hasData: !!data, hasError: !!error });
-
-      console.log('📊 Réponse Supabase (podcast):', { data, error });
-      
-      if (error) {
-        console.error('❌ Erreur Supabase (podcast):', error);
-        throw error;
-      }
-      
-      if (!data) {
-        throw new Error('Aucune donnée retournée par Supabase');
-      }
-      
-      // Formater la réponse
-      const formattedPodcast: Podcast = {
-        ...data,
-        author: {
-          id: data.author_id,
-          first_name: 'Animateur',
-          last_name: 'Podcast',
-          avatar_url: null
+      const resp = await fetch(`${API_BASE}/contents`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: token ? `Bearer ${token}` : '',
         },
-        categories: {
-          id: data.category_id,
-          name: 'Catégorie Podcast',
-          slug: 'podcast',
-          color: '#8B5CF6'
-        }
-      };
-      
-      // Rafraîchir la liste des podcasts (non bloquant pour éviter les blocages UI)
-      console.log('🔄 Rafraîchissement liste podcasts (async, non bloquant)...');
-      fetchPodcasts().then(() => console.log('🔃 Liste podcasts rafraîchie')).catch(err => console.error('⚠️ Erreur rafraîchissement podcasts:', err));
-      
-      console.log('✅ Podcast créé avec succès!');
-      return formattedPodcast;
+        body: JSON.stringify({
+          ...podcastData,
+          type: 'podcast',
+          slug,
+          published_at:
+            podcastData.status === 'published' ? new Date().toISOString() : undefined,
+        }),
+      });
+
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.error || 'Erreur lors de la création du podcast');
+      }
+
+      const result = await resp.json();
+      const formatted = formatPodcast(result.data);
+
+      fetchPodcasts().catch(console.error);
+      return formatted;
     } catch (err) {
-      console.error('💥 Erreur création podcast:', err);
+      console.error('Erreur createPodcast:', err);
       setError(err as Error);
       throw err;
     } finally {
@@ -414,94 +207,37 @@ export const usePodcasts = ({
   const updatePodcast = useCallback(async (id: string, updates: Partial<Podcast>) => {
     try {
       setLoading(true);
-      
-      // Préparer les données pour la mise à jour en excluant les champs non-DB
+
       const dbUpdates: any = { ...updates };
-      
-      // Supprimer les champs qui ne sont pas dans la table contents
       delete dbUpdates.author;
       delete dbUpdates.categories;
-      delete dbUpdates.created_at; // Géré automatiquement
-      delete dbUpdates.id; // fourni dans l'URL, pas dans payload
-      // Champs non supportés par la table contents qui peuvent venir du formulaire
-      delete (dbUpdates as any).article_data;
-      delete (dbUpdates as any).indice_data;
-      delete (dbUpdates as any).content_categories;
-      
-      // Convertir category slug en UUID si nécessaire
-      if (dbUpdates.category_id && typeof dbUpdates.category_id === 'string') {
-        // Vérifier si c'est un UUID valide (format: 8-4-4-4-12 caractères)
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dbUpdates.category_id);
-        if (!isUUID) {
-          try {
-            const { data: categoryData, error: catError } = await supabase
-              .from('content_categories')
-              .select('id')
-              .eq('slug', dbUpdates.category_id)
-              .single();
-            
-            if (catError) {
-              console.error('❌ Erreur récupération catégorie:', catError);
-              // Utiliser une catégorie par défaut ou supprimer le champ
-              delete dbUpdates.category_id;
-            } else if (categoryData) {
-              dbUpdates.category_id = categoryData.id;
-              console.log('✅ Catégorie convertie:', dbUpdates.category_id);
-            }
-          } catch (catErr) {
-            console.error('❌ Erreur conversion catégorie:', catErr);
-            delete dbUpdates.category_id;
-          }
-        }
-      }
-      
-      // If status is being updated to published and published_at is not set
+      delete dbUpdates.created_at;
+      delete dbUpdates.id;
+
       if (dbUpdates.status === 'published' && !dbUpdates.published_at) {
         dbUpdates.published_at = new Date().toISOString();
       }
-      // Normaliser published_at si fourni au format date-only
-      if (dbUpdates.published_at && typeof dbUpdates.published_at === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dbUpdates.published_at)) {
-        dbUpdates.published_at = new Date(dbUpdates.published_at + 'T00:00:00.000Z').toISOString();
-      }
 
-      // Ne pas inclure updated_at car il est géré automatiquement par le trigger
-      delete dbUpdates.updated_at;
+      const token = getSessionToken();
+      const resp = await fetch(`${API_BASE}/contents/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: token ? `Bearer ${token}` : '',
+        },
+        body: JSON.stringify(dbUpdates),
+      });
 
-      console.log('📝 Données podcast à mettre à jour:', JSON.stringify(dbUpdates, null, 2));
+      if (!resp.ok) throw new Error('Erreur lors de la mise à jour du podcast');
+      const result = await resp.json();
 
-      // Vérifier que category_id est bien un UUID avant la mise à jour
-      if (dbUpdates.category_id && typeof dbUpdates.category_id === 'string') {
-        const isUUID = dbUpdates.category_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
-        if (!isUUID) {
-          console.warn('⚠️ category_id n\'est pas un UUID valide:', dbUpdates.category_id);
-          console.log('🔄 Tentative de conversion slug vers UUID...');
-          // Ne pas supprimer, laisser la conversion slug->UUID se faire plus haut
-        }
-      }
-
-      console.log('🔄 Envoi de la mise à jour vers Supabase...');
-      
-      const { data, error } = await supabase
-        .from('contents')
-        .update(dbUpdates)
-        .eq('id', id)
-        .select('*')
-        .single();
-
-      console.log('📊 Réponse Supabase:', { data, error });
-
-      if (error) throw error;
-      
-      // Update local state
-      setPodcasts(prev => 
-        prev.map(podcast => 
-          podcast.id === id ? { ...podcast, ...updates } : podcast
-        )
+      setPodcasts(prev =>
+        prev.map(podcast => (podcast.id === id ? { ...podcast, ...updates } : podcast))
       );
-      
-      return data;
+
+      return result.data;
     } catch (err) {
-      console.error('Error updating podcast:', err);
+      console.error('Erreur updatePodcast:', err);
       setError(err as Error);
       throw err;
     } finally {
@@ -512,19 +248,19 @@ export const usePodcasts = ({
   const deletePodcast = useCallback(async (id: string) => {
     try {
       setLoading(true);
-      
-      const { error } = await supabase
-        .from('contents')
-        .delete()
-        .eq('id', id);
 
-      if (error) throw error;
-      
-      // Update local state
+      const token = getSessionToken();
+      const resp = await fetch(`${API_BASE}/contents/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: token ? `Bearer ${token}` : '' },
+      });
+
+      if (!resp.ok) throw new Error('Erreur lors de la suppression du podcast');
+
       setPodcasts(prev => prev.filter(podcast => podcast.id !== id));
       return true;
     } catch (err) {
-      console.error('Error deleting podcast:', err);
+      console.error('Erreur deletePodcast:', err);
       setError(err as Error);
       throw err;
     } finally {
@@ -533,14 +269,13 @@ export const usePodcasts = ({
   }, []);
 
   useEffect(() => {
-    if (!authReady) return;
     if (didInitialFetch.current) {
       fetchPodcasts();
       return;
     }
     didInitialFetch.current = true;
     fetchPodcasts();
-  }, [authReady, status, limit, offset, category, authorId, fetchPodcasts]);
+  }, [status, limit, offset, category, authorId, fetchPodcasts]);
 
   return {
     podcasts,
@@ -551,6 +286,6 @@ export const usePodcasts = ({
     fetchPodcastBySlug,
     createPodcast,
     updatePodcast,
-    deletePodcast
+    deletePodcast,
   };
 };

@@ -32,8 +32,15 @@ export interface CommoditiesData {
 // Fonction pour récupérer les prix des commodités
 export const fetchCommoditiesData = async (): Promise<CommoditiesData> => {
   try {
-    // Essayer d'abord l'API de commodités
-    const response = await fetch("/.netlify/functions/commodities-scraper");
+    const isLocal =
+      window.location.hostname === "localhost" ||
+      window.location.hostname.includes("127.0.0.1");
+
+    const apiUrl = isLocal
+      ? "http://localhost:5000/api/commodities"
+      : "/api/commodities";
+
+    const response = await fetch(apiUrl);
 
     if (response.ok) {
       const contentType = response.headers.get("content-type");

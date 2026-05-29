@@ -1,5 +1,4 @@
-import { supabase } from '@/lib/supabase';
-
+// Service d'authentification refactorisé pour utiliser l'API standalone Amani
 export type UserProfile = {
   id: string;
   email: string;
@@ -12,106 +11,156 @@ export type UserProfile = {
   updated_at: string;
 };
 
-export const signUp = async (email: string, password: string, userData: { firstName: string; lastName: string }) => {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        first_name: userData.firstName,
-        last_name: userData.lastName,
-      },
-    },
-  });
+const isLocal =
+  window.location.hostname === "localhost" ||
+  window.location.hostname.includes("127.0.0.1");
 
-  if (error) {
+const API_BASE_URL = isLocal ? "http://localhost:5000/api" : "/api";
+
+// Helper pour lire le token d'accès Supabase stocké localement
+export const getSessionToken = (): string | null => {
+  const authData = localStorage.getItem('amani-finance-auth');
+  if (authData) {
+    try {
+      const parsed = JSON.parse(authData);
+      return parsed?.currentSession?.access_token || parsed?.access_token || null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
+export const signUp = async (email: string, password: string, userData: { firstName: string; lastName: string }) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password, firstName: userData.firstName, lastName: userData.lastName }),
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || "Erreur d'inscription via l'API");
+    }
+
+    const result = await response.json();
+    
+    // Enregistrer la session dans localStorage pour que le client l'utilise
+    if (result.data?.session) {
+      localStorage.setItem('amani-finance-auth', JSON.stringify(result.data.session));
+    }
+
+    return result.data;
+  } catch (error) {
     console.error('Error signing up:', error);
     throw error;
   }
-
-  return data;
 };
 
 export const signIn = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/signin`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    });
 
-  if (error) {
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || "Erreur de connexion via l'API");
+    }
+
+    const result = await response.json();
+
+    // Enregistrer la session dans localStorage
+    if (result.data?.session) {
+      localStorage.setItem('amani-finance-auth', JSON.stringify(result.data.session));
+    }
+
+    return result.data;
+  } catch (error) {
     console.error('Error signing in:', error);
     throw error;
   }
-
-  return data;
 };
 
 export const signOut = async () => {
-  const { error } = await supabase.auth.signOut();
-  
-  if (error) {
+  try {
+    const token = getSessionToken();
+    await fetch(`${API_BASE_URL}/auth/signout`, {
+      method: "POST",
+      headers: {
+        "Authorization": token ? `Bearer ${token}` : "",
+      },
+    });
+
+    // Vider localStorage
+    localStorage.removeItem('amani-finance-auth');
+  } catch (error) {
     console.error('Error signing out:', error);
     throw error;
   }
 };
 
 export const getCurrentUser = async () => {
-  const { data: { user }, error } = await supabase.auth.getUser();
-  
-  if (error) {
+  try {
+    const token = getSessionToken();
+    if (!token) return null;
+
+    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      // Jeton expiré ou invalide
+      localStorage.removeItem('amani-finance-auth');
+      return null;
+    }
+
+    const result = await response.json();
+    return result.data as UserProfile & { email: string };
+  } catch (error) {
     console.error('Error getting current user:', error);
-    throw error;
+    return null;
   }
-  
-  if (!user) return null;
-  
-  // Get the user's profile
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-    
-  if (profileError) {
-    console.error('Error getting user profile:', profileError);
-    throw profileError;
-  }
-  
-  return {
-    ...user,
-    ...profile,
-  } as UserProfile & { email: string };
 };
 
 export const updateProfile = async (updates: Partial<UserProfile>) => {
-  const user = await getCurrentUser();
-  
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
-  
-  const { data, error } = await supabase
-    .from('profiles')
-    .update(updates)
-    .eq('id', user.id)
-    .select()
-    .single();
-    
-  if (error) {
+  try {
+    const token = getSessionToken();
+    if (!token) throw new Error('User not authenticated');
+
+    const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify(updates),
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || "Erreur de mise à jour du profil");
+    }
+
+    const result = await response.json();
+    return result.data as UserProfile;
+  } catch (error) {
     console.error('Error updating profile:', error);
     throw error;
   }
-  
-  return data as UserProfile;
 };
 
 export const resetPassword = async (email: string) => {
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/update-password`,
-  });
-  
-  if (error) {
-    console.error('Error sending password reset email:', error);
-    throw error;
-  }
+  // Optionnel: peut être redirigé vers l'API si implémenté
+  console.warn("Réinitialisation de mot de passe non supportée en mode déporté complet pour l'instant.");
 };

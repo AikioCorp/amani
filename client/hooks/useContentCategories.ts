@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
 
 export interface ContentCategory {
   id: string;
@@ -16,6 +15,12 @@ export interface ContentCategory {
   updated_at: string;
 }
 
+const isLocal =
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1'));
+
+const API_BASE = isLocal ? 'http://localhost:5000/api' : '/api';
+
 export const useContentCategories = () => {
   const [categories, setCategories] = useState<ContentCategory[]>([]);
   const [loading, setLoading] = useState(false);
@@ -26,21 +31,15 @@ export const useContentCategories = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      let query = supabase
-        .from('content_categories')
-        .select('*')
-        .order('sort_order', { ascending: true });
-      
-      if (activeOnly) {
-        query = query.eq('is_active', true);
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      
-      setCategories(data || []);
+
+      const params = new URLSearchParams();
+      params.set('active_only', activeOnly ? 'true' : 'false');
+
+      const resp = await fetch(`${API_BASE}/categories?${params}`);
+      if (!resp.ok) throw new Error('Erreur lors de la récupération des catégories');
+      const result = await resp.json();
+
+      setCategories(result.data || []);
     } catch (err) {
       console.error('Erreur récupération catégories:', err);
       setError(err as Error);
@@ -54,17 +53,17 @@ export const useContentCategories = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const { data, error } = await supabase
-        .from('content_categories')
-        .insert(categoryData)
-        .select('*')
-        .single();
-      
-      if (error) throw error;
-      
-      setCategories(prev => [...prev, data]);
-      return data;
+
+      const resp = await fetch(`${API_BASE}/categories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(categoryData),
+      });
+      if (!resp.ok) throw new Error('Erreur lors de la création de la catégorie');
+      const result = await resp.json();
+
+      setCategories(prev => [...prev, result.data]);
+      return result.data;
     } catch (err) {
       console.error('Erreur création catégorie:', err);
       setError(err as Error);
@@ -79,21 +78,17 @@ export const useContentCategories = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const { data, error } = await supabase
-        .from('content_categories')
-        .update(updates)
-        .eq('id', id)
-        .select('*')
-        .single();
-      
-      if (error) throw error;
-      
-      setCategories(prev => 
-        prev.map(cat => cat.id === id ? { ...cat, ...data } : cat)
-      );
-      
-      return data;
+
+      const resp = await fetch(`${API_BASE}/categories/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      if (!resp.ok) throw new Error('Erreur lors de la mise à jour de la catégorie');
+      const result = await resp.json();
+
+      setCategories(prev => prev.map(cat => cat.id === id ? { ...cat, ...result.data } : cat));
+      return result.data;
     } catch (err) {
       console.error('Erreur mise à jour catégorie:', err);
       setError(err as Error);
@@ -108,14 +103,10 @@ export const useContentCategories = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const { error } = await supabase
-        .from('content_categories')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-      
+
+      const resp = await fetch(`${API_BASE}/categories/${id}`, { method: 'DELETE' });
+      if (!resp.ok) throw new Error('Erreur lors de la suppression de la catégorie');
+
       setCategories(prev => prev.filter(cat => cat.id !== id));
     } catch (err) {
       console.error('Erreur suppression catégorie:', err);
@@ -129,20 +120,11 @@ export const useContentCategories = () => {
   // Récupérer une catégorie par slug
   const getCategoryBySlug = useCallback(async (slug: string): Promise<ContentCategory | null> => {
     try {
-      const { data, error } = await supabase
-        .from('content_categories')
-        .select('*')
-        .eq('slug', slug)
-        .single();
-      
-      if (error) {
-        if (error.code === 'PGRST116') {
-          return null; // Pas trouvé
-        }
-        throw error;
-      }
-      
-      return data;
+      const resp = await fetch(`${API_BASE}/categories/${slug}`);
+      if (resp.status === 404) return null;
+      if (!resp.ok) throw new Error('Erreur lors de la récupération de la catégorie');
+      const result = await resp.json();
+      return result.data;
     } catch (err) {
       console.error('Erreur récupération catégorie par slug:', err);
       return null;
@@ -162,6 +144,6 @@ export const useContentCategories = () => {
     createCategory,
     updateCategory,
     deleteCategory,
-    getCategoryBySlug
+    getCategoryBySlug,
   };
 };

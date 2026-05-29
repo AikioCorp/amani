@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
@@ -58,37 +57,45 @@ export default function NewArticle() {
     }
   }, [title, setValue]);
 
-  // Charger les catégories
+  // Charger les catégories via l'API
   useEffect(() => {
     const fetchCategories = async () => {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('id, name')
-        .eq('is_active', true)
-        .order('name');
-
-      if (!error && data) {
-        setCategories(data);
+      try {
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1');
+        const API_BASE = isLocal ? 'http://localhost:5000/api' : '/api';
+        const resp = await fetch(`${API_BASE}/categories?active_only=true`);
+        if (!resp.ok) return;
+        const result = await resp.json();
+        setCategories(result.data || []);
+      } catch (err) {
+        console.error('Erreur chargement catégories:', err);
       }
     };
 
     fetchCategories();
   }, []);
 
-  // Soumettre le formulaire
+  // Soumettre le formulaire via l'API
   const onSubmit = async (formData: FormData) => {
     setIsSubmitting(true);
     setError(null);
 
     try {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      
-      if (!currentUser) {
+      if (!user) {
         throw new Error('Vous devez être connecté pour créer un article');
       }
 
-      const { error } = await supabase.from('contents').insert([
-        {
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1');
+      const API_BASE = isLocal ? 'http://localhost:5000/api' : '/api';
+      const token = localStorage.getItem('amani-finance-auth') ? JSON.parse(localStorage.getItem('amani-finance-auth')!).token : null;
+
+      const resp = await fetch(`${API_BASE}/contents`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
           type: 'article',
           title: formData.title,
           slug: formData.slug,
@@ -97,18 +104,21 @@ export default function NewArticle() {
           category_id: formData.category_id,
           status: formData.status,
           published_at: formData.status === 'published' ? new Date().toISOString() : null,
-          author_id: currentUser.id,
-        },
-      ]);
+          author_id: user.id,
+        }),
+      });
 
-      if (error) throw error;
-      
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.error || 'Erreur lors de la création de l\'article');
+      }
+
       navigate('/dashboard/articles');
     } catch (err) {
       console.error('Erreur lors de la création de l\'article:', err);
       setError(
-        err instanceof Error 
-          ? err.message 
+        err instanceof Error
+          ? err.message
           : 'Une erreur est survenue lors de la création de l\'article'
       );
     } finally {
