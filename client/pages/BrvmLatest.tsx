@@ -1,9 +1,4 @@
 import { useEffect, useState } from "react";
-<<<<<<< HEAD
-
-
-=======
->>>>>>> 591d86e4f624d202725739400380e7433b6bf43c
 
 type Row = {
   code: string | null;
@@ -30,41 +25,6 @@ export default function BrvmLatest() {
       setLoading(true);
       setError(null);
       try {
-<<<<<<< HEAD
-        const res = await fetch("http://localhost:5000/api/brvm");
-        if (!res.ok) throw new Error("Erreur de chargement de l'API");
-        const json = await res.json();
-        if (!json.success) throw new Error(json.error || "Erreur API");
-        const brvmData = json.data;
-        
-        const mappedRows: Row[] = [];
-        
-        if (brvmData.composite) {
-          mappedRows.push({
-            code: "COMPOSITE",
-            name: brvmData.composite.name,
-            latest_close: parseFloat(brvmData.composite.value.toString().replace(/[^0-9.-]/g, "")) || 0,
-            latest_change: parseFloat(brvmData.composite.change.toString().replace(/[^0-9.-]/g, "")) || 0,
-            latest_change_percent: parseFloat(brvmData.composite.changePercent.toString().replace(/[^0-9.-]/g, "")) || 0,
-            latest_at: brvmData.composite.lastUpdate
-          });
-        }
-        
-        if (brvmData.sectoriels && Array.isArray(brvmData.sectoriels)) {
-          brvmData.sectoriels.forEach((idx: any) => {
-            mappedRows.push({
-              code: idx.name.substring(0, 8).toUpperCase(),
-              name: idx.name,
-              latest_close: parseFloat(idx.value.toString().replace(/[^0-9.-]/g, "")) || 0,
-              latest_change: parseFloat(idx.change.toString().replace(/[^0-9.-]/g, "")) || 0,
-              latest_change_percent: parseFloat(idx.changePercent.toString().replace(/[^0-9.-]/g, "")) || 0,
-              latest_at: idx.lastUpdate
-            });
-          });
-        }
-        
-        setRows(mappedRows);
-=======
         const resp = await fetch(`${API_BASE}/brvm`);
         if (!resp.ok) throw new Error("Erreur de récupération des données BRVM");
         const result = await resp.json();
@@ -76,24 +36,23 @@ export default function BrvmLatest() {
           const compositeRow: Row = {
             code: "COMPOSITE",
             name: data.composite.name,
-            latest_close: parseFloat(data.composite.value) || null,
-            latest_change: parseFloat(data.composite.change) || null,
-            latest_change_percent: parseFloat(data.composite.changePercent?.replace(/[^\d.-]/g, "")) || null,
+            latest_close: parseFloat(data.composite.value.toString().replace(/[^0-9.-]/g, "")) || null,
+            latest_change: parseFloat(data.composite.change.toString().replace(/[^0-9.-]/g, "")) || null,
+            latest_change_percent: parseFloat(data.composite.changePercent?.toString().replace(/[^0-9.-]/g, "")) || null,
             latest_at: data.composite.lastUpdate || data.timestamp || null,
           };
 
           const sectorialRows: Row[] = (data.sectoriels || []).map((s: any, idx: number) => ({
             code: `SECT-${idx + 1}`,
             name: s.name,
-            latest_close: parseFloat(s.value) || null,
-            latest_change: parseFloat(s.change) || null,
-            latest_change_percent: parseFloat(s.changePercent?.replace(/[^\d.-]/g, "")) || null,
+            latest_close: parseFloat(s.value.toString().replace(/[^0-9.-]/g, "")) || null,
+            latest_change: parseFloat(s.change.toString().replace(/[^0-9.-]/g, "")) || null,
+            latest_change_percent: parseFloat(s.changePercent?.toString().replace(/[^0-9.-]/g, "")) || null,
             latest_at: s.lastUpdate || data.timestamp || null,
           }));
 
           setRows([compositeRow, ...sectorialRows]);
         }
->>>>>>> 591d86e4f624d202725739400380e7433b6bf43c
       } catch (e: any) {
         if (isMounted) {
           setError(e.message || "Erreur de chargement");
@@ -107,7 +66,6 @@ export default function BrvmLatest() {
 
     return () => { isMounted = false; };
   }, []);
-
 
   return (
     <div className="p-4 sm:p-6">
