@@ -73,6 +73,12 @@ const SECTIONS: Section[] = [
           { label: "Nouvel indice", to: "/dashboard/indices/new", icon: Plus, permission: "create_indices" },
         ],
       },
+      {
+        label: "Import Serper",
+        to: "/dashboard/serper",
+        icon: Globe,
+        permission: "create_articles",
+      },
     ],
   },
   {
@@ -82,21 +88,8 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: "🌐 Pages publiques",
-    items: [
-      { label: "Marché", to: "/dashboard/manage-marche", icon: Globe, permission: "manage_settings" },
-      { label: "Économie", to: "/dashboard/manage-economie", icon: Globe, permission: "manage_settings" },
-      { label: "Industrie", to: "/dashboard/manage-industrie", icon: Globe, permission: "manage_settings" },
-      { label: "Investissement", to: "/dashboard/manage-investissement", icon: Globe, permission: "manage_settings" },
-      { label: "Insights", to: "/dashboard/manage-insights", icon: Globe, permission: "manage_settings" },
-      { label: "Tech", to: "/dashboard/manage-tech", icon: Globe, permission: "manage_settings" },
-    ],
-  },
-  {
     title: "📊 Données",
     items: [
-      { label: "Données marché", to: "/dashboard/market-data", icon: BarChart3, permission: "view_analytics" },
-      { label: "Données économie", to: "/dashboard/economic-data", icon: BarChart3, permission: "view_analytics" },
       { label: "Matières premières", to: "/dashboard/commodities-management", icon: Layers, permission: "create_indices" },
     ],
   },
