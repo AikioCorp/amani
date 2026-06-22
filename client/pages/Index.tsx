@@ -53,7 +53,7 @@ export default function Index() {
   const [brvmData, setBrvmData] = React.useState<BRVMData | null>(null);
   const [commoditiesData, setCommoditiesData] =
     React.useState<CommoditiesData | null>(null);
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(false);
   const [lastUpdate, setLastUpdate] = React.useState<Date | null>(null);
 
   // Données de contenu chargées unifiées depuis l'API homepage
@@ -89,9 +89,11 @@ export default function Index() {
 
 
   // Fonction pour charger toutes les données (BRVM + Commodités)
-  const loadAllData = async () => {
+  const loadAllData = async (isManual = false) => {
     try {
-      setLoading(true);
+      if (isManual) {
+        setLoading(true);
+      }
       const [brvmResponse, commoditiesResponse] = await Promise.allSettled([
         fetchBRVMData(),
         fetchCommoditiesData(),
@@ -163,47 +165,52 @@ export default function Index() {
     if (!brvmData) {
       // Données de fallback
       return [
-        { name: "BRVM", value: "185.42", change: "+2.3%", isPositive: true },
+        { name: "BRVM", value: "185.42", change: "+2.3%", trend: "up" },
         {
           name: "FCFA/EUR",
           value: "655.957",
-          change: "-0.1%",
-          isPositive: false,
+          change: "0%",
+          trend: "neutral",
         },
         {
           name: "Inflation",
           value: "4.2%",
           change: "+0.5%",
-          isPositive: false,
+          trend: "up",
         },
-        { name: "Taux BCEAO", value: "3.5%", change: "0%", isPositive: true },
+        { name: "Taux BCEAO", value: "3.5%", change: "0%", trend: "neutral" },
       ];
     }
+
+    const getTrend = (changeStr: string, isPositive: boolean) => {
+      if (!changeStr || changeStr === "0" || changeStr === "0%" || changeStr.startsWith("0")) return "neutral";
+      return isPositive ? "up" : "down";
+    };
 
     return [
       {
         name: "BRVM",
         value: brvmData.composite.value,
         change: brvmData.composite.changePercent,
-        isPositive: brvmData.composite.isPositive,
+        trend: getTrend(brvmData.composite.changePercent, brvmData.composite.isPositive),
       },
       {
         name: "FCFA/EUR",
         value: brvmData.fcfa_eur.value,
         change: brvmData.fcfa_eur.changePercent,
-        isPositive: brvmData.fcfa_eur.isPositive,
+        trend: getTrend(brvmData.fcfa_eur.changePercent, brvmData.fcfa_eur.isPositive),
       },
       {
         name: "Inflation",
         value: brvmData.inflation.value,
         change: brvmData.inflation.changePercent,
-        isPositive: brvmData.inflation.isPositive,
+        trend: getTrend(brvmData.inflation.changePercent, brvmData.inflation.isPositive),
       },
       {
         name: "Taux BCEAO",
         value: brvmData.taux_bceao.value,
         change: brvmData.taux_bceao.changePercent,
-        isPositive: brvmData.taux_bceao.isPositive,
+        trend: getTrend(brvmData.taux_bceao.changePercent, brvmData.taux_bceao.isPositive),
       },
     ];
   }, [brvmData]);
@@ -251,82 +258,55 @@ export default function Index() {
 
       
 
-      {/* Key Indices Widget - BRVM en temps réel (hidden if flag OFF) */}
+      {/* Key Indices Widget - BRVM en temps réel */}
       {ENABLE_MARKET_WIDGET && (
-      <section className="py-8 bg-white border-b">
+      <section className="py-8 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-amani-primary">
-                Indices BRVM en temps réel
-              </h2>
-              {lastUpdate && (
-                <p className="text-sm text-gray-500 mt-1">
-                  Dernière mise à jour: {lastUpdate.toLocaleTimeString("fr-FR")}
-                  <span className="ml-2 text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
-                    Simulation
-                  </span>
-                </p>
-              )}
-            </div>
+          <div className="flex items-center justify-between pb-4 mb-6 border-b border-[#E5DDD5]">
+            <h2 className="text-sm font-bold tracking-widest text-[#9C8464] uppercase">
+              Indices BRVM en temps réel
+            </h2>
             <div className="flex items-center gap-4">
               <button
                 onClick={() => {
                   if (ENABLE_MARKET_FETCH) {
-                    loadAllData();
+                    loadAllData(true);
                   } else {
-                    // Pas d'appel API: juste mettre à jour l'horodatage pour l'UX
                     setLastUpdate(new Date());
                   }
                 }}
                 disabled={loading}
-                className="flex items-center gap-2 text-amani-primary hover:underline disabled:opacity-50"
+                className="flex items-center gap-1.5 text-xs font-semibold text-[#9C8464] hover:opacity-80 disabled:opacity-50 transition-opacity"
               >
                 <RefreshCw
-                  className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+                  className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
                 />
                 Actualiser
               </button>
-              <Link
-                to="/indices"
-                className="text-amani-primary hover:underline"
-              >
-                Voir tous les indices →
-              </Link>
             </div>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {keyIndices.map((index, i) => (
               <div
                 key={i}
-                className={`bg-[#E5DDD2] p-4 rounded-lg relative transition-all duration-300 ${loading ? "opacity-50" : "opacity-100"}`}
+                className={`bg-[#F5F5F5] border border-[#EAEAEA] p-6 rounded relative transition-all duration-300 ${loading ? "opacity-50" : "opacity-100"}`}
               >
                 {loading && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-white/50 rounded-lg">
-                    <RefreshCw className="w-5 h-5 animate-spin text-amani-primary" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/50 rounded">
+                    <RefreshCw className="w-5 h-5 animate-spin text-[#9C8464]" />
                   </div>
                 )}
-                <div className="text-sm text-gray-600 mb-1 font-medium">
+                <div className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold mb-2">
                   {index.name}
                 </div>
-                <div className="text-2xl font-bold text-amani-primary mb-2">
+                <div className="text-3xl font-bold text-gray-900 mb-1">
                   {index.value}
                 </div>
-                <div
-                  className={`flex items-center gap-1 text-sm font-semibold ${index.isPositive ? "text-green-600" : "text-red-600"}`}
-                >
-                  {index.isPositive ? (
-                    <TrendingUp className="w-4 h-4" />
-                  ) : (
-                    <TrendingDown className="w-4 h-4" />
-                  )}
-                  {index.change}
-                </div>
-                {/* Indicateur temps réel */}
-                <div className="absolute top-2 right-2">
-                  <div
-                    className={`w-2 h-2 rounded-full ${loading ? "bg-yellow-500" : "bg-green-500"} animate-pulse`}
-                  ></div>
+                <div className="flex items-center gap-1 text-[13px] font-semibold text-[#9C8464]">
+                  {index.trend === "up" && <span>↗</span>}
+                  {index.trend === "down" && <span>↘</span>}
+                  {index.trend === "neutral" && <span>→</span>}
+                  <span>{index.change}</span>
                 </div>
               </div>
             ))}
