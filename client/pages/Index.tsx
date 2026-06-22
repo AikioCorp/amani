@@ -45,8 +45,8 @@ import {
 // - ENABLE_MARKET_FETCH: controls calling remote APIs; keep false to use simulated data only
 const ENABLE_MARKET_WIDGET = true;
 const ENABLE_MARKET_FETCH = false;
-import { useArticles } from "../hooks/useArticles";
-import { usePodcasts } from "../hooks/usePodcasts";
+
+
 
 export default function Index() {
   // État pour les données BRVM et commodités en temps réel
@@ -56,18 +56,29 @@ export default function Index() {
   const [loading, setLoading] = React.useState(true);
   const [lastUpdate, setLastUpdate] = React.useState<Date | null>(null);
 
-  // Données réelles: articles et podcasts publiés depuis Supabase
-  const { articles, loading: loadingArticles } = useArticles({ status: 'published', limit: 4, offset: 0 });
-  const { podcasts, loading: loadingPodcasts } = usePodcasts({ status: 'published', limit: 2, offset: 0 });
-  // Sections par catégories
-  const { articles: ecoArticles, loading: loadingEco } = useArticles({ status: 'published', limit: 4, offset: 0, category: 'economie' });
-  // Marchés: inclure deux catégories ('marches-financiers' et 'marches-boursiers') et fusionner
-  const { articles: marketFinArticles, loading: loadingMarketFin } = useArticles({ status: 'published', limit: 4, offset: 0, category: 'marches-financiers' });
-  const { articles: marketBoursArticles, loading: loadingMarketBours } = useArticles({ status: 'published', limit: 4, offset: 0, category: 'marches-boursiers' });
-  const loadingMarket = loadingMarketFin || loadingMarketBours;
+  // Données de contenu chargées unifiées depuis l'API homepage
+  const [articles, setArticles] = React.useState<any[]>([]);
+  const [podcasts, setPodcasts] = React.useState<any[]>([]);
+  const [ecoArticles, setEcoArticles] = React.useState<any[]>([]);
+  const [marketFinArticles, setMarketFinArticles] = React.useState<any[]>([]);
+  const [marketBoursArticles, setMarketBoursArticles] = React.useState<any[]>([]);
+  const [industryArticles, setIndustryArticles] = React.useState<any[]>([]);
+  const [investArticles, setInvestArticles] = React.useState<any[]>([]);
+  const [insightsArticles, setInsightsArticles] = React.useState<any[]>([]);
+  const [techArticles, setTechArticles] = React.useState<any[]>([]);
+  const [loadingContent, setLoadingContent] = React.useState(true);
+
+  const loadingArticles = loadingContent;
+  const loadingPodcasts = loadingContent;
+  const loadingEco = loadingContent;
+  const loadingMarket = loadingContent;
+  const loadingIndustry = loadingContent;
+  const loadingInvest = loadingContent;
+  const loadingInsights = loadingContent;
+  const loadingTech = loadingContent;
+
   const marketArticles = React.useMemo(() => {
     const list = [...(marketFinArticles || []), ...(marketBoursArticles || [])];
-    // Trier par published_at (puis created_at) décroissant et limiter à 4
     const sorted = list.sort((a, b) => {
       const aDate = (a.published_at || a.created_at) ? new Date(a.published_at || a.created_at).getTime() : 0;
       const bDate = (b.published_at || b.created_at) ? new Date(b.published_at || b.created_at).getTime() : 0;
@@ -75,10 +86,7 @@ export default function Index() {
     });
     return sorted.slice(0, 4);
   }, [marketFinArticles, marketBoursArticles]);
-  const { articles: industryArticles, loading: loadingIndustry } = useArticles({ status: 'published', limit: 4, offset: 0, category: 'industrie-miniere' });
-  const { articles: investArticles, loading: loadingInvest } = useArticles({ status: 'published', limit: 4, offset: 0, category: 'investissement' });
-  const { articles: insightsArticles, loading: loadingInsights } = useArticles({ status: 'published', limit: 4, offset: 0, category: 'insights' });
-  const { articles: techArticles, loading: loadingTech } = useArticles({ status: 'published', limit: 4, offset: 0, category: 'technologie' });
+
 
   // Fonction pour charger toutes les données (BRVM + Commodités)
   const loadAllData = async () => {
@@ -109,13 +117,46 @@ export default function Index() {
     }
   };
 
-  // Charger les données au démarrage et toutes les 5 minutes (désactivé si fetch OFF)
+  const loadHomepageContent = async () => {
+    try {
+      setLoadingContent(true);
+      const isLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname.includes("127.0.0.1"));
+      const API_BASE = isLocal ? "http://localhost:5000/api" : "/api";
+
+      const res = await fetch(`${API_BASE}/contents/homepage`);
+      if (!res.ok) throw new Error("API error");
+      const json = await res.json();
+      
+      if (json.success && json.data) {
+        const homeData = json.data;
+        setArticles(homeData.latestArticles || []);
+        setPodcasts(homeData.latestPodcasts || []);
+        setEcoArticles(homeData.economie || []);
+        setMarketFinArticles(homeData.marchesFinanciers || []);
+        setMarketBoursArticles(homeData.marchesBoursiers || []);
+        setIndustryArticles(homeData.industrieMiniere || []);
+        setInvestArticles(homeData.investissement || []);
+        setInsightsArticles(homeData.insights || []);
+        setTechArticles(homeData.technologie || []);
+      }
+    } catch (error) {
+      console.error("Erreur chargement contenu homepage:", error);
+    } finally {
+      setLoadingContent(false);
+    }
+  };
+
+  // Charger les données au démarrage
   React.useEffect(() => {
-    if (!ENABLE_MARKET_FETCH) return;
-    loadAllData();
-    const interval = setInterval(loadAllData, 5 * 60 * 1000); // 5 minutes
-    return () => clearInterval(interval);
+    loadHomepageContent();
+
+    if (ENABLE_MARKET_FETCH) {
+      loadAllData();
+      const interval = setInterval(loadAllData, 5 * 60 * 1000); // 5 minutes
+      return () => clearInterval(interval);
+    }
   }, []);
+
 
   // Convertir les données BRVM pour l'affichage
   const keyIndices = React.useMemo(() => {
