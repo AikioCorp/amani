@@ -2,18 +2,16 @@ import React from "react";
 import { useParams, Link } from "react-router-dom";
 import { Calendar, ArrowLeft, Share2, Mail, Send } from "lucide-react";
 import { useArticles } from "../hooks/useArticles";
-import { supabase } from "../lib/supabase";
 import { useToast } from "../context/ToastContext";
 
 export default function Article() {
   const { id } = useParams();
   const { fetchArticleByIdOrSlug } = useArticles({ status: 'all', limit: 1, offset: 0 });
-  const [article, setArticle] = React.useState<ReturnType<typeof Object> | any>(null);
+
+  const [article, setArticle] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [showSticky, setShowSticky] = React.useState(false);
-  const [showFull, setShowFull] = React.useState(false);
-
   React.useEffect(() => {
     let mounted = true;
     const run = async () => {
@@ -183,16 +181,20 @@ function CategoriesSidebar() {
 
   React.useEffect(() => {
     let mounted = true;
+    const isLocal =
+      typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" || window.location.hostname.includes("127.0.0.1"));
+    const API_BASE = isLocal ? "http://localhost:5000/api" : "/api";
+
     const load = async () => {
       try {
         setLoading(true);
         setErr(null);
-        const { data, error } = await supabase
-          .from('content_categories')
-          .select('id,name,slug')
-          .order('name', { ascending: true });
-        if (error) throw error;
-        if (mounted) setCategories((data as unknown as Array<{ id: string; name: string; slug: string }>) || []);
+        const resp = await fetch(`${API_BASE}/categories`);
+        if (!resp.ok) throw new Error("Erreur de chargement des catégories");
+        const result = await resp.json();
+        
+        if (mounted) setCategories(result.data || []);
       } catch (e: any) {
         if (mounted) setErr(e?.message || 'Erreur chargement catégories');
       } finally {

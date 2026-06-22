@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { usePodcasts, Podcast } from "../hooks/usePodcasts";
-import { supabase } from "../lib/supabase";
 // DashboardLayout removed: page now renders inside persistent DashboardShell
 import UnifiedContentForm from "../components/UnifiedContentForm";
 import { ArrowLeft, Mic, AlertCircle, Loader } from "lucide-react";
@@ -13,7 +12,7 @@ export default function EditPodcast() {
   const navigate = useNavigate();
   const { user, hasPermission } = useAuth();
   const { success, error } = useToast();
-  const { fetchPodcastBySlug, updatePodcast } = usePodcasts();
+  const { fetchPodcastByIdOrSlug, updatePodcast } = usePodcasts();
 
   const [podcast, setPodcast] = useState<Podcast | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,51 +52,14 @@ export default function EditPodcast() {
         setLoading(true);
         console.log("🔍 Chargement du podcast avec ID:", id);
 
-        // Récupérer le podcast par ID avec les données de catégorie
-        const { data, error: fetchError } = await supabase
-          .from('contents')
-          .select(`
-            *,
-            content_categories!inner(id, name, slug, color)
-          `)
-          .eq('id', id)
-          .eq('type', 'podcast')
-          .single();
-
-        if (fetchError) {
-          throw fetchError;
-        }
+        const data = await fetchPodcastByIdOrSlug(id);
 
         if (!data) {
           throw new Error('Podcast non trouvé');
         }
 
-        // Formater les données pour correspondre au type Podcast
-        // Typage explicite du résultat Supabase pour éviter "unknown"
-        const row = data as any;
-        const podcastData: Podcast = {
-          ...(row as Podcast),
-          author: {
-            id: row.author_id as string,
-            first_name: 'Animateur',
-            last_name: 'Podcast',
-            avatar_url: null
-          },
-          categories: row.content_categories ? {
-            id: row.content_categories.id as string,
-            name: row.content_categories.name as string,
-            slug: row.content_categories.slug as string,
-            color: row.content_categories.color as string
-          } : {
-            id: row.category_id as string,
-            name: 'Catégorie Podcast',
-            slug: 'podcast',
-            color: '#8B5CF6'
-          }
-        };
-
-        console.log("✅ Podcast récupéré:", podcastData);
-        setPodcast(podcastData);
+        console.log("✅ Podcast récupéré:", data);
+        setPodcast(data);
       } catch (err) {
         console.error("❌ Erreur lors du chargement du podcast:", err);
         error("Erreur", "Impossible de charger les données du podcast.");
@@ -108,7 +70,7 @@ export default function EditPodcast() {
     };
 
     loadPodcast();
-  }, [id]);
+  }, [id, fetchPodcastByIdOrSlug, error]);
 
   // Gestion de la sauvegarde
   const handleSave = async (formData: any) => {
@@ -123,7 +85,7 @@ export default function EditPodcast() {
       success("Succès", "Podcast mis à jour avec succès !");
       
       // Recharger les données du podcast après la sauvegarde
-      const updatedPodcast = await fetchPodcastBySlug(podcast?.slug || '');
+      const updatedPodcast = await fetchPodcastByIdOrSlug(id);
       console.log("🔄 Podcast rechargé après sauvegarde:", updatedPodcast);
       setPodcast(updatedPodcast);
       

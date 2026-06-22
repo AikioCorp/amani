@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getSessionToken } from '../services/authService';
 
 export interface ContentCategory {
   id: string;
@@ -54,9 +55,13 @@ export const useContentCategories = () => {
       setLoading(true);
       setError(null);
 
+      const token = getSessionToken();
       const resp = await fetch(`${API_BASE}/categories`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(categoryData),
       });
       if (!resp.ok) throw new Error('Erreur lors de la création de la catégorie');
@@ -79,9 +84,13 @@ export const useContentCategories = () => {
       setLoading(true);
       setError(null);
 
+      const token = getSessionToken();
       const resp = await fetch(`${API_BASE}/categories/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(updates),
       });
       if (!resp.ok) throw new Error('Erreur lors de la mise à jour de la catégorie');
@@ -104,7 +113,11 @@ export const useContentCategories = () => {
       setLoading(true);
       setError(null);
 
-      const resp = await fetch(`${API_BASE}/categories/${id}`, { method: 'DELETE' });
+      const token = getSessionToken();
+      const resp = await fetch(`${API_BASE}/categories/${id}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (!resp.ok) throw new Error('Erreur lors de la suppression de la catégorie');
 
       setCategories(prev => prev.filter(cat => cat.id !== id));

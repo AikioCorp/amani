@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "../lib/supabase";
+import { getContents } from "../services/contentService";
+import { getSessionToken } from "../services/authService";
 import {
   FileText,
   Mic,
@@ -27,7 +28,7 @@ import {
 export default function DashboardMain() {
   const { user, hasPermission } = useAuth();
   
-  // Dashboard state (from Supabase)
+  // Dashboard state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState({
@@ -56,58 +57,62 @@ export default function DashboardMain() {
 
   useEffect(() => {
     let isMounted = true;
+    const isLocal =
+      typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" || window.location.hostname.includes("127.0.0.1"));
+    const API_BASE = isLocal ? "http://localhost:5000/api" : "/api";
+
     async function load() {
       setLoading(true);
       setError(null);
       try {
-        // Ensure auth/session ready to satisfy RLS
-        await supabase.auth.getSession();
+        const token = getSessionToken();
+        const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
         // Date helpers for "this month"
         const now = new Date();
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-        // Counts by type
-        const countByType = async (type: string, createdField: string = "created_at") => {
-          const base = supabase
-            .from("contents")
-            .select("id", { count: "exact", head: true })
-            .eq("type", type);
-          const { count: total, error: e1 } = await base;
-          if (e1) throw e1;
-          const { count: thisMonth, error: e2 } = await supabase
-            .from("contents")
-            .select("id", { count: "exact", head: true })
-            .eq("type", type)
-            .gte(createdField, monthStart);
-          if (e2) throw e2;
-          return { total: total || 0, thisMonth: thisMonth || 0 };
+        // Fetch total counts and this month counts from REST API
+        const fetchCounts = async (type: "article" | "podcast" | "indice") => {
+          // Fetch a batch of recent articles to count total and this month locally
+          const result = await getContents({ type, limit: 100 });
+          const total = result.count || 0;
+          const thisMonth = (result.data || []).filter(
+            (c: any) => new Date(c.created_at) >= monthStart
+          ).length;
+          return { total, thisMonth };
         };
 
         const [art, pod, ind] = await Promise.all([
-          countByType("article"),
-          countByType("podcast"),
-          countByType("indice"),
+          fetchCounts("article"),
+          fetchCounts("podcast"),
+          fetchCounts("indice"),
         ]);
 
-        // Users count from profiles (if available)
+        // Users count from profiles (requires admin)
         let usersTotal = 0;
+        let usersThisMonth = 0;
         try {
-          const { count: usersCount } = await supabase
-            .from("profiles")
-            .select("id", { count: "exact", head: true });
-          usersTotal = usersCount || 0;
-        } catch {}
+          const resp = await fetch(`${API_BASE}/users?limit=100`, { headers: authHeaders });
+          if (resp.ok) {
+            const resData = await resp.json();
+            if (resData.success && resData.data) {
+              usersTotal = resData.data.length;
+              usersThisMonth = resData.data.filter(
+                (u: any) => new Date(u.created_at) >= monthStart
+              ).length;
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching users count:", err);
+        }
 
         // Recent activity from contents
-        const { data: recent, error: recentErr } = await supabase
-          .from("contents")
-          .select("id, type, title, summary, created_at")
-          .order("created_at", { ascending: false })
-          .limit(6);
-        if (recentErr) throw recentErr;
+        const recentRes = await getContents({ limit: 6 });
+        const recent = recentRes.data || [];
 
-        const mapped = (recent || []).map((r) => {
+        const mapped = recent.map((r) => {
           const t = r.type as string;
           const icon = t === "article" ? FileText : t === "podcast" ? Mic : t === "indice" ? BarChart3 : Activity;
           const color = t === "article" ? "text-blue-600" : t === "podcast" ? "text-purple-600" : t === "indice" ? "text-green-600" : "text-gray-600";
@@ -117,7 +122,7 @@ export default function DashboardMain() {
             id: r.id as string,
             type: t,
             title: r.title as string,
-            description: (r as any).summary as string | null,
+            description: r.excerpt || r.summary || null,
             time,
             user: undefined,
             icon,
@@ -128,13 +133,9 @@ export default function DashboardMain() {
         // Personal stats (by author_id)
         let myArticles = 0, myPodcasts = 0, myIndices = 0;
         if (user?.id) {
-          const byMe = async (type: string) => {
-            const { count } = await supabase
-              .from("contents")
-              .select("id", { count: "exact", head: true })
-              .eq("type", type)
-              .eq("author_id", user.id);
-            return count || 0;
+          const byMe = async (type: "article" | "podcast" | "indice") => {
+            const res = await getContents({ type, authorId: user.id, limit: 1 });
+            return res.count || 0;
           };
           [myArticles, myPodcasts, myIndices] = await Promise.all([
             byMe("article"),
@@ -149,7 +150,7 @@ export default function DashboardMain() {
           articles: { total: art.total, thisMonth: art.thisMonth, growth: 0 },
           podcasts: { total: pod.total, thisMonth: pod.thisMonth, growth: 0 },
           indices: { total: ind.total, thisMonth: ind.thisMonth, growth: 0 },
-          users: { total: usersTotal, thisMonth: 0, growth: 0 },
+          users: { total: usersTotal, thisMonth: usersThisMonth, growth: 0 },
         }));
         setRecentActivity(mapped);
         setPersonal({ myArticles, myPodcasts, myIndices });

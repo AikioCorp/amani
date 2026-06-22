@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 591d86e4f624d202725739400380e7433b6bf43c
 
 type Row = {
   code: string | null;
@@ -17,10 +20,17 @@ export default function BrvmLatest() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    const isLocal =
+      typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" || window.location.hostname.includes("127.0.0.1"));
+    const API_BASE = isLocal ? "http://localhost:5000/api" : "/api";
+
     (async () => {
       setLoading(true);
       setError(null);
       try {
+<<<<<<< HEAD
         const res = await fetch("http://localhost:5000/api/brvm");
         if (!res.ok) throw new Error("Erreur de chargement de l'API");
         const json = await res.json();
@@ -54,12 +64,48 @@ export default function BrvmLatest() {
         }
         
         setRows(mappedRows);
+=======
+        const resp = await fetch(`${API_BASE}/brvm`);
+        if (!resp.ok) throw new Error("Erreur de récupération des données BRVM");
+        const result = await resp.json();
+        
+        if (!isMounted) return;
+
+        if (result.success && result.data) {
+          const data = result.data;
+          const compositeRow: Row = {
+            code: "COMPOSITE",
+            name: data.composite.name,
+            latest_close: parseFloat(data.composite.value) || null,
+            latest_change: parseFloat(data.composite.change) || null,
+            latest_change_percent: parseFloat(data.composite.changePercent?.replace(/[^\d.-]/g, "")) || null,
+            latest_at: data.composite.lastUpdate || data.timestamp || null,
+          };
+
+          const sectorialRows: Row[] = (data.sectoriels || []).map((s: any, idx: number) => ({
+            code: `SECT-${idx + 1}`,
+            name: s.name,
+            latest_close: parseFloat(s.value) || null,
+            latest_change: parseFloat(s.change) || null,
+            latest_change_percent: parseFloat(s.changePercent?.replace(/[^\d.-]/g, "")) || null,
+            latest_at: s.lastUpdate || data.timestamp || null,
+          }));
+
+          setRows([compositeRow, ...sectorialRows]);
+        }
+>>>>>>> 591d86e4f624d202725739400380e7433b6bf43c
       } catch (e: any) {
-        setError(e.message || "Erreur de chargement");
+        if (isMounted) {
+          setError(e.message || "Erreur de chargement");
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     })();
+
+    return () => { isMounted = false; };
   }, []);
 
 

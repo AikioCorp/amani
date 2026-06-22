@@ -7,7 +7,6 @@ import { Badge } from "./ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { FileText, Mic, BarChart3, Plus, X, AlertCircle } from "lucide-react";
-import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
@@ -354,18 +353,18 @@ export default function UnifiedContentForm({
     const loadCategories = async () => {
       try {
         console.log('🔍 Chargement des catégories...');
-        const { data, error } = await supabase
-          .from('content_categories')
-          .select('id, name, slug, sort_order')
-          // Ne pas filtrer sur is_active pour afficher toutes les catégories disponibles
-          .order('sort_order', { ascending: true });
+        const isLocal = window.location.hostname === "localhost" || window.location.hostname.includes("127.0.0.1");
+        const apiUrl = isLocal ? "http://localhost:5000/api/categories" : "/api/categories";
         
-        if (error) throw error;
+        const resp = await fetch(apiUrl);
+        if (!resp.ok) throw new Error("Erreur de récupération des catégories via l'API");
+        
+        const result = await resp.json();
+        const data = result.data;
         
         console.log('📊 Catégories récupérées:', data);
         
         if (data && data.length > 0) {
-          // Assurer le typage des champs retournés par Supabase
           type CategoryRow = { id: string; name: string; slug: string };
           const rows = data as unknown as CategoryRow[];
           const mappedCategories = rows.map((cat) => ({

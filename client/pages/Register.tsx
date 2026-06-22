@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, UserPlus, Mail, Lock, User } from "lucide-react";
-import { supabase } from "../lib/supabase";
+import { signUp } from "../services/authService";
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
@@ -56,40 +56,18 @@ export default function Register() {
     setIsLoading(true);
     
     try {
-      // Inscription avec Supabase (sans créer le profil manuellement)
-      // Le profil sera créé automatiquement par un trigger Supabase
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/login`,
-          data: {
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            full_name: `${formData.firstName} ${formData.lastName}`,
-            organization: formData.organization || "",
-          },
-        },
+      // Inscription via notre API native REST
+      await signUp(formData.email, formData.password, {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
       });
       
-      if (signUpError) {
-        // Gérer les erreurs spécifiques
-        if (signUpError.message.includes("already registered")) {
-          setError("Cet email est déjà utilisé. Veuillez vous connecter.");
-        } else {
-          setError(signUpError.message || "Erreur lors de l'inscription.");
-        }
-        return;
-      }
+      setSuccess(true);
       
-      if (authData.user) {
-        setSuccess(true);
-        
-        // Rediriger après 2 secondes
-        setTimeout(() => {
-          navigate("/login");
-        }, 2000);
-      }
+      // Rediriger après 2 secondes
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
     } catch (err: any) {
       console.error("Erreur d'inscription:", err);
       setError(err.message || "Erreur lors de l'inscription. Veuillez réessayer.");

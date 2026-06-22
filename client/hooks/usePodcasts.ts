@@ -160,6 +160,33 @@ export const usePodcasts = ({
     }
   }, []);
 
+  const fetchPodcastById = useCallback(async (id: string): Promise<Podcast> => {
+    try {
+      setLoading(true);
+      const token = getSessionToken();
+      const resp = await fetch(`${API_BASE}/contents/id/${id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!resp.ok) throw new Error('Podcast introuvable');
+      const result = await resp.json();
+      return formatPodcast(result.data);
+    } catch (err) {
+      console.error('Erreur fetchPodcastById:', err);
+      setError(err as Error);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchPodcastByIdOrSlug = useCallback(async (identifier: string): Promise<Podcast> => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidRegex.test(identifier)) {
+      return fetchPodcastById(identifier);
+    }
+    return fetchPodcastBySlug(identifier);
+  }, [fetchPodcastById, fetchPodcastBySlug]);
+
   const createPodcast = useCallback(async (
     podcastData: Omit<Podcast, 'id' | 'created_at' | 'updated_at' | 'views' | 'likes' | 'shares'>
   ) => {
@@ -284,6 +311,8 @@ export const usePodcasts = ({
     count,
     refetch: fetchPodcasts,
     fetchPodcastBySlug,
+    fetchPodcastById,
+    fetchPodcastByIdOrSlug,
     createPodcast,
     updatePodcast,
     deletePodcast,

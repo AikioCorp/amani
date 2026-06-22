@@ -280,7 +280,7 @@ export default function EditArticle() {
         {/* Formulaire unifié */}
         <UnifiedContentForm
           type="article"
-          initialData={article}
+          initialData={article as any}
           onSave={handleSave}
           onCancel={handleCancel}
         />

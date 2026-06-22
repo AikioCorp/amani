@@ -2,48 +2,65 @@ import { useState, useRef, ChangeEvent, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { uploadAvatar } from "../lib/avatar";
-import { supabase } from "../lib/supabase";
+import { AuthService } from "../services/supabase";
 import {
   Save,
   User,
   Mail,
   Building,
-  MapPin,
   Phone,
-  Calendar,
-  Shield,
-  Bell,
-  Eye,
-  EyeOff,
-  Camera,
-  Key,
-  Globe,
-  AlertCircle,
-  CheckCircle,
-  Settings,
-  Activity,
+  MapPin,
   FileText,
+  Camera,
+  Loader2,
+  Lock,
+  Globe,
+  Settings,
+  Bell,
+  Check,
   BarChart3,
+  Activity,
+  Eye,
+  Shield,
+  Key,
+  EyeOff,
 } from "lucide-react";
 
 export default function Profile() {
   const { user } = useAuth();
   const { success, error } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState("personal");
+  const [isUploading, setIsUploading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
   const [profileData, setProfileData] = useState({
-    firstName: user?.firstName || "",
-    lastName: user?.lastName || "",
-    email: user?.email || "",
+    firstName: "",
+    lastName: "",
+    email: "",
     organization: "",
     phone: "",
     location: "",
     bio: "",
-    avatarUrl: user?.avatarUrl || "",
+    avatarUrl: "",
   });
+
+
+  const [activeTab, setActiveTab] = useState("general");
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      setProfileData((prev) => ({
+        ...prev,
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        avatarUrl: user.avatarUrl || "",
+        organization: user.organization || "",
+      }));
+    }
+  }, [user]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -54,37 +71,28 @@ export default function Profile() {
       if (user.id) {
         console.group("[Profile] Fetch profile");
         console.log("user.id:", user.id);
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .maybeSingle();
-
-        if (error) {
-          console.error("[Profile] Fetch error:", {
-            message: error.message,
-            details: (error as any).details,
-            hint: (error as any).hint,
-            code: (error as any).code,
-          });
-        } else if (data) {
-          console.log("[Profile] Fetch success. Received:", {
-            id: data.id,
-            first_name: data.first_name,
-            last_name: data.last_name,
-            country: (data as any).country,
-            // website/twitter/linkedin intentionally ignored
-          });
-          setProfileData({
-            firstName: String((data as any).first_name ?? ""),
-            lastName: String((data as any).last_name ?? ""),
-            email: String(user.email ?? ""),
-            organization: String((data as any).organization ?? ""),
-            phone: String((data as any).phone ?? ""),
-            location: String((data as any).location ?? ""),
-            bio: String((data as any).bio ?? ""),
-            avatarUrl: String((data as any).avatar_url ?? ""),
-          });
+        try {
+          const data = await AuthService.getProfile(user.id);
+          if (data) {
+            console.log("[Profile] Fetch success. Received:", {
+              id: data.id,
+              first_name: data.first_name,
+              last_name: data.last_name,
+              country: data.country,
+            });
+            setProfileData({
+              firstName: String(data.first_name ?? ""),
+              lastName: String(data.last_name ?? ""),
+              email: String(user.email ?? ""),
+              organization: String(data.organization ?? ""),
+              phone: String(data.phone ?? ""),
+              location: String(data.location ?? ""),
+              bio: String(data.bio ?? ""),
+              avatarUrl: String(data.avatar_url ?? ""),
+            });
+          }
+        } catch (err: any) {
+          console.error("[Profile] Fetch error:", err);
         }
         console.groupEnd();
       }
@@ -105,7 +113,7 @@ export default function Profile() {
         }
       }
     }
-  }, [user?.id, user?.email, supabase]);
+  }, [user?.id, user?.email]);
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
@@ -133,17 +141,15 @@ export default function Profile() {
         user.avatarUrl = avatarUrl;
       }
 
-      // Persister dans Supabase (création si la ligne n'existe pas)
-      const { error: avatarUpdateError } = await supabase
-        .from("profiles")
-        .upsert(
-          {
-            id: user.id,
-            avatar_url: avatarUrl,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "id" },
-        );
+      // Persister via l'API
+      let avatarUpdateError = null;
+      try {
+        await AuthService.updateProfile(user.id, { avatar_url: avatarUrl });
+        console.log("[Profile] Avatar update success. avatar_url:", avatarUrl);
+      } catch (err) {
+        avatarUpdateError = err;
+        console.error("[Profile] Avatar update error:", err);
+      }
 
       if (avatarUpdateError) {
         console.error("[Profile] Avatar upsert error:", {
@@ -218,42 +224,17 @@ export default function Profile() {
       const requestId = Math.random().toString(36).slice(2, 8);
       console.log(`[Profile] Upserting payload (req:${requestId}):`, profileUpdates);
 
-      // Mettre à jour le profil dans Supabase (ne demande PAS de représentation pour éviter un blocage si SELECT est refusé par RLS)
-      // Ajout d'un timeout pour éviter les blocages réseau
-      console.log(`[Profile] Before upsert await (req:${requestId})`);
-      const ac = new AbortController();
-      const timeout = setTimeout(() => {
-        console.warn(`[Profile] Upsert timed out after 10s (req:${requestId})`);
-        ac.abort();
-      }, 10_000);
+      // Mettre à jour le profil via l'API
       let updateError: any | null = null;
       try {
-        const { error } = await supabase
-          .from("profiles")
-          .upsert({ id: user.id, ...profileUpdates }, { onConflict: "id" })
-          .abortSignal(ac.signal);
-        updateError = error;
-      } catch (e: any) {
-        if (e?.name === "AbortError") {
-          console.error(`[Profile] Upsert aborted (req:${requestId})`);
-          updateError = e;
-        } else {
-          console.error(`[Profile] Upsert threw unexpected error (req:${requestId}):`, e);
-          updateError = e;
-        }
-      } finally {
-        clearTimeout(timeout);
+        await AuthService.updateProfile(user.id, profileUpdates);
+      } catch (err: any) {
+        updateError = err;
       }
-      console.log(`[Profile] After upsert await (req:${requestId})`);
 
       if (updateError) {
-        console.error("[Profile] Upsert error:", {
-          message: updateError.message,
-          details: (updateError as any).details,
-          hint: (updateError as any).hint,
-          code: (updateError as any).code,
-        });
-        error("Erreur", `Erreur de sauvegarde: ${updateError.message}`);
+        console.error("[Profile] Update error:", updateError);
+        error("Erreur", `Erreur de sauvegarde: ${updateError.message || updateError}`);
         console.groupEnd();
         return;
       }
@@ -272,21 +253,17 @@ export default function Profile() {
         bio: profileUpdates.bio || "",
       }));
 
-      // Mettre à jour l'email si nécessaire
+      // Mettre à jour l'email si nécessaire via l'API
       if (profileData.email !== user.email) {
         console.log("[Profile] Updating auth email from", user.email, "to", profileData.email);
-        const { error: emailError } = await supabase.auth.updateUser({
-          email: profileData.email,
-        });
-
-        if (emailError) {
-          console.error(
-            "Erreur lors de la mise à jour de l'email:",
-            emailError,
-          );
+        try {
+          await AuthService.updateProfile(user.id, { email: profileData.email });
+          user.email = profileData.email; // Mettre à jour localement
+        } catch (err: any) {
+          console.error("Erreur lors de la mise à jour de l'email:", err);
           error(
             "Erreur",
-            "Une erreur est survenue lors de la mise à jour de l'email.",
+            err.message || "Une erreur est survenue lors de la mise à jour de l'email.",
           );
           return;
         }
@@ -348,19 +325,14 @@ export default function Profile() {
     try {
       setIsSaving(true);
 
-      // Changer le mot de passe via Supabase Auth
-      const { error: passwordError } = await supabase.auth.updateUser({
-        password: passwordData.newPassword,
-      });
-
-      if (passwordError) {
-        console.error(
-          "Erreur lors du changement de mot de passe:",
-          passwordError,
-        );
+      // Changer le mot de passe via l'API
+      try {
+        await AuthService.updateProfile(user.id, { password: passwordData.newPassword });
+      } catch (err: any) {
+        console.error("Erreur lors du changement de mot de passe:", err);
         error(
           "Erreur",
-          "Une erreur est survenue lors du changement de mot de passe.",
+          err.message || "Une erreur est survenue lors du changement de mot de passe.",
         );
         return;
       }
