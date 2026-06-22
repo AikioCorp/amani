@@ -7,7 +7,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export const ArticleDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  const { article, loading, error } = useArticle(slug || '');
+  const { article: articleRaw, loading, error } = useArticle(slug || '');
+  const article = articleRaw as any;
 
   if (loading) {
     return (

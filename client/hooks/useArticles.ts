@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getContents, getContentBySlug, createContent, updateContent, deleteContent as deleteContentApi } from '../services/contentService';
+import { getContents, getContentBySlug, getContentById, createContent, updateContent, deleteContent as deleteContentApi } from '../services/contentService';
 import { getSessionToken } from '../services/authService';
 
 export type ArticleStatus = 'draft' | 'published' | 'archived' | 'review';
@@ -133,16 +133,14 @@ export const useArticles = ({
   const fetchArticleById = useCallback(async (id: string): Promise<Article> => {
     try {
       setLoading(true);
-      // Fallback simple: récupérer par ID via notre API si besoin (on peut utiliser getContents)
-      const result = await getContents({ type: 'article' });
-      const found = result.data.find(c => c.id === id);
-      if (!found) throw new Error("Article introuvable par ID");
+      const data = await getContentById(id);
+      if (!data) throw new Error("Article introuvable par ID");
       
       return {
-        ...(found as any),
+        ...(data as any),
         type: 'article',
-        category_info: (found as any).category || undefined,
-        comment_count: 0
+        category_info: (data as any).category || undefined,
+        comment_count: (data as any).comments?.length || 0
       };
     } catch (err: any) {
       setError(err as Error);
@@ -197,7 +195,7 @@ export const useArticles = ({
   const updateArticle = useCallback(async (id: string, updates: Partial<Article>) => {
     try {
       setLoading(true);
-      const data = await updateContent(id, updates);
+      const data = await updateContent(id, updates as any);
       
       setArticles(prev => 
         prev.map(article => 
@@ -253,4 +251,34 @@ export const useArticles = ({
     updateArticle,
     deleteArticle
   };
+};
+
+export const useArticle = (slugOrId: string) => {
+  const { fetchArticleByIdOrSlug } = useArticles();
+  const [article, setArticle] = useState<Article | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    if (!slugOrId) {
+      setLoading(false);
+      return;
+    }
+    const load = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchArticleByIdOrSlug(slugOrId);
+        if (active) setArticle(data);
+      } catch (err: any) {
+        if (active) setError(err);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    load();
+    return () => { active = false; };
+  }, [slugOrId, fetchArticleByIdOrSlug]);
+
+  return { article, loading, error };
 };

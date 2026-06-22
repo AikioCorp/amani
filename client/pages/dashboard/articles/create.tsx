@@ -5,12 +5,13 @@ import { useToast } from '../../../context/ToastContext';
 import DashboardLayout from '../../../components/DashboardLayout';
 import UnifiedContentForm from '../../../components/UnifiedContentForm';
 import { ContentType } from '../../../types/database';
-import { supabase } from '../../../lib/supabase';
+import { useArticles } from '../../../hooks/useArticles';
 
 export default function CreateArticle() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { success, error: showError } = useToast();
+  const { createArticle } = useArticles();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSave = async (formData: any) => {
@@ -28,7 +29,7 @@ export default function CreateArticle() {
         slug: formData.slug,
         summary: formData.summary,
         content: formData.content || '',
-        type: 'article' as ContentType,
+        type: 'article' as const,
         status: formData.status,
         category_id: formData.category,
         author_id: user.id,
@@ -37,22 +38,14 @@ export default function CreateArticle() {
         meta_description: formData.meta_description || formData.summary?.substring(0, 160),
         featured_image_alt: formData.featured_image_alt || formData.title,
         tags: formData.tags || [],
-        article_data: {
-          // Ajoutez ici les champs spécifiques aux articles si nécessaire
-        }
+        article_data: {}
       };
 
-      // Insérer l'article dans la base de données
-      const { data, error } = await supabase
-        .from('contents')
-        .insert([articleData])
-        .select()
-        .single();
-
-      if (error) throw error;
+      // Insérer l'article dans la base de données via notre service/API
+      const data = await createArticle(articleData as any);
 
       success('Article créé avec succès !');
-      navigate(`/dashboard/articles/${data.slug || data.id}`);
+      navigate(`/dashboard/articles`);
     } catch (err) {
       console.error('Erreur lors de la création de l\'article:', err);
       showError('Une erreur est survenue lors de la création de l\'article');
@@ -71,7 +64,6 @@ export default function CreateArticle() {
           type="article"
           onSave={handleSave}
           onCancel={() => navigate('/dashboard/articles')}
-          isSubmitting={isSubmitting}
         />
       </div>
     </DashboardLayout>

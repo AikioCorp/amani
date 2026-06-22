@@ -12,6 +12,13 @@ interface User {
   role?: string;
   roles?: string[];
   permissions?: string[];
+  lastLogin?: string;
+  preferences?: {
+    sectors: string[];
+    countries: string[];
+    newsletter: boolean;
+    alerts: boolean;
+  };
 }
 
 interface AuthContextType {
@@ -86,6 +93,13 @@ function buildUserFromSession(sessionUser: any, profile?: any): User {
     role,
     roles: [role],
     permissions: allPermissions,
+    lastLogin: merged.last_login ? new Date(merged.last_login).toLocaleString() : new Date().toLocaleString(),
+    preferences: merged.preferences || {
+      sectors: ["Économie", "Bourse"],
+      countries: ["Mali", "Sénégal"],
+      newsletter: true,
+      alerts: false
+    }
   };
 }
 

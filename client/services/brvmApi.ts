@@ -8,6 +8,7 @@ export interface BRVMIndex {
   changePercent: string;
   isPositive: boolean;
   lastUpdate: string;
+  source?: string;
 }
 
 export interface BRVMData {
@@ -15,6 +16,9 @@ export interface BRVMData {
   fcfa_eur: BRVMIndex;
   inflation: BRVMIndex;
   taux_bceao: BRVMIndex;
+  sectoriels?: BRVMIndex[];
+  timestamp?: string;
+  source?: string;
 }
 
 // Fonction pour récupérer les données BRVM

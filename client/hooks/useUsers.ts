@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getSessionToken } from '../services/authService';
 
 export interface User {
   id: string;
@@ -8,6 +9,7 @@ export interface User {
   organization?: string;
   avatar_url?: string;
   role: string;
+  roles?: string[];
   permissions: string[];
   phone?: string;
   bio?: string;
@@ -47,11 +49,17 @@ export function useUsers() {
       setIsLoading(true);
       setError(null);
 
-      const resp = await fetch(`${API_BASE}/users?limit=100`);
+      const token = getSessionToken();
+      const resp = await fetch(`${API_BASE}/users?limit=100`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (!resp.ok) throw new Error('Erreur lors de la récupération des utilisateurs');
       const result = await resp.json();
 
-      const usersData: User[] = result.data || [];
+      const usersData: User[] = (result.data || []).map((u: any) => ({
+        ...u,
+        roles: [u.role],
+      }));
       setUsers(usersData);
 
       // Calculer les statistiques
@@ -81,7 +89,11 @@ export function useUsers() {
 
   const deleteUser = async (userId: string) => {
     try {
-      const resp = await fetch(`${API_BASE}/users/${userId}`, { method: 'DELETE' });
+      const token = getSessionToken();
+      const resp = await fetch(`${API_BASE}/users/${userId}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (!resp.ok) throw new Error('Erreur lors de la suppression');
       await fetchUsers();
       return true;
@@ -93,9 +105,13 @@ export function useUsers() {
 
   const updateUserRoles = async (userId: string, role: string) => {
     try {
+      const token = getSessionToken();
       const resp = await fetch(`${API_BASE}/users/${userId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ role }),
       });
       if (!resp.ok) throw new Error('Erreur lors de la mise à jour des rôles');
@@ -109,9 +125,13 @@ export function useUsers() {
 
   const updateUser = async (userId: string, updates: Partial<User>) => {
     try {
+      const token = getSessionToken();
       const resp = await fetch(`${API_BASE}/users/${userId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(updates),
       });
       if (!resp.ok) throw new Error('Erreur lors de la mise à jour');

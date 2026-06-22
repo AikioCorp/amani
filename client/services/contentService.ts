@@ -3,6 +3,7 @@ export type Content = {
   id: string;
   title: string;
   slug: string;
+  summary: string;
   content: string;
   excerpt?: string;
   status: 'draft' | 'published' | 'archived';
@@ -67,12 +68,33 @@ export const getContentBySlug = async (slug: string) => {
   }
 };
 
+import { getSessionToken } from "./authService";
+
+export const getContentById = async (id: string) => {
+  try {
+    const token = getSessionToken();
+    const response = await fetch(`${API_BASE_URL}/contents/id/${id}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!response.ok) throw new Error("Contenu introuvable via l'API");
+    const result = await response.json();
+    return result.data as Content;
+  } catch (error) {
+    console.error('Error fetching content by ID:', error);
+    throw error;
+  }
+};
+
 export const createContent = async (content: Omit<Content, 'id' | 'created_at' | 'updated_at' | 'status' | 'author_id'>) => {
   try {
+    const token = getSessionToken();
     const response = await fetch(`${API_BASE_URL}/contents`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify(content),
     });
@@ -87,10 +109,12 @@ export const createContent = async (content: Omit<Content, 'id' | 'created_at' |
 
 export const updateContent = async (id: string, updates: Partial<Content>) => {
   try {
+    const token = getSessionToken();
     const response = await fetch(`${API_BASE_URL}/contents/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify(updates),
     });
@@ -105,8 +129,10 @@ export const updateContent = async (id: string, updates: Partial<Content>) => {
 
 export const deleteContent = async (id: string) => {
   try {
+    const token = getSessionToken();
     const response = await fetch(`${API_BASE_URL}/contents/${id}`, {
       method: "DELETE",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     if (!response.ok) throw new Error("Erreur de suppression de contenu via l'API");
     return true;
