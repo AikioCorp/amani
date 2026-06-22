@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+
+
 
 type Row = {
   code: string | null;
@@ -20,12 +21,39 @@ export default function BrvmLatest() {
       setLoading(true);
       setError(null);
       try {
-        const { data, error } = await supabase
-          .from("brvm_indices_latest")
-          .select("code,name,latest_close,latest_change,latest_change_percent,latest_at")
-          .order("name", { ascending: true });
-        if (error) throw error;
-        setRows((data ?? []) as Row[]);
+        const res = await fetch("http://localhost:5000/api/brvm");
+        if (!res.ok) throw new Error("Erreur de chargement de l'API");
+        const json = await res.json();
+        if (!json.success) throw new Error(json.error || "Erreur API");
+        const brvmData = json.data;
+        
+        const mappedRows: Row[] = [];
+        
+        if (brvmData.composite) {
+          mappedRows.push({
+            code: "COMPOSITE",
+            name: brvmData.composite.name,
+            latest_close: parseFloat(brvmData.composite.value.toString().replace(/[^0-9.-]/g, "")) || 0,
+            latest_change: parseFloat(brvmData.composite.change.toString().replace(/[^0-9.-]/g, "")) || 0,
+            latest_change_percent: parseFloat(brvmData.composite.changePercent.toString().replace(/[^0-9.-]/g, "")) || 0,
+            latest_at: brvmData.composite.lastUpdate
+          });
+        }
+        
+        if (brvmData.sectoriels && Array.isArray(brvmData.sectoriels)) {
+          brvmData.sectoriels.forEach((idx: any) => {
+            mappedRows.push({
+              code: idx.name.substring(0, 8).toUpperCase(),
+              name: idx.name,
+              latest_close: parseFloat(idx.value.toString().replace(/[^0-9.-]/g, "")) || 0,
+              latest_change: parseFloat(idx.change.toString().replace(/[^0-9.-]/g, "")) || 0,
+              latest_change_percent: parseFloat(idx.changePercent.toString().replace(/[^0-9.-]/g, "")) || 0,
+              latest_at: idx.lastUpdate
+            });
+          });
+        }
+        
+        setRows(mappedRows);
       } catch (e: any) {
         setError(e.message || "Erreur de chargement");
       } finally {
@@ -33,6 +61,7 @@ export default function BrvmLatest() {
       }
     })();
   }, []);
+
 
   return (
     <div className="p-4 sm:p-6">
