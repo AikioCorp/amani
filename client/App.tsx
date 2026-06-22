@@ -39,6 +39,8 @@ import Industrie from "./pages/Industrie";
 import Investissement from "./pages/Investissement";
 import Insights from "./pages/Insights";
 import Tech from "./pages/Tech";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 // Dashboard Pages
 import DashboardMain from "./pages/DashboardMain";
@@ -102,6 +104,8 @@ const AppContent = () => {
         <Route path="/" element={<Index />} />
         <Route path="/article/:id" element={<Article />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/register" element={<Register />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />

@@ -160,7 +160,47 @@ export const updateProfile = async (updates: Partial<UserProfile>) => {
   }
 };
 
-export const resetPassword = async (email: string) => {
-  // Optionnel: peut être redirigé vers l'API si implémenté
-  console.warn("Réinitialisation de mot de passe non supportée en mode déporté complet pour l'instant.");
+export const forgotPassword = async (email: string) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || "Erreur lors de la demande de réinitialisation");
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error in forgotPassword:', error);
+    throw error;
+  }
 };
+
+export const resetPassword = async (token: string, password: string) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ token, password }),
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || "Erreur lors de la réinitialisation du mot de passe");
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error in resetPassword:', error);
+    throw error;
+  }
+};
+
