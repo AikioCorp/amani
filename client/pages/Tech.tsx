@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { Search, Filter, Zap, Smartphone, Cloud, Brain, Code, Shield, Globe, TrendingUp } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { useArticles } from '../hooks/useArticles';
 
 const Tech = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -55,56 +57,27 @@ const Tech = () => {
     }
   ];
 
-  const techNews = [
-    {
-      id: 1,
-      title: "L'IA Révolutionne l'Agriculture Africaine : Cas d'Usage Concrets",
-      category: "Intelligence Artificielle",
-      summary: "Comment l'intelligence artificielle transforme l'agriculture africaine avec des solutions d'optimisation des rendements et de prédiction météorologique.",
-      image: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400&h=250&fit=crop",
-      date: "2024-03-15",
-      readTime: "6 min",
-      author: "Dr. Fatou Diop",
-      trending: true,
-      difficulty: "Intermédiaire"
-    },
-    {
-      id: 2,
-      title: "Blockchain et Identité Numérique : L'Avenir de la Gouvernance en Afrique",
-      category: "Blockchain",
-      summary: "Exploration des applications blockchain pour créer des systèmes d'identité numérique sécurisés et améliorer la gouvernance publique.",
-      image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&h=250&fit=crop",
-      date: "2024-03-14",
-      readTime: "8 min",
-      author: "Jean-Claude Kassi",
-      trending: false,
-      difficulty: "Expert"
-    },
-    {
-      id: 3,
-      title: "Fintech : Comment les Super Apps Transforment les Paiements en Afrique",
-      category: "FinTech",
-      summary: "Analyse de l'émergence des super applications financières et leur impact sur l'inclusion financière à travers le continent.",
-      image: "https://images.unsplash.com/photo-1556740749-887f6717d7e4?w=400&h=250&fit=crop",
-      date: "2024-03-13",
-      readTime: "5 min",
-      author: "Amina Tall",
-      trending: true,
-      difficulty: "Débutant"
-    },
-    {
-      id: 4,
-      title: "Cybersécurité : Protéger l'Économie Numérique Africaine",
-      category: "Cybersécurité",
-      summary: "État des lieux de la cybersécurité en Afrique et stratégies pour protéger les infrastructures numériques critiques.",
-      image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=400&h=250&fit=crop",
-      date: "2024-03-12",
-      readTime: "7 min",
-      author: "Mohamed El Fassi",
-      trending: false,
-      difficulty: "Expert"
-    }
-  ];
+  // Fetch real published tech articles
+  const { articles: dbArticles, loading } = useArticles({
+    status: 'published',
+    category: 'technologie',
+    limit: 30
+  });
+
+  const techNews = useMemo(() => {
+    return (dbArticles || []).map((art: any) => ({
+      id: art.id,
+      title: art.title,
+      category: art.category_info?.name || 'Technologie',
+      summary: art.summary || art.excerpt || '',
+      image: art.featured_image || 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400&h=250&fit=crop',
+      date: art.published_at || art.created_at,
+      readTime: `${art.read_time || 6} min`,
+      author: art.author ? `${art.author.first_name} ${art.author.last_name}` : 'Amani Rédaction',
+      trending: (art.views || 0) > 50,
+      difficulty: art.tags?.includes('Expert') ? 'Expert' : art.tags?.includes('Débutant') ? 'Débutant' : 'Intermédiaire'
+    }));
+  }, [dbArticles]);
 
   const emergingTechs = [
     {
@@ -176,7 +149,25 @@ const Tech = () => {
   const filteredNews = techNews.filter(article => {
     const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          article.summary.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || article.category.toLowerCase().includes(selectedCategory);
+    
+    // Map selected category keys to keywords in French/English for better matching
+    const categoryKeywords: Record<string, string[]> = {
+      ai: ['ia', 'intelligence artificielle', 'artificial intelligence', 'machine learning', 'deep learning'],
+      blockchain: ['blockchain', 'crypto', 'bitcoin', 'ethereum', 'web3'],
+      mobile: ['mobile', 'app', 'application', 'téléphone', 'smartphone'],
+      cloud: ['cloud', 'serveur', 'aws', 'gcp', 'azure', 'hébergement'],
+      iot: ['iot', 'internet des objets', 'connected', 'connecté'],
+      fintech: ['fintech', 'paiement', 'mobile money', 'banque', 'finance'],
+      cybersecurity: ['cyber', 'sécurité', 'hacker', 'protection', 'attaque']
+    };
+
+    let matchesCategory = selectedCategory === 'all';
+    if (!matchesCategory && categoryKeywords[selectedCategory]) {
+      const keywords = categoryKeywords[selectedCategory];
+      const targetText = `${article.title} ${article.summary}`.toLowerCase();
+      matchesCategory = keywords.some(keyword => targetText.includes(keyword));
+    }
+
     return matchesSearch && matchesCategory;
   });
 
@@ -317,51 +308,67 @@ const Tech = () => {
           </div>
 
           {/* Articles Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {filteredNews.map((article) => (
-              <Card key={article.id} className="hover:shadow-lg transition-shadow">
-                <div className="relative">
-                  <img
-                    src={article.image}
-                    alt={article.title}
-                    className="w-full h-48 object-cover rounded-t-lg"
-                  />
-                  {article.trending && (
-                    <Badge className="absolute top-3 left-3 bg-red-500 text-white">
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                      Tendance
-                    </Badge>
-                  )}
-                </div>
-                <CardHeader>
-                  <div className="flex justify-between items-start mb-3">
-                    <Badge variant="secondary">{article.category}</Badge>
-                    <Badge className={getDifficultyColor(article.difficulty)}>
-                      {article.difficulty}
-                    </Badge>
+          {loading ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-white rounded-xl shadow-lg h-96 animate-pulse" />
+              ))}
+            </div>
+          ) : filteredNews.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              Aucun article trouvé pour cette recherche.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {filteredNews.map((article) => (
+                <Card key={article.id} className="hover:shadow-lg transition-shadow flex flex-col justify-between">
+                  <div>
+                    <div className="relative">
+                      <img
+                        src={article.image}
+                        alt={article.title}
+                        className="w-full h-48 object-cover rounded-t-lg"
+                      />
+                      {article.trending && (
+                        <Badge className="absolute top-3 left-3 bg-red-500 text-white">
+                          <TrendingUp className="h-3 w-3 mr-1" />
+                          Tendance
+                        </Badge>
+                      )}
+                    </div>
+                    <CardHeader>
+                      <div className="flex justify-between items-start mb-3">
+                        <Badge variant="secondary">{article.category}</Badge>
+                        <Badge className={getDifficultyColor(article.difficulty)}>
+                          {article.difficulty}
+                        </Badge>
+                      </div>
+                      <CardTitle className="text-xl mb-2">{article.title}</CardTitle>
+                      <CardDescription className="text-gray-600 line-clamp-3">
+                        {article.summary}
+                      </CardDescription>
+                    </CardHeader>
                   </div>
-                  <CardTitle className="text-xl mb-2">{article.title}</CardTitle>
-                  <CardDescription className="text-gray-600">
-                    {article.summary}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex justify-between items-center text-sm text-gray-600 mb-4">
-                    <span>Par {article.author}</span>
-                    <span>{article.readTime} de lecture</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">
-                      {new Date(article.date).toLocaleDateString('fr-FR')}
-                    </span>
-                    <Button size="sm">
-                      Lire l'Article
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  <CardContent>
+                    <div className="flex justify-between items-center text-sm text-gray-600 mb-4">
+                      <span>Par {article.author}</span>
+                      <span>{article.readTime} de lecture</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-500">
+                        {new Date(article.date).toLocaleDateString('fr-FR')}
+                      </span>
+                      <Link to={`/article/${article.id}`}>
+                        <Button size="sm">
+                          Lire l'Article
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

@@ -1,13 +1,36 @@
-import React, { useState } from 'react';
-import { Search, Filter, TrendingUp, DollarSign, BarChart3, Shield, Globe, Users, ArrowUpRight } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { Search, Filter, TrendingUp, DollarSign, BarChart3, Shield, Globe, Users, ArrowUpRight, Calendar, Clock, Eye, ChevronRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { useArticles } from '../hooks/useArticles';
 
 const Investissement = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Fetch real published investment articles
+  const { articles: dbArticles, loading } = useArticles({
+    status: 'published',
+    category: 'investissement',
+    limit: 10
+  });
+
+  const investmentArticles = useMemo(() => {
+    return (dbArticles || []).map((art: any) => ({
+      id: art.id,
+      title: art.title,
+      summary: art.summary || art.excerpt || '',
+      category: art.category_info?.name || 'Investissement',
+      image: art.featured_image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=250&fit=crop',
+      date: art.published_at || art.created_at,
+      readTime: `${art.read_time || 5} min`,
+      views: art.views || 0,
+      author: art.author ? `${art.author.first_name} ${art.author.last_name}` : 'Amani Rédaction',
+    }));
+  }, [dbArticles]);
 
   const investmentStats = [
     {
@@ -344,6 +367,60 @@ const Investissement = () => {
               </Card>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Investment Articles */}
+      <section className="py-16 bg-gray-50 border-t border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-center mb-12 text-[#373B3A]">
+            Analyses & Actualités d'Investissement
+          </h2>
+
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-white rounded-xl shadow-lg h-80 animate-pulse" />
+              ))}
+            </div>
+          ) : investmentArticles.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              Aucun article d'investissement disponible pour le moment.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {investmentArticles.map((article) => (
+                <Card key={article.id} className="hover:shadow-lg transition-shadow flex flex-col justify-between">
+                  <div>
+                    <img
+                      src={article.image}
+                      alt={article.title}
+                      className="w-full h-48 object-cover rounded-t-lg"
+                    />
+                    <CardHeader>
+                      <Badge className="w-fit mb-2" variant="secondary">{article.category}</Badge>
+                      <CardTitle className="text-lg line-clamp-2">{article.title}</CardTitle>
+                      <CardDescription className="line-clamp-3">{article.summary}</CardDescription>
+                    </CardHeader>
+                  </div>
+                  <CardContent>
+                    <div className="flex justify-between items-center text-xs text-gray-500 mb-4">
+                      <span>Par {article.author}</span>
+                      <span>{article.readTime}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-400">
+                        {new Date(article.date).toLocaleDateString('fr-FR')}
+                      </span>
+                      <Link to={`/article/${article.id}`} className="text-sm font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                        Lire <ChevronRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

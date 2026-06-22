@@ -1,6 +1,5 @@
-import { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import ArticleReader from "../components/ArticleReader";
 import {
   TrendingUp,
   TrendingDown,
@@ -24,12 +23,37 @@ import {
   Star,
   ChevronRight,
 } from "lucide-react";
+import { useArticles } from "../hooks/useArticles";
 
 export default function Economie() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedCountry, setSelectedCountry] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  // Fetch real published economy articles
+  const { articles: dbArticles, loading } = useArticles({
+    status: 'published',
+    category: 'economie',
+    limit: 30
+  });
+
+  const articles = useMemo(() => {
+    return (dbArticles || []).map((art: any) => ({
+      id: art.id,
+      title: art.title,
+      excerpt: art.summary || art.excerpt || '',
+      content: art.content || '',
+      author: art.author ? `${art.author.first_name} ${art.author.last_name}` : 'Amani Rédaction',
+      category: art.category_info?.name || 'Macroéconomie',
+      country: art.country || 'UEMOA',
+      publishedAt: art.published_at || art.created_at,
+      readTime: art.read_time || 6,
+      views: art.views || 0,
+      coverImage: art.featured_image || 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800',
+      featured: (art.views || 0) > 100,
+    }));
+  }, [dbArticles]);
 
   const economicData = [
     {
@@ -78,83 +102,22 @@ export default function Economie() {
     },
   ];
 
-  const articles = [
-    {
-      id: "1",
-      title: "UEMOA : Croissance économique soutenue en 2024",
-      excerpt: "L'Union économique et monétaire ouest-africaine maintient une dynamique positive avec une croissance projetée à 5.8% pour l'année 2024, portée par les réformes structurelles et l'amélioration du climat des affaires.",
-      content: `L'économie de l'UEMOA connaît une période de croissance remarquable en 2024, avec des performances qui dépassent les prévisions initiales. Cette dynamique positive s'explique par plusieurs facteurs clés.
-
-Premièrement, les réformes structurelles engagées par les États membres commencent à porter leurs fruits. La modernisation du système fiscal, l'amélioration de la gouvernance et la facilitation de l'accès au crédit pour les PME ont créé un environnement plus favorable aux investissements.
-
-Deuxièmement, le secteur agricole, pilier de l'économie régionale, bénéficie de conditions climatiques favorables et d'innovations technologiques. L'adoption progressive de nouvelles variétés de semences et l'amélioration des systèmes d'irrigation contribuent à l'augmentation des rendements.
-
-Le secteur minier continue également de jouer un rôle moteur, avec de nouveaux projets d'extraction d'or et d'autres minerais qui génèrent d'importantes recettes d'exportation. Parallèlement, le développement du secteur des services, notamment les télécommunications et les services financiers, diversifie l'économie et crée de nouveaux emplois.
-
-Cette croissance s'accompagne d'une stabilité monétaire maintenue par la BCEAO, avec un taux d'inflation maîtrisé autour de 2.5%. Les politiques monétaires prudentes ont permis de préserver la confiance des investisseurs tout en soutenant l'activité économique.`,
-      author: "Dr. Fatou Diallo",
-      category: "Macroéconomie",
-      country: "UEMOA",
-      publishedAt: "2024-01-15",
-      readTime: 8,
-      views: 15420,
-      coverImage: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800",
-      featured: true,
-    },
-    {
-      id: "2",
-      title: "Mali : Le secteur minier dopé par les cours de l'or",
-      excerpt: "Les performances du secteur aurifère malien atteignent des niveaux records, contribuant significativement à l'économie nationale et aux recettes d'exportation.",
-      content: `Le Mali consolide sa position de troisième producteur d'or africain avec une production qui dépasse les prévisions. Cette performance exceptionnelle s'explique par la combinaison de plusieurs facteurs favorables.
-
-L'amélioration des cours internationaux de l'or, qui évoluent autour de 2000 USD l'once, offre des marges confortables aux compagnies minières opérant sur le territoire malien. Cette conjoncture favorable encourage les investissements dans l'exploration et l'expansion des sites existants.
-
-Les nouvelles technologies d'extraction permettent également d'optimiser les rendements tout en réduisant l'impact environnemental. L'adoption de procédés plus efficaces et respectueux de l'environnement répond aux exigences croissantes des investisseurs internationaux en matière de responsabilité sociale.
-
-Le gouvernement malien a également mis en place un cadre réglementaire plus attractif, avec une fiscalité adaptée qui encourage les investissements tout en garantissant des retombées significatives pour l'économie nationale. Les recettes minières représentent désormais plus de 70% des recettes d'exportation du pays.`,
-      author: "Amadou Traoré",
-      category: "Secteur minier",
-      country: "Mali",
-      publishedAt: "2024-01-12",
-      readTime: 6,
-      views: 8750,
-      coverImage: "https://images.unsplash.com/photo-1541840031508-326b77c9a17e?w=800",
-      featured: false,
-    },
-    {
-      id: "3",
-      title: "Agriculture sahélienne : Innovation et résilience",
-      excerpt: "Face aux défis climatiques, les agriculteurs sahéliens adoptent des pratiques innovantes qui transforment progressivement le secteur agricole régional.",
-      content: `L'agriculture sahélienne traverse une période de transformation remarquable, portée par l'innovation et l'adaptation aux changements climatiques. Cette évolution s'observe à travers plusieurs initiatives prometteuses.
-
-L'agriculture intelligente face au climat (AIC) gagne du terrain avec l'adoption de variétés de semences résistantes à la sécheresse et l'utilisation de systèmes d'irrigation goutte-à-goutte. Ces technologies permettent d'optimiser l'utilisation de l'eau, ressource particulièrement précieuse dans la région.
-
-Les coopératives agricoles jouent un rôle central dans cette transformation. Elles facilitent l'accès aux intrants de qualité, partagent les connaissances techniques et négocient de meilleurs prix pour les producteurs. Cette organisation collective renforce la résilience du secteur face aux chocs externes.
-
-Le développement de chaînes de valeur agricoles intégrées créé de nouvelles opportunités économiques. De la production à la commercialisation, en passant par la transformation, chaque maillon de la chaîne est optimisé pour maximiser la valeur ajoutée et réduire les pertes post-récolte.`,
-      author: "Mariama Sy",
-      category: "Agriculture",
-      country: "Sahel",
-      publishedAt: "2024-01-10",
-      readTime: 7,
-      views: 12300,
-      coverImage: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800",
-      featured: false,
-    }
-  ];
-
   const categories = ["all", "Macroéconomie", "Secteur minier", "Agriculture", "Commerce", "Finance"];
   const countries = ["all", "Mali", "Burkina Faso", "Niger", "Tchad", "UEMOA", "Sahel"];
 
-  const filteredArticles = articles.filter((article) => {
-    const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         article.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || article.category === selectedCategory;
-    const matchesCountry = selectedCountry === "all" || article.country === selectedCountry;
-    return matchesSearch && matchesCategory && matchesCountry;
-  });
+  const filteredArticles = useMemo(() => {
+    return articles.filter((article) => {
+      const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           article.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === "all" || article.category.toLowerCase().includes(selectedCategory.toLowerCase());
+      const matchesCountry = selectedCountry === "all" || article.country.toLowerCase().includes(selectedCountry.toLowerCase());
+      return matchesSearch && matchesCategory && matchesCountry;
+    });
+  }, [articles, searchTerm, selectedCategory, selectedCountry]);
 
-  const featuredArticle = articles.find(article => article.featured);
+  const featuredArticle = useMemo(() => {
+    return articles.find(article => article.featured) || articles[0];
+  }, [articles]);
 
   return (
     <div className="min-h-screen bg-[#E5DDD2]">
@@ -384,7 +347,17 @@ Le développement de chaînes de valeur agricoles intégrées créé de nouvelle
             Dernières analyses ({filteredArticles.length})
           </h2>
           
-          {viewMode === "grid" ? (
+          {loading ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="bg-white rounded-xl shadow-lg h-96 animate-pulse" />
+              ))}
+            </div>
+          ) : filteredArticles.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              Aucun article trouvé pour cette recherche.
+            </div>
+          ) : viewMode === "grid" ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredArticles.map((article) => (
                 <article key={article.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">

@@ -15,127 +15,30 @@ import {
   BarChart3,
   Mic,
 } from "lucide-react";
+import { useArticles } from "../hooks/useArticles";
 
 export default function Actualites() {
   const [selectedCategory, setSelectedCategory] = React.useState<string>("all");
   const [searchTerm, setSearchTerm] = React.useState<string>("");
 
-  // Mock data des actualités
-  const actualites = [
-    {
-      id: 1,
-      title:
-        "Le Mali annonce de nouveaux investissements dans les infrastructures",
-      excerpt:
-        "Le gouvernement malien a dévoilé un plan d'investissement de 500 milliards de FCFA pour moderniser les infrastructures du pays et stimuler la croissance économique. Ce programme ambitieux vise à améliorer les réseaux de transport, d'énergie et de télécommunications.",
-      category: "Économie",
-      date: "2024-01-15",
-      author: "Dr. Mohamed Keita",
-      image:
-        "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&h=500&fit=crop",
-      views: 2150,
-      readTime: "5 min",
-      featured: true,
-    },
-    {
-      id: 2,
-      title: "La BCEAO maintient son taux directeur à 3.5%",
-      excerpt:
-        "La Banque centrale des États de l'Afrique de l'Ouest a décidé de maintenir son taux directeur inchangé lors de sa dernière réunion, citant la stabilité de l'inflation dans la zone UEMOA.",
-      category: "Finance",
-      date: "2024-01-14",
-      author: "Kani Sissoko",
-      image:
-        "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800&h=500&fit=crop",
-      views: 1890,
-      readTime: "3 min",
-      featured: false,
-    },
-    {
-      id: 3,
-      title: "Croissance du secteur agricole au Burkina Faso",
-      excerpt:
-        "Le secteur agricole burkinabé enregistre une croissance de 8% cette année, porté par une augmentation de la production de coton et de céréales. Cette performance dépasse les prévisions initiales.",
-      category: "Agriculture",
-      date: "2024-01-13",
-      author: "Dr. Mohamed Keita",
-      image:
-        "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&h=500&fit=crop",
-      views: 1567,
-      readTime: "4 min",
-      featured: false,
-    },
-    {
-      id: 4,
-      title: "BRVM : Performance record avec +28,89% en 2024",
-      excerpt:
-        "La Bourse Régionale des Valeurs Mobilières conclut l'année 2024 sur une hausse remarquable, marquant l'une de ses meilleures performances de la décennie avec des volumes d'échanges en forte progression.",
-      category: "Marché",
-      date: "2024-01-12",
-      author: "Kani Sissoko",
-      image:
-        "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800&h=500&fit=crop",
-      views: 2890,
-      readTime: "6 min",
-      featured: true,
-    },
-    {
-      id: 5,
-      title: "Nouveau partenariat commercial Mali-Sénégal",
-      excerpt:
-        "Les gouvernements malien et sénégalais signent un accord de partenariat commercial visant à faciliter les échanges bilatéraux et à réduire les barrières douanières entre les deux pays.",
-      category: "Commerce",
-      date: "2024-01-11",
-      author: "Dr. Mohamed Keita",
-      image:
-        "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800&h=500&fit=crop",
-      views: 1234,
-      readTime: "4 min",
-      featured: false,
-    },
-    {
-      id: 6,
-      title: "Innovation technologique dans la fintech africaine",
-      excerpt:
-        "Les startups fintech africaines lèvent plus de 3 milliards de dollars en 2024, témoignant de l'innovation croissante dans le secteur des services financiers numériques sur le continent.",
-      category: "Tech",
-      date: "2024-01-10",
-      author: "Kani Sissoko",
-      image:
-        "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=500&fit=crop",
-      views: 1876,
-      readTime: "5 min",
-      featured: false,
-    },
-    {
-      id: 7,
-      title: "Prix du cacao : Impact sur l'économie ivoirienne",
-      excerpt:
-        "La hausse du prix du cacao sur les marchés internationaux profite aux producteurs ivoiriens, le pays étant le premier producteur mondial avec 40% de la production globale.",
-      category: "Agriculture",
-      date: "2024-01-09",
-      author: "Dr. Mohamed Keita",
-      image:
-        "https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=800&h=500&fit=crop",
-      views: 1654,
-      readTime: "4 min",
-      featured: false,
-    },
-    {
-      id: 8,
-      title: "Inflation modérée dans la zone UEMOA",
-      excerpt:
-        "L'inflation dans la zone UEMOA reste modérée à 4.2%, en ligne avec les objectifs de la BCEAO. Cette stabilité favorise un environnement économique prévisible pour les entreprises.",
-      category: "Économie",
-      date: "2024-01-08",
-      author: "Kani Sissoko",
-      image:
-        "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=500&fit=crop",
-      views: 987,
-      readTime: "3 min",
-      featured: false,
-    },
-  ];
+  // Charger les articles publiés réels depuis l'API
+  const { articles: dbArticles, loading } = useArticles({ status: "published", limit: 50, offset: 0 });
+
+  // Mapper les articles réels vers le format attendu par le UI
+  const actualites = React.useMemo(() => {
+    return (dbArticles || []).map((art: any) => ({
+      id: art.id,
+      title: art.title,
+      excerpt: art.summary || art.excerpt || "",
+      category: art.category_info?.name || art.category?.name || "Économie",
+      date: art.published_at || art.created_at,
+      author: art.author ? `${art.author.first_name} ${art.author.last_name}` : "Amani Rédaction",
+      image: art.featured_image || "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&h=500&fit=crop",
+      views: art.views || 0,
+      readTime: `${art.read_time || 5} min`,
+      featured: (art.views || 0) > 100,
+    }));
+  }, [dbArticles]);
 
   const categories = [
     { id: "all", name: "Toutes", icon: Globe, count: actualites.length },
@@ -356,42 +259,64 @@ export default function Actualites() {
         </div>
 
         {/* Articles à la une */}
-        {featuredArticles.length > 0 && (
+        {loading ? (
           <div className="mb-16">
-            <h2 className="text-3xl font-bold text-amani-primary mb-8 flex items-center gap-3">
-              <span className="bg-red-600 text-white px-3 py-1 rounded-lg text-lg">
-                🔥
-              </span>
-              À la une
-            </h2>
+            <h2 className="text-3xl font-bold text-amani-primary mb-8">Chargement...</h2>
             <div className="grid lg:grid-cols-3 gap-8">
-              {featuredArticles.map((article) => (
-                <ArticleCard
-                  key={article.id}
-                  article={article}
-                  featured={true}
-                />
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-white rounded-xl shadow-lg h-96 animate-pulse" />
               ))}
             </div>
           </div>
+        ) : (
+          featuredArticles.length > 0 && (
+            <div className="mb-16">
+              <h2 className="text-3xl font-bold text-amani-primary mb-8 flex items-center gap-3">
+                <span className="bg-red-600 text-white px-3 py-1 rounded-lg text-lg">
+                  🔥
+                </span>
+                À la une
+              </h2>
+              <div className="grid lg:grid-cols-3 gap-8">
+                {featuredArticles.map((article) => (
+                  <ArticleCard
+                    key={article.id}
+                    article={article}
+                    featured={true}
+                  />
+                ))}
+              </div>
+            </div>
+          )
         )}
 
         {/* Autres articles */}
-        {regularArticles.length > 0 && (
+        {loading ? (
           <div>
-            <h2 className="text-3xl font-bold text-amani-primary mb-8">
-              Dernières actualités
-            </h2>
+            <h2 className="text-3xl font-bold text-amani-primary mb-8">Dernières actualités</h2>
             <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-8">
-              {regularArticles.map((article) => (
-                <ArticleCard key={article.id} article={article} />
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="bg-white rounded-xl shadow-lg h-80 animate-pulse" />
               ))}
             </div>
           </div>
+        ) : (
+          regularArticles.length > 0 && (
+            <div>
+              <h2 className="text-3xl font-bold text-amani-primary mb-8">
+                Dernières actualités
+              </h2>
+              <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-8">
+                {regularArticles.map((article) => (
+                  <ArticleCard key={article.id} article={article} />
+                ))}
+              </div>
+            </div>
+          )
         )}
 
         {/* Aucun résultat */}
-        {filteredActualites.length === 0 && (
+        {!loading && filteredActualites.length === 0 && (
           <div className="text-center py-16">
             <div className="bg-white rounded-xl shadow-lg p-12 max-w-md mx-auto">
               <Search className="w-16 h-16 text-gray-300 mx-auto mb-6" />

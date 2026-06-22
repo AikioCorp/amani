@@ -1,14 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { Search, Filter, Grid, List, TrendingUp, Factory, Zap, Users, DollarSign } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { useArticles } from '../hooks/useArticles';
 
 const Industrie = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSector, setSelectedSector] = useState('all');
+
+  // Fetch real published industry articles
+  const { articles: dbArticles, loading } = useArticles({
+    status: 'published',
+    category: 'industrie-miniere',
+    limit: 30
+  });
+
+  const industrialNews = useMemo(() => {
+    return (dbArticles || []).map((art: any) => ({
+      id: art.id,
+      title: art.title,
+      summary: art.summary || art.excerpt || '',
+      sector: art.category_info?.name || 'Mines & Industrie',
+      image: art.featured_image || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=250&fit=crop',
+      date: art.published_at || art.created_at,
+      readTime: `${art.read_time || 5} min`,
+      trending: (art.views || 0) > 50
+    }));
+  }, [dbArticles]);
 
   const industrialStats = [
     {
@@ -45,53 +67,10 @@ const Industrie = () => {
     { id: 'all', name: 'Tous les secteurs' },
     { id: 'manufacturing', name: 'Manufacture' },
     { id: 'energy', name: 'Énergie' },
+    { id: 'mines', name: 'Mines' },
     { id: 'automotive', name: 'Automobile' },
-    { id: 'aerospace', name: 'Aérospatiale' },
     { id: 'pharma', name: 'Pharmaceutique' },
     { id: 'food', name: 'Agroalimentaire' }
-  ];
-
-  const industrialNews = [
-    {
-      id: 1,
-      title: "L'industrie automobile africaine en pleine transformation digitale",
-      summary: "Les constructeurs automobiles investissent massivement dans l'innovation technologique et l'automatisation pour rester compétitifs sur le marché mondial.",
-      sector: "Automobile",
-      image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=250&fit=crop",
-      date: "2024-03-15",
-      readTime: "5 min",
-      trending: true
-    },
-    {
-      id: 2,
-      title: "Révolution verte : L'industrie énergétique mise sur les renouvelables",
-      summary: "Les entreprises énergétiques accélèrent leur transition vers les sources d'énergie renouvelable, créant de nouveaux emplois et opportunités d'investissement.",
-      sector: "Énergie",
-      image: "https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?w=400&h=250&fit=crop",
-      date: "2024-03-14",
-      readTime: "7 min",
-      trending: false
-    },
-    {
-      id: 3,
-      title: "L'industrie pharmaceutique : Innovation et accessibilité au cœur des défis",
-      summary: "Face aux enjeux de santé publique, l'industrie pharmaceutique développe de nouvelles approches pour améliorer l'accès aux médicaments.",
-      sector: "Pharmaceutique",
-      image: "https://images.unsplash.com/photo-1565793298595-6a879b1d9492?w=400&h=250&fit=crop",
-      date: "2024-03-13",
-      readTime: "6 min",
-      trending: true
-    },
-    {
-      id: 4,
-      title: "Agroalimentaire : La sécurité alimentaire à l'ère du développement durable",
-      summary: "L'industrie agroalimentaire innove pour répondre aux défis de la sécurité alimentaire tout en respectant les principes du développement durable.",
-      sector: "Agroalimentaire",
-      image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=400&h=250&fit=crop",
-      date: "2024-03-12",
-      readTime: "4 min",
-      trending: false
-    }
   ];
 
   const featuredCompanies = [
@@ -101,12 +80,30 @@ const Industrie = () => {
     { name: "PharmaCare Africa", sector: "Pharmaceutique", growth: "+22%", employees: "1,800" }
   ];
 
-  const filteredNews = industrialNews.filter(article => {
-    const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         article.summary.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSector = selectedSector === 'all' || article.sector.toLowerCase().includes(selectedSector);
-    return matchesSearch && matchesSector;
-  });
+  const filteredNews = useMemo(() => {
+    return industrialNews.filter(article => {
+      const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           article.summary.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const sectorKeywords: Record<string, string[]> = {
+        manufacturing: ['manufacture', 'usine', 'production', 'manufacturière'],
+        energy: ['énergie', 'électricité', 'solaire', 'renouvelable', 'pétrole', 'gaz'],
+        mines: ['mine', 'or', 'uranium', 'charbon', 'fer', 'bauxite', 'extraction', 'minier'],
+        automotive: ['auto', 'voiture', 'véhicule', 'constructeur'],
+        pharma: ['pharma', 'médicament', 'santé', 'médical'],
+        food: ['agro', 'alimentaire', 'nourriture', 'agriculture', 'agroalimentaire']
+      };
+
+      let matchesSector = selectedSector === 'all';
+      if (!matchesSector && sectorKeywords[selectedSector]) {
+        const keywords = sectorKeywords[selectedSector];
+        const targetText = `${article.title} ${article.summary} ${article.sector}`.toLowerCase();
+        matchesSector = keywords.some(keyword => targetText.includes(keyword));
+      }
+
+      return matchesSearch && matchesSector;
+    });
+  }, [industrialNews, searchTerm, selectedSector]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -227,47 +224,61 @@ const Industrie = () => {
           </div>
 
           {/* Articles Grid/List */}
-          <div className={viewMode === 'grid' 
-            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" 
-            : "space-y-6"
-          }>
-            {filteredNews.map((article) => (
-              <Card key={article.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-                <div className={viewMode === 'list' ? "flex" : ""}>
-                  <div className={viewMode === 'list' ? "w-48 flex-shrink-0" : ""}>
-                    <img
-                      src={article.image}
-                      alt={article.title}
-                      className={`w-full h-48 object-cover ${viewMode === 'grid' ? 'rounded-t-lg' : 'rounded-l-lg'}`}
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <CardHeader>
-                      <div className="flex justify-between items-start mb-2">
-                        <Badge variant="secondary">{article.sector}</Badge>
-                        {article.trending && (
-                          <div className="flex items-center text-orange-500">
-                            <TrendingUp className="h-4 w-4 mr-1" />
-                            <span className="text-xs font-medium">Tendance</span>
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-white rounded-xl shadow-lg h-96 animate-pulse" />
+              ))}
+            </div>
+          ) : filteredNews.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              Aucun article industriel trouvé pour cette recherche.
+            </div>
+          ) : (
+            <div className={viewMode === 'grid' 
+              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" 
+              : "space-y-6"
+            }>
+              {filteredNews.map((article) => (
+                <Link key={article.id} to={`/article/${article.id}`} className="block">
+                  <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full flex flex-col justify-between">
+                    <div className={viewMode === 'list' ? "flex h-full" : ""}>
+                      <div className={viewMode === 'list' ? "w-48 flex-shrink-0" : ""}>
+                        <img
+                          src={article.image}
+                          alt={article.title}
+                          className={`w-full h-48 object-cover ${viewMode === 'grid' ? 'rounded-t-lg' : 'rounded-l-lg'}`}
+                        />
+                      </div>
+                      <div className="flex-1 flex flex-col justify-between">
+                        <CardHeader>
+                          <div className="flex justify-between items-start mb-2">
+                            <Badge variant="secondary">{article.sector}</Badge>
+                            {article.trending && (
+                              <div className="flex items-center text-orange-500">
+                                <TrendingUp className="h-4 w-4 mr-1" />
+                                <span className="text-xs font-medium">Tendance</span>
+                              </div>
+                            )}
                           </div>
-                        )}
+                          <CardTitle className="text-lg">{article.title}</CardTitle>
+                          <CardDescription className="text-sm text-gray-600 line-clamp-3">
+                            {article.summary}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex justify-between items-center text-sm text-gray-500">
+                            <span>{new Date(article.date).toLocaleDateString('fr-FR')}</span>
+                            <span>{article.readTime} de lecture</span>
+                          </div>
+                        </CardContent>
                       </div>
-                      <CardTitle className="text-lg">{article.title}</CardTitle>
-                      <CardDescription className="text-sm text-gray-600">
-                        {article.summary}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex justify-between items-center text-sm text-gray-500">
-                        <span>{new Date(article.date).toLocaleDateString('fr-FR')}</span>
-                        <span>{article.readTime} de lecture</span>
-                      </div>
-                    </CardContent>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+                    </div>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </div>

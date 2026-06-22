@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import Footer from '../components/Footer';
 import {
@@ -21,10 +21,16 @@ import {
   Target,
   Zap,
 } from "lucide-react";
+import { useArticles } from "../hooks/useArticles";
 
 export default function Marche() {
   const [selectedMarket, setSelectedMarket] = useState("all");
   const [selectedTimeframe, setSelectedTimeframe] = useState("1d");
+
+  // Fetch real published market articles
+  const { articles: marketFinArticles, loading: loadingMarketFin } = useArticles({ status: 'published', limit: 10, category: 'marches-financiers' });
+  const { articles: marketBoursArticles, loading: loadingMarketBours } = useArticles({ status: 'published', limit: 10, category: 'marches-boursiers' });
+  const loadingNews = loadingMarketFin || loadingMarketBours;
 
   const marketData = [
     {
@@ -125,35 +131,23 @@ export default function Marche() {
     },
   ];
 
-  const recentNews = [
-    {
-      id: "1",
-      title: "BRVM : Performance exceptionnelle du secteur bancaire",
-      excerpt: "Les valeurs bancaires dominent les échanges avec une hausse moyenne de 3.5%",
-      category: "Bourse",
-      publishedAt: "2024-01-15",
-      readTime: "3 min",
-      image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400",
-    },
-    {
-      id: "2", 
-      title: "Le FCFA se stabilise face au dollar américain",
-      excerpt: "Analyse des facteurs de stabilisation de la monnaie commune",
-      category: "Devises",
-      publishedAt: "2024-01-14",
-      readTime: "5 min",
-      image: "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=400",
-    },
-    {
-      id: "3",
-      title: "Orange CI : Résultats trimestriels en hausse",
-      excerpt: "L'opérateur télécom affiche une croissance de 12% de son chiffre d'affaires",
-      category: "Entreprises",
-      publishedAt: "2024-01-13",
-      readTime: "4 min",
-      image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400",
-    },
-  ];
+  const recentNews = useMemo(() => {
+    const list = [...(marketFinArticles || []), ...(marketBoursArticles || [])];
+    const sorted = list.sort((a, b) => {
+      const aDate = (a.published_at || a.created_at) ? new Date(a.published_at || a.created_at).getTime() : 0;
+      const bDate = (b.published_at || b.created_at) ? new Date(b.published_at || b.created_at).getTime() : 0;
+      return bDate - aDate;
+    });
+    return sorted.slice(0, 10).map((art) => ({
+      id: art.id,
+      title: art.title,
+      excerpt: art.summary || "",
+      category: art.category_info?.name || "Bourse",
+      publishedAt: art.published_at || art.created_at,
+      readTime: `${art.read_time || 5} min`,
+      image: art.featured_image || "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400",
+    }));
+  }, [marketFinArticles, marketBoursArticles]);
 
   const marketSummary = {
     gainers: marketData.filter(item => item.isPositive).length,
@@ -401,54 +395,70 @@ export default function Marche() {
             Actualités des marchés
           </h2>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {recentNews.map((news) => (
-              <article key={news.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-                <div className="relative">
-                  <img
-                    src={news.image}
-                    alt={news.title}
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="absolute top-4 left-4">
-                    <span className="bg-amani-primary text-white px-3 py-1 rounded-full text-sm font-medium">
-                      {news.category}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="p-6">
-                  <h3 className="text-lg font-bold text-amani-primary mb-3 leading-tight">
-                    {news.title}
-                  </h3>
-                  
-                  <p className="text-gray-600 mb-4 leading-relaxed">
-                    {news.excerpt}
-                  </p>
-                  
-                  <div className="flex items-center justify-between text-sm text-gray-500">
-                    <div className="flex items-center gap-4">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {new Date(news.publishedAt).toLocaleDateString("fr-FR")}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {news.readTime}
-                      </span>
+          {loadingNews ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-white rounded-xl shadow-lg h-96 animate-pulse" />
+              ))}
+            </div>
+          ) : recentNews.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              Aucune actualité de marché trouvée.
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {recentNews.map((news) => (
+                <article key={news.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow flex flex-col justify-between">
+                  <div>
+                    <div className="relative">
+                      <img
+                        src={news.image}
+                        alt={news.title}
+                        className="w-full h-48 object-cover"
+                      />
+                      <div className="absolute top-4 left-4">
+                        <span className="bg-amani-primary text-white px-3 py-1 rounded-full text-sm font-medium">
+                          {news.category}
+                        </span>
+                      </div>
                     </div>
                     
-                    <Link
-                      to={`/article/${news.id}`}
-                      className="flex items-center gap-1 text-amani-primary hover:text-amani-primary/80 font-medium"
-                    >
-                      Lire <ArrowRight className="w-4 h-4" />
-                    </Link>
+                    <div className="p-6">
+                      <h3 className="text-lg font-bold text-amani-primary mb-3 leading-tight">
+                        {news.title}
+                      </h3>
+                      
+                      <p className="text-gray-600 mb-4 leading-relaxed line-clamp-3">
+                        {news.excerpt}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </article>
-            ))}
-          </div>
+                  
+                  <div className="p-6 pt-0">
+                    <div className="flex items-center justify-between text-sm text-gray-500">
+                      <div className="flex items-center gap-4">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-4 h-4" />
+                          {new Date(news.publishedAt).toLocaleDateString("fr-FR")}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {news.readTime}
+                        </span>
+                      </div>
+                      
+                      <Link
+                        to={`/article/${news.id}`}
+                        className="flex items-center gap-1 text-amani-primary hover:text-amani-primary/80 font-medium"
+                      >
+                        Lire <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
           
           <div className="text-center mt-8">
             <Link

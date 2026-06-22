@@ -1,13 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { Search, Filter, TrendingUp, Eye, Calendar, User, Clock, BarChart3, Brain, Lightbulb } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { useArticles } from '../hooks/useArticles';
 
 const Insights = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Fetch real published insights articles
+  const { articles: dbArticles, loading } = useArticles({
+    status: 'published',
+    category: 'insights',
+    limit: 30
+  });
+
+  const featuredInsights = useMemo(() => {
+    return (dbArticles || []).map((art: any) => ({
+      id: art.id,
+      title: art.title,
+      category: art.category_info?.name || 'Insights',
+      author: art.author ? `${art.author.first_name} ${art.author.last_name}` : 'Amani Rédaction',
+      readTime: `${art.read_time || 8} min`,
+      views: (art.views || 0).toLocaleString(),
+      date: art.published_at || art.created_at,
+      image: art.featured_image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=300&fit=crop',
+      summary: art.summary || art.excerpt || '',
+      tags: art.tags || ['Analyse', 'Perspective'],
+      featured: (art.views || 0) > 100,
+      complexity: art.tags?.includes('Expert') ? 'Expert' : art.tags?.includes('Débutant') ? 'Débutant' : 'Intermédiaire'
+    }));
+  }, [dbArticles]);
 
   const insightCategories = [
     { id: 'all', name: 'Toutes les analyses' },
@@ -16,51 +42,6 @@ const Insights = () => {
     { id: 'technology', name: 'Innovation Tech' },
     { id: 'policy', name: 'Politiques Publiques' },
     { id: 'social', name: 'Impact Social' }
-  ];
-
-  const featuredInsights = [
-    {
-      id: 1,
-      title: "L'Avenir de l'Économie Numérique en Afrique : Analyse Prospective 2024-2030",
-      category: "Analyse Économique",
-      author: "Dr. Amina Kone",
-      readTime: "12 min",
-      views: "5.2K",
-      date: "2024-03-15",
-      image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=300&fit=crop",
-      summary: "Une analyse approfondie des tendances qui façonneront l'économie numérique africaine au cours des six prochaines années, avec des prévisions basées sur les données actuelles.",
-      tags: ["Économie Numérique", "Prévisions", "Technologie", "Croissance"],
-      featured: true,
-      complexity: "Expert"
-    },
-    {
-      id: 2,
-      title: "Impact de l'Intelligence Artificielle sur l'Emploi en Afrique Subsaharienne",
-      category: "Innovation Tech",
-      author: "Prof. Jean-Baptiste Ouédraogo",
-      readTime: "8 min",
-      views: "3.8K",
-      date: "2024-03-14",
-      image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=300&fit=crop",
-      summary: "Étude sur les transformations du marché de l'emploi avec l'arrivée de l'IA et les stratégies d'adaptation nécessaires pour les travailleurs africains.",
-      tags: ["Intelligence Artificielle", "Emploi", "Formation", "Adaptation"],
-      featured: false,
-      complexity: "Intermédiaire"
-    },
-    {
-      id: 3,
-      title: "Les Cryptomonnaies et leur Adoption en Afrique : Opportunités et Défis",
-      category: "Tendances Marché",
-      author: "Sarah Diallo",
-      readTime: "10 min",
-      views: "4.1K",
-      date: "2024-03-13",
-      image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=300&fit=crop",
-      summary: "Analyse du phénomène croissant d'adoption des cryptomonnaies sur le continent africain, ses avantages pour l'inclusion financière et les risques associés.",
-      tags: ["Cryptomonnaies", "Finance", "Innovation", "Inclusion"],
-      featured: true,
-      complexity: "Intermédiaire"
-    }
   ];
 
   const quickInsights = [
@@ -143,12 +124,29 @@ const Insights = () => {
     }
   };
 
-  const filteredInsights = featuredInsights.filter(insight => {
-    const matchesSearch = insight.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         insight.summary.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || insight.category.toLowerCase().includes(selectedCategory);
-    return matchesSearch && matchesCategory;
-  });
+  const filteredInsights = useMemo(() => {
+    return featuredInsights.filter(insight => {
+      const matchesSearch = insight.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           insight.summary.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const insightCategoryKeywords: Record<string, string[]> = {
+        economic: ['économ', 'gdp', 'pib', 'inflation', 'croissance'],
+        market: ['marché', 'bourse', 'brvm', 'crypto', 'finance'],
+        technology: ['tech', 'ia', 'blockchain', 'innovation', 'digital'],
+        policy: ['politique', 'publique', 'gouvernement', 'réforme', 'uemoa'],
+        social: ['social', 'emploi', 'education', 'santé', 'population']
+      };
+
+      let matchesCategory = selectedCategory === 'all';
+      if (!matchesCategory && insightCategoryKeywords[selectedCategory]) {
+        const keywords = insightCategoryKeywords[selectedCategory];
+        const targetText = `${insight.title} ${insight.summary} ${insight.category}`.toLowerCase();
+        matchesCategory = keywords.some(keyword => targetText.includes(keyword));
+      }
+
+      return matchesSearch && matchesCategory;
+    });
+  }, [featuredInsights, searchTerm, selectedCategory]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -265,69 +263,85 @@ const Insights = () => {
           </div>
 
           {/* Insights Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {filteredInsights.map((insight) => (
-              <Card key={insight.id} className={`hover:shadow-lg transition-shadow ${insight.featured ? 'ring-2 ring-[#373B3A]' : ''}`}>
-                <div className="relative">
-                  <img
-                    src={insight.image}
-                    alt={insight.title}
-                    className="w-full h-48 object-cover rounded-t-lg"
-                  />
-                  {insight.featured && (
-                    <Badge className="absolute top-3 left-3 bg-[#373B3A] text-white">
-                      En Vedette
-                    </Badge>
-                  )}
-                </div>
-                <CardHeader>
-                  <div className="flex justify-between items-start mb-3">
-                    <Badge variant="secondary">{insight.category}</Badge>
-                    <Badge className={getComplexityColor(insight.complexity)}>
-                      {insight.complexity}
-                    </Badge>
+          {loading ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-white rounded-xl shadow-lg h-96 animate-pulse" />
+              ))}
+            </div>
+          ) : filteredInsights.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              Aucun insight trouvé pour cette recherche.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {filteredInsights.map((insight) => (
+                <Card key={insight.id} className={`hover:shadow-lg transition-shadow flex flex-col justify-between ${insight.featured ? 'ring-2 ring-[#373B3A]' : ''}`}>
+                  <div>
+                    <div className="relative">
+                      <img
+                        src={insight.image}
+                        alt={insight.title}
+                        className="w-full h-48 object-cover rounded-t-lg"
+                      />
+                      {insight.featured && (
+                        <Badge className="absolute top-3 left-3 bg-[#373B3A] text-white">
+                          En Vedette
+                        </Badge>
+                      )}
+                    </div>
+                    <CardHeader>
+                      <div className="flex justify-between items-start mb-3">
+                        <Badge variant="secondary">{insight.category}</Badge>
+                        <Badge className={getComplexityColor(insight.complexity)}>
+                          {insight.complexity}
+                        </Badge>
+                      </div>
+                      <CardTitle className="text-xl mb-2">{insight.title}</CardTitle>
+                      <CardDescription className="text-gray-600 mb-4 line-clamp-3">
+                        {insight.summary}
+                      </CardDescription>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {insight.tags.map((tag, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardHeader>
                   </div>
-                  <CardTitle className="text-xl mb-2">{insight.title}</CardTitle>
-                  <CardDescription className="text-gray-600 mb-4">
-                    {insight.summary}
-                  </CardDescription>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {insight.tags.map((tag, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex justify-between items-center text-sm text-gray-600 mb-4">
-                    <div className="flex items-center gap-4">
+                  <CardContent>
+                    <div className="flex justify-between items-center text-sm text-gray-600 mb-4">
+                      <div className="flex items-center gap-4">
+                        <span className="flex items-center gap-1">
+                          <User className="h-4 w-4" />
+                          {insight.author}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          {insight.readTime}
+                        </span>
+                      </div>
                       <span className="flex items-center gap-1">
-                        <User className="h-4 w-4" />
-                        {insight.author}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        {insight.readTime}
+                        <Eye className="h-4 w-4" />
+                        {insight.views}
                       </span>
                     </div>
-                    <span className="flex items-center gap-1">
-                      <Eye className="h-4 w-4" />
-                      {insight.views}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">
-                      {new Date(insight.date).toLocaleDateString('fr-FR')}
-                    </span>
-                    <Button size="sm">
-                      Lire l'Analyse
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-500">
+                        {new Date(insight.date).toLocaleDateString('fr-FR')}
+                      </span>
+                      <Link to={`/article/${insight.id}`}>
+                        <Button size="sm">
+                          Lire l'Analyse
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
