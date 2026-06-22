@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Search, Globe, Plus, AlertCircle, CheckCircle2, Loader2, ArrowUpRight, ArrowLeft } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
@@ -29,20 +30,36 @@ export default function SerperIntegration() {
   const [isLoading, setIsLoading] = useState(false);
   const [isImporting, setIsImporting] = useState<string | null>(null); // "all" or specific link
   const [errorMessage, setErrorMessage] = useState("");
+  const [importedArticles, setImportedArticles] = useState<Record<string, string>>({});
+  const [categories, setCategories] = useState<any[]>([]);
+  const [articleSettings, setArticleSettings] = useState<Record<string, { categoryId: string; featuredImage: string; publishedAt: string; status: 'draft' | 'published' }>>({});
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/categories`);
+        const result = await response.json();
+        if (response.ok && result.success) {
+          setCategories(result.data || []);
+        }
+      } catch (err) {
+        console.error("Erreur de récupération des catégories", err);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   if (!user || !hasPermission("create_articles")) {
     return (
-      <DashboardLayout title="Accès refusé" subtitle="Permissions insuffisantes">
-        <div className="flex items-center justify-center py-12">
-          <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md text-center">
-            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Accès refusé</h2>
-            <p className="text-gray-600 mb-6">
-              Vous n'avez pas les permissions requises pour accéder à l'importateur Serper.
-            </p>
-          </div>
+      <div className="flex items-center justify-center py-12">
+        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md text-center">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Accès refusé</h2>
+          <p className="text-gray-600 mb-6">
+            Vous n'avez pas les permissions requises pour accéder à l'importateur Serper.
+          </p>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
@@ -68,11 +85,34 @@ export default function SerperIntegration() {
         throw new Error(result.error || "Erreur de récupération des actualités.");
       }
 
-      setNews(result.data || []);
-      if ((result.data || []).length === 0) {
+      const fetchedNews = result.data || [];
+      setNews(fetchedNews);
+
+      // Prepopulate settings for each fetched article
+      const initialSettings: Record<string, any> = {};
+      const defaultCatId = categories.length > 0 ? categories[0].id : "";
+      fetchedNews.forEach((item: NewsArticle) => {
+        let formattedDate = "";
+        try {
+          formattedDate = new Date(item.date).toISOString().substring(0, 10);
+        } catch (e) {
+          formattedDate = new Date().toISOString().substring(0, 10);
+        }
+
+        initialSettings[item.link] = {
+          categoryId: defaultCatId,
+          featuredImage: item.imageUrl || "",
+          publishedAt: formattedDate,
+          status: "draft",
+          summary: item.snippet || ""
+        };
+      });
+      setArticleSettings(initialSettings);
+
+      if (fetchedNews.length === 0) {
         warning("Aucune actualité trouvée pour cette recherche.");
       } else {
-        success(`${(result.data || []).length} actualités récupérées avec succès.`);
+        success(`${fetchedNews.length} actualités récupérées avec succès.`);
       }
     } catch (err: any) {
       setErrorMessage(err.message || "Erreur lors de la connexion au serveur.");
@@ -90,22 +130,46 @@ export default function SerperIntegration() {
         throw new Error("Session expirée. Veuillez vous reconnecter.");
       }
 
-      // If specific link, we might want to only import that.
-      // But backend's handleImportNews imports the whole set for the query.
-      // To simulate individual imports or just run the import query:
-      const response = await fetch(`${API_BASE_URL}/news/import?q=${encodeURIComponent(query)}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      });
+      let response;
+      if (targetLink === "all") {
+        response = await fetch(`${API_BASE_URL}/news/import?q=${encodeURIComponent(query)}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+      } else {
+        const found = news.find(n => n.link === targetLink);
+        if (!found) throw new Error("Article introuvable.");
+
+        const settings = articleSettings[targetLink] || {};
+
+        response = await fetch(`${API_BASE_URL}/news/import`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({ 
+            article: found,
+            categoryId: settings.categoryId,
+            featuredImage: settings.featuredImage,
+            publishedAt: settings.publishedAt,
+            status: settings.status || "draft",
+            summary: settings.summary || ""
+          }),
+        });
+      }
 
       const result = await response.json();
       if (!response.ok) {
         throw new Error(result.error || "Erreur lors de l'importation.");
       }
 
+      if (targetLink !== "all" && result.articleId) {
+        setImportedArticles(prev => ({ ...prev, [targetLink]: result.articleId }));
+      }
       success(result.message || "Importation terminée avec succès !");
     } catch (err: any) {
       error(err.message || "Erreur d'importation.");
@@ -115,10 +179,17 @@ export default function SerperIntegration() {
   };
 
   return (
-    <DashboardLayout
-      title="🌍 Importateur d'Actualités Serper"
-      subtitle="Recherchez et importez des articles économiques du Sahel directement depuis Google News"
-    >
+    <div className="space-y-6">
+      {/* Title Header */}
+      <div className="flex flex-col mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
+          🌍 Importateur d'Actualités Serper
+        </h1>
+        <p className="text-gray-500 mt-1 text-sm">
+          Recherchez et importez des articles économiques du Sahel directement depuis Google News
+        </p>
+      </div>
+
       <div className="space-y-6">
         {/* Search form bar */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
@@ -209,6 +280,122 @@ export default function SerperIntegration() {
                     <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">
                       {item.snippet}
                     </p>
+
+                    {!importedArticles[item.link] && (
+                      <div className="bg-gray-50 p-4 rounded-xl mb-4 border border-gray-100 text-xs space-y-3">
+                        <p className="font-bold text-gray-700">Options d'importation :</p>
+                        
+                        {/* Category Selector */}
+                        <div className="grid grid-cols-3 items-center gap-2">
+                          <label className="text-gray-500 font-medium">Catégorie :</label>
+                          <select
+                            value={articleSettings[item.link]?.categoryId || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setArticleSettings(prev => ({
+                                ...prev,
+                                [item.link]: {
+                                  ...(prev[item.link] || { featuredImage: "", publishedAt: "", status: "draft" }),
+                                  categoryId: val
+                                }
+                              }));
+                            }}
+                            className="col-span-2 bg-white border border-gray-200 rounded p-1 text-gray-700 focus:outline-none focus:ring-1 focus:ring-amani-primary"
+                          >
+                            <option value="">Sélectionner une catégorie</option>
+                            {categories.map((cat) => (
+                              <option key={cat.id} value={cat.id}>
+                                {cat.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Image URL Input */}
+                        <div className="grid grid-cols-3 items-center gap-2">
+                          <label className="text-gray-500 font-medium">Image URL :</label>
+                          <input
+                            type="text"
+                            placeholder="https://..."
+                            value={articleSettings[item.link]?.featuredImage || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setArticleSettings(prev => ({
+                                ...prev,
+                                [item.link]: {
+                                  ...(prev[item.link] || { categoryId: "", publishedAt: "", status: "draft" }),
+                                  featuredImage: val
+                                }
+                              }));
+                            }}
+                            className="col-span-2 bg-white border border-gray-200 rounded p-1 text-gray-700 focus:outline-none focus:ring-1 focus:ring-amani-primary"
+                          />
+                        </div>
+
+                        {/* Publication Date Input */}
+                        <div className="grid grid-cols-3 items-center gap-2">
+                          <label className="text-gray-500 font-medium">Date pub. :</label>
+                          <input
+                            type="date"
+                            value={articleSettings[item.link]?.publishedAt || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setArticleSettings(prev => ({
+                                ...prev,
+                                [item.link]: {
+                                  ...(prev[item.link] || { categoryId: "", featuredImage: "", status: "draft" }),
+                                  publishedAt: val
+                                }
+                              }));
+                            }}
+                            className="col-span-2 bg-white border border-gray-200 rounded p-1 text-gray-700 focus:outline-none focus:ring-1 focus:ring-amani-primary"
+                          />
+                        </div>
+
+                        {/* Summary Input */}
+                        <div className="grid grid-cols-3 items-start gap-2">
+                          <label className="text-gray-500 font-medium pt-1">Résumé (Retenir) :</label>
+                          <textarea
+                            placeholder="Ce qu'il faut retenir de l'article..."
+                            value={articleSettings[item.link]?.summary || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setArticleSettings(prev => ({
+                                ...prev,
+                                [item.link]: {
+                                  ...(prev[item.link] || { categoryId: "", featuredImage: "", publishedAt: "", status: "draft" }),
+                                  summary: val
+                                }
+                              }));
+                            }}
+                            rows={3}
+                            className="col-span-2 bg-white border border-gray-200 rounded p-1.5 text-gray-700 focus:outline-none focus:ring-1 focus:ring-amani-primary resize-y"
+                          />
+                        </div>
+
+                        {/* Status Selector */}
+                        <div className="grid grid-cols-3 items-center gap-2">
+                          <label className="text-gray-500 font-medium">Statut :</label>
+                          <select
+                            value={articleSettings[item.link]?.status || "draft"}
+                            onChange={(e) => {
+                              const val = e.target.value as 'draft' | 'published';
+                              setArticleSettings(prev => ({
+                                ...prev,
+                                [item.link]: {
+                                  ...(prev[item.link] || { categoryId: "", featuredImage: "", publishedAt: "", summary: "" }),
+                                  status: val
+                                }
+                              }));
+                            }}
+                            className="col-span-2 bg-white border border-gray-200 rounded p-1 text-gray-700 focus:outline-none focus:ring-1 focus:ring-amani-primary"
+                          >
+                            <option value="draft">Brouillon (Draft)</option>
+                            <option value="published">Publié (Published)</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center justify-between border-t border-gray-100 pt-4 mt-2">
                     <a
@@ -221,18 +408,27 @@ export default function SerperIntegration() {
                       <ArrowUpRight className="w-3.5 h-3.5" />
                     </a>
                     
-                    <button
-                      onClick={() => handleImport(item.link)}
-                      disabled={isImporting !== null}
-                      className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 hover:border-amani-primary hover:bg-amani-primary/5 transition-all text-gray-700 hover:text-amani-primary flex items-center gap-1"
-                    >
-                      {isImporting === item.link ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Plus className="w-3.5 h-3.5" />
-                      )}
-                      Importer
-                    </button>
+                    {importedArticles[item.link] ? (
+                      <Link
+                        to={`/dashboard/articles/edit/${importedArticles[item.link]}`}
+                        className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-yellow-600 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-700 hover:text-yellow-800 transition-all flex items-center gap-1"
+                      >
+                        Modifier l'article →
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() => handleImport(item.link)}
+                        disabled={isImporting !== null}
+                        className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 hover:border-amani-primary hover:bg-amani-primary/5 transition-all text-gray-700 hover:text-amani-primary flex items-center gap-1"
+                      >
+                        {isImporting === item.link ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Plus className="w-3.5 h-3.5" />
+                        )}
+                        Importer
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -253,6 +449,6 @@ export default function SerperIntegration() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </div>
   );
 }

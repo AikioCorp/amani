@@ -38,7 +38,7 @@ export function Navigation() {
   };
 
   return (
-    <nav className="bg-amani-primary border-b border-amani-primary/20 sticky top-0 z-50 shadow-lg">
+    <nav className="bg-[#373B3A] border-b border-[#373B3A]/20 sticky top-0 z-50 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 lg:h-20">
           {/* Logo */}

@@ -42,6 +42,7 @@ import Tech from "./pages/Tech";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import SerperIntegration from "./pages/SerperIntegration";
+import ImportsManagement from "./pages/ImportsManagement";
 
 // Dashboard Pages
 import DashboardMain from "./pages/DashboardMain";
@@ -165,6 +166,7 @@ const AppContent = () => {
           <Route path="logs" element={<Logs />} />
           <Route path="integrations" element={<Integrations />} />
           <Route path="serper" element={<SerperIntegration />} />
+          <Route path="imports" element={<ImportsManagement />} />
         </Route>
 
         {/* 404 route */}

@@ -79,6 +79,12 @@ const SECTIONS: Section[] = [
         icon: Globe,
         permission: "create_articles",
       },
+      {
+        label: "Imports Amani",
+        to: "/dashboard/imports",
+        icon: ListChecks,
+        permission: "create_articles",
+      },
     ],
   },
   {

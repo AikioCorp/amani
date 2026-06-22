@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { UnifiedContent } from "../types/database";
+import { sanitizeHtml } from "../lib/sanitize";
 import {
   Share2,
   Copy,
@@ -394,7 +395,7 @@ export default function ArticleReader({
           {article.content ? (
             <div
               className="text-gray-700 leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: article.content }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.content) }}
             />
           ) : (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-center">

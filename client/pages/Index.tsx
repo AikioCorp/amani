@@ -46,7 +46,138 @@ import {
 const ENABLE_MARKET_WIDGET = true;
 const ENABLE_MARKET_FETCH = false;
 
+interface ArticleSectionProps {
+  title: string;
+  subtitle?: string;
+  viewAllLink: string;
+  articles: any[];
+  loading: boolean;
+}
 
+const ArticleSection: React.FC<ArticleSectionProps> = ({
+  title,
+  subtitle,
+  viewAllLink,
+  articles = [],
+  loading,
+}) => {
+  const featured = articles[0];
+  const listItems = articles.slice(1, 4);
+
+  if (!loading && (!articles || articles.length === 0)) {
+    return null;
+  }
+
+  return (
+    <section className="py-14 bg-white border-b border-[#E5DDD5]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between pb-4 mb-8 border-b border-[#E5DDD5]">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 border-l-4 border-[#9C8464] pl-3 leading-none uppercase tracking-wider">
+              {title}
+            </h2>
+            {subtitle && (
+              <p className="text-xs text-gray-500 mt-2 font-medium italic">
+                {subtitle}
+              </p>
+            )}
+          </div>
+          <Link
+            to={viewAllLink}
+            className="text-xs font-semibold text-[#9C8464] hover:opacity-80 transition-opacity whitespace-nowrap ml-4"
+          >
+            Voir plus →
+          </Link>
+        </div>
+
+        {loading ? (
+          <div className="grid lg:grid-cols-3 gap-8 animate-pulse">
+            <div className="lg:col-span-2 space-y-4">
+              <div className="aspect-[16/10] bg-gray-200 rounded-lg" />
+              <div className="h-4 bg-gray-200 rounded w-1/4" />
+              <div className="h-6 bg-gray-200 rounded w-3/4" />
+              <div className="h-4 bg-gray-200 rounded w-5/6" />
+            </div>
+            <div className="lg:col-span-1 space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex gap-4">
+                  <div className="w-24 h-20 bg-gray-200 rounded-lg flex-shrink-0" />
+                  <div className="flex-1 space-y-2 py-1">
+                    <div className="h-3 bg-gray-200 rounded w-1/3" />
+                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Featured Article */}
+            <div className="lg:col-span-2">
+              {featured && (
+                <Link to={`/article/${featured.id}`} className="group block">
+                  <div className="relative aspect-[16/10] overflow-hidden rounded-lg bg-gray-100">
+                    <img
+                      src={featured.featured_image || '/placeholder.svg'}
+                      alt={featured.title}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                    {featured.category_info?.name && (
+                      <span className="absolute top-4 left-4 bg-black/80 text-white text-[10px] uppercase tracking-widest font-bold px-3 py-1.5 rounded">
+                        {featured.category_info.name}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-4">
+                    {featured.published_at && (
+                      <span className="block text-[11px] font-bold text-[#9C8464] tracking-wider mb-1 uppercase">
+                        {new Date(featured.published_at).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    )}
+                    <h3 className="text-xl font-bold text-gray-950 leading-snug group-hover:text-[#9C8464] transition-colors mb-2">
+                      {featured.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 line-clamp-2">
+                      {featured.summary}
+                    </p>
+                  </div>
+                </Link>
+              )}
+            </div>
+
+            {/* Sidebar list */}
+            <div className="lg:col-span-1 flex flex-col gap-6">
+              {listItems.map((item, index) => (
+                <Link key={index} to={`/article/${item.id}`} className="group flex gap-4">
+                  <img
+                    src={item.featured_image || '/placeholder.svg'}
+                    alt={item.title}
+                    className="w-24 h-20 object-cover rounded-lg bg-gray-100 flex-shrink-0"
+                    loading="lazy"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[10px] font-bold text-[#9C8464] tracking-widest uppercase mb-1">
+                      {item.category_info?.name || 'ACTUALITÉ'}
+                      {item.read_time && ` • ${item.read_time} MIN READ`}
+                    </div>
+                    <h4 className="text-sm font-bold text-gray-950 leading-snug line-clamp-2 group-hover:text-[#9C8464] transition-colors">
+                      {item.title}
+                    </h4>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
 
 export default function Index() {
   // État pour les données BRVM et commodités en temps réel
@@ -220,34 +351,34 @@ export default function Index() {
   const otherArticles = React.useMemo(() => (articles || []).slice(1, 4), [articles]);
 
   return (
-    <div className="min-h-screen bg-[#E5DDD2]">
+    <div className="min-h-screen bg-[#FDFBF9] font-sans antialiased text-gray-900">
+      
       {/* Hero Section – utilise le dernier article publié s'il existe */}
-      <section className="bg-amani-primary text-white">
+      <section className="bg-[#373B3A] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h1 className="text-4xl lg:text-6xl font-bold mb-6">À la une</h1>
-              <h2 className="text-2xl lg:text-3xl font-semibold mb-4">
+              <h1 className="text-4xl lg:text-5xl font-extrabold mb-6 tracking-tight">À la une</h1>
+              <h2 className="text-2xl lg:text-3xl font-bold mb-4 leading-snug">
                 <Link
                   to={heroArticle ? `/article/${heroArticle.id}` : "/article/1"}
-                  className="hover:underline"
+                  className="hover:text-[#EADFC9] transition-colors"
                 >
-                  {heroArticle ? heroArticle.title : "Le Mali lance son plus grand projet d'infrastructure"}
+                  {heroArticle ? heroArticle.title : "La Plateforme Interopérable du Système de Paiement Instantané (PI-SPI) de la BCEAO"}
                 </Link>
               </h2>
-              {/* Extrait et métadonnées supprimés: on souhaite uniquement le titre cliquable */}
             </div>
             <div className="relative">
               <img
-                src={heroArticle?.featured_image || "/placeholder.svg"}
-                alt={heroArticle?.title || "Infrastructure project"}
-                className="w-full h-80 object-cover rounded-lg shadow-xl"
+                src={heroArticle?.featured_image || "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=800&q=80"}
+                alt={heroArticle?.title || "La Plateforme Interopérable du Système de Paiement Instantané (PI-SPI) de la BCEAO"}
+                className="w-full h-80 object-cover rounded-2xl shadow-2xl"
                 loading="lazy"
                 decoding="async"
                 onError={(e) => {
                   const target = e.currentTarget as HTMLImageElement;
                   target.onerror = null;
-                  target.src = "/placeholder.svg";
+                  target.src = "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=800&q=80";
                 }}
               />
             </div>
@@ -255,586 +386,673 @@ export default function Index() {
         </div>
       </section>
 
-
-      
-
       {/* Key Indices Widget - BRVM en temps réel */}
       {ENABLE_MARKET_WIDGET && (
-      <section className="py-8 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between pb-4 mb-6 border-b border-[#E5DDD5]">
-            <h2 className="text-sm font-bold tracking-widest text-[#9C8464] uppercase">
-              Indices BRVM en temps réel
-            </h2>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => {
-                  if (ENABLE_MARKET_FETCH) {
-                    loadAllData(true);
-                  } else {
-                    setLastUpdate(new Date());
-                  }
-                }}
-                disabled={loading}
-                className="flex items-center gap-1.5 text-xs font-semibold text-[#9C8464] hover:opacity-80 disabled:opacity-50 transition-opacity"
-              >
-                <RefreshCw
-                  className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
-                />
-                Actualiser
-              </button>
+        <section className="py-8 bg-white border-b border-[#F0EAE1]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between pb-4 mb-6 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900">
+                Indices BRVM en temps réel
+              </h2>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => {
+                    if (ENABLE_MARKET_FETCH) {
+                      loadAllData(true);
+                    } else {
+                      setLastUpdate(new Date());
+                    }
+                  }}
+                  disabled={loading}
+                  className="flex items-center gap-1 text-xs font-semibold text-gray-400 hover:text-gray-600 disabled:opacity-50 transition-colors"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+                  Actualiser
+                </button>
+                <Link to="/indices" className="text-xs font-semibold text-gray-400 hover:text-gray-600 transition-colors">
+                  Voir tous les indices →
+                </Link>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {keyIndices.map((index, i) => (
+                <div
+                  key={i}
+                  className="bg-[#FDFDFD] border border-gray-100 p-6 rounded-xl relative hover:shadow-sm transition-all"
+                >
+                  <div className="absolute top-3 right-3 w-1.5 h-1.5 bg-yellow-400 rounded-full" />
+                  <div className="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-3">
+                    {index.name}
+                  </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl font-black text-gray-900">
+                      {index.value}
+                    </span>
+                    <RefreshCw className="w-3.5 h-3.5 text-gray-300 cursor-pointer hover:text-[#9C8464] transition-colors" />
+                  </div>
+                  <div className={`flex items-center gap-0.5 text-xs font-bold ${
+                    index.trend === "up" ? "text-green-600" : index.trend === "down" ? "text-red-600" : "text-gray-400"
+                  }`}>
+                    {index.trend === "up" && <span>↗</span>}
+                    {index.trend === "down" && <span>↘</span>}
+                    {index.trend === "neutral" && <span>→</span>}
+                    <span>{index.change}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            {keyIndices.map((index, i) => (
-              <div
-                key={i}
-                className={`bg-[#F5F5F5] border border-[#EAEAEA] p-6 rounded relative transition-all duration-300 ${loading ? "opacity-50" : "opacity-100"}`}
-              >
-                {loading && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-white/50 rounded">
-                    <RefreshCw className="w-5 h-5 animate-spin text-[#9C8464]" />
-                  </div>
-                )}
-                <div className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold mb-2">
-                  {index.name}
-                </div>
-                <div className="text-3xl font-bold text-gray-900 mb-1">
-                  {index.value}
-                </div>
-                <div className="flex items-center gap-1 text-[13px] font-semibold text-[#9C8464]">
-                  {index.trend === "up" && <span>↗</span>}
-                  {index.trend === "down" && <span>↘</span>}
-                  {index.trend === "neutral" && <span>→</span>}
-                  <span>{index.change}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
       )}
 
-      {/* Dernières actualités – affiche les articles publiés en base */}
-      <section className="py-16 bg-gradient-to-br from-gray-50 to-white">
+      {/* 1. Dernières Actualités Section */}
+      <section className="py-12 bg-white border-b border-[#F0EAE1]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-amani-primary mb-4">
-              Dernières actualités
-            </h2>
-            <p className="text-xl text-gray-600">
-              Restez informé des derniers développements économiques
-            </p>
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-8 mb-16">
-            {/* Featured Article - Left (2/3) */}
-            <div className="lg:col-span-2">
-              <div className="relative overflow-hidden rounded-2xl shadow-2xl group">
-                <img
-                  src={heroArticle?.featured_image || "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&h=500&fit=crop"}
-                  alt={heroArticle?.title || "Article principal"}
-                  className="w-full h-96 lg:h-[500px] object-cover group-hover:scale-105 transition-transform duration-700"
-                  loading="lazy"
-                  decoding="async"
-                  onError={(e) => {
-                    const target = e.currentTarget as HTMLImageElement;
-                    target.onerror = null;
-                    target.src = "/placeholder.svg";
-                  }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                <div className="absolute bottom-0 left-0 right-0 p-8">
-                  <span className="inline-block bg-red-600 text-white px-4 py-2 rounded-full text-sm font-bold mb-4 shadow-lg">
-                    🔥 À LA UNE
-                  </span>
-                  <h3 className="text-3xl lg:text-4xl font-bold text-white mb-4 leading-tight">
-                    <Link to={heroArticle ? `/article/${heroArticle.id}` : '/article/1'} className="hover:underline">
-                      {heroArticle?.title || 'Le Mali annonce de nouveaux investissements dans les infrastructures'}
-                    </Link>
-                  </h3>
-                  {/* Meta et résumé masqués sur la grande carte à la demande: on garde seulement le titre */}
-                </div>
-              </div>
+          <div className="flex items-center justify-between pb-4 mb-8 border-b border-[#EADFC9]">
+            <div className="flex items-center gap-3">
+              <span className="w-1.5 h-6 bg-[#9C8464] block rounded-sm"></span>
+              <h2 className="text-xl font-bold tracking-wider text-gray-900 uppercase">
+                Dernières Actualités
+              </h2>
             </div>
-
-            {/* News List - Right (1/3) */}
-            <div className="bg-white rounded-2xl shadow-xl p-6 h-fit">
-              <div className="flex items-center justify-between mb-6">
-                <h4 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                  <div className="w-1 h-6 bg-red-600 rounded-full"></div>
-                  Dernières actualités
-                </h4>
-                <Link
-                  to="/actualites"
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                >
-                  Voir tout →
-                </Link>
-              </div>
-
-              <div className="space-y-3">
-                {(otherArticles.length ? otherArticles : []).map((item, index) => (
-                  <Link key={index} to={`/article/${item.id}`} className="block group">
-                    <div className="relative h-28 rounded-xl overflow-hidden">
-                      <img
-                        src={item.featured_image || '/placeholder.svg'}
-                        alt={item.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                        decoding="async"
-                        onError={(e) => {
-                          const target = e.currentTarget as HTMLImageElement;
-                          target.onerror = null;
-                          target.src = '/placeholder.svg';
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-                      <div className="absolute bottom-0 left-0 right-0 p-3">
-                        <h5 className="font-semibold text-white leading-snug line-clamp-2">
-                          {item.title}
-                        </h5>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Actualités Économiques – section dédiée (placée après Dernières actualités) */}
-      <section className="py-14 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-end justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-bold text-amani-primary">Actualités économiques</h2>
-              <p className="text-gray-600 mt-1">Sélection d'articles récents dans la catégorie Économie</p>
-            </div>
-            <Link to="/economie" className="text-amani-primary hover:underline">Voir plus →</Link>
-          </div>
-
-          {/* Grid des articles économiques */}
-          {loadingEco ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl shadow overflow-hidden animate-pulse">
-                  <div className="aspect-[16/10] bg-gray-200" />
-                  <div className="p-4 space-y-2">
-                    <div className="h-4 bg-gray-200 rounded w-1/3" />
-                    <div className="h-5 bg-gray-200 rounded w-3/4" />
-                    <div className="h-4 bg-gray-200 rounded w-2/3" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {(ecoArticles || []).map((item) => (
-                <Link key={item.id} to={`/article/${item.id}`} className="group block bg-white rounded-xl shadow hover:shadow-lg transition-shadow overflow-hidden">
-                  <div className="relative aspect-[16/10] bg-gray-100">
-                    <img
-                      src={item.featured_image || '/placeholder.svg'}
-                      alt={item.title}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      loading="lazy"
-                      decoding="async"
-                      onError={(e) => {
-                        const target = e.currentTarget as HTMLImageElement;
-                        target.onerror = null;
-                        target.src = '/placeholder.svg';
-                      }}
-                    />
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amani-secondary/20 text-amani-primary font-medium">
-                        {item.category_info?.name || 'Économie'}
-                      </span>
-                      {item.published_at && (
-                        <span>{new Date(item.published_at).toLocaleDateString('fr-FR')}</span>
-                      )}
-                    </div>
-                    <h3 className="text-base font-semibold text-[#373B3A] leading-snug line-clamp-2 mb-1">{item.title}</h3>
-                    <p className="text-sm text-gray-600 line-clamp-2">{item.summary}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-
-          {(!ecoArticles || ecoArticles.length === 0) && (
-            <div className="text-gray-500">Aucune actualité économique disponible pour le moment.</div>
-          )}
-        </div>
-      </section>
-
-      {/* Marchés financiers */}
-      <section className="py-14 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-end justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-bold text-amani-primary">Marchés</h2>
-              <p className="text-gray-600 mt-1">Dernières tendances des marchés et de la bourse</p>
-            </div>
-            <Link to="/marche" className="text-amani-primary hover:underline">Voir plus →</Link>
-          </div>
-          {loadingMarket ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl shadow overflow-hidden animate-pulse">
-                  <div className="aspect-[16/10] bg-gray-200" />
-                  <div className="p-4 space-y-2">
-                    <div className="h-4 bg-gray-200 rounded w-1/3" />
-                    <div className="h-5 bg-gray-200 rounded w-3/4" />
-                    <div className="h-4 bg-gray-200 rounded w-2/3" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {(marketArticles || []).map((item) => (
-                <Link key={item.id} to={`/article/${item.id}`} className="group block bg-white rounded-xl shadow hover:shadow-lg transition-shadow overflow-hidden">
-                  <div className="relative aspect-[16/10] bg-gray-100">
-                    <img
-                      src={item.featured_image || '/placeholder.svg'}
-                      alt={item.title}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      loading="lazy"
-                      decoding="async"
-                      onError={(e) => {
-                        const target = e.currentTarget as HTMLImageElement;
-                        target.onerror = null;
-                        target.src = '/placeholder.svg';
-                      }}
-                    />
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amani-secondary/20 text-amani-primary font-medium">
-                        {item.category_info?.name || 'Marché'}
-                      </span>
-                      {item.published_at && (
-                        <span>{new Date(item.published_at).toLocaleDateString('fr-FR')}</span>
-                      )}
-                    </div>
-                    <h3 className="text-base font-semibold text-[#373B3A] leading-snug line-clamp-2 mb-1">{item.title}</h3>
-                    <p className="text-sm text-gray-600 line-clamp-2">{item.summary}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-          {(!marketArticles || marketArticles.length === 0) && (
-            <div className="text-gray-500">Aucun article marché disponible pour le moment.</div>
-          )}
-        </div>
-      </section>
-
-      {/* Industrie */}
-      <section className="py-14 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-end justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-bold text-amani-primary">Industrie</h2>
-              <p className="text-gray-600 mt-1">Actualités des secteurs industriels clés</p>
-            </div>
-            <Link to="/industrie" className="text-amani-primary hover:underline">Voir plus →</Link>
-          </div>
-          {loadingIndustry ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl shadow overflow-hidden animate-pulse">
-                  <div className="aspect-[16/10] bg-gray-200" />
-                  <div className="p-4 space-y-2">
-                    <div className="h-4 bg-gray-200 rounded w-1/3" />
-                    <div className="h-5 bg-gray-200 rounded w-3/4" />
-                    <div className="h-4 bg-gray-200 rounded w-2/3" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {(industryArticles || []).map((item) => (
-                <Link key={item.id} to={`/article/${item.id}`} className="group block bg-white rounded-xl shadow hover:shadow-lg transition-shadow overflow-hidden">
-                  <div className="relative aspect-[16/10] bg-gray-100">
-                    <img
-                      src={item.featured_image || '/placeholder.svg'}
-                      alt={item.title}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      loading="lazy"
-                      decoding="async"
-                      onError={(e) => {
-                        const target = e.currentTarget as HTMLImageElement;
-                        target.onerror = null;
-                        target.src = '/placeholder.svg';
-                      }}
-                    />
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amani-secondary/20 text-amani-primary font-medium">
-                        {item.category_info?.name || 'Industrie'}
-                      </span>
-                      {item.published_at && (
-                        <span>{new Date(item.published_at).toLocaleDateString('fr-FR')}</span>
-                      )}
-                    </div>
-                    <h3 className="text-base font-semibold text-[#373B3A] leading-snug line-clamp-2 mb-1">{item.title}</h3>
-                    <p className="text-sm text-gray-600 line-clamp-2">{item.summary}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-          {(!industryArticles || industryArticles.length === 0) && (
-            <div className="text-gray-500">Aucun article industrie disponible pour le moment.</div>
-          )}
-        </div>
-      </section>
-
-      {/* Investissement */}
-      <section className="py-14 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-end justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-bold text-amani-primary">Investissement</h2>
-              <p className="text-gray-600 mt-1">Opportunités et mouvements d'investissement</p>
-            </div>
-            <Link to="/investissement" className="text-amani-primary hover:underline">Voir plus →</Link>
-          </div>
-          {loadingInvest ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl shadow overflow-hidden animate-pulse">
-                  <div className="aspect-[16/10] bg-gray-200" />
-                  <div className="p-4 space-y-2">
-                    <div className="h-4 bg-gray-200 rounded w-1/3" />
-                    <div className="h-5 bg-gray-200 rounded w-3/4" />
-                    <div className="h-4 bg-gray-200 rounded w-2/3" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {(investArticles || []).map((item) => (
-                <Link key={item.id} to={`/article/${item.id}`} className="group block bg-white rounded-xl shadow hover:shadow-lg transition-shadow overflow-hidden">
-                  <div className="relative aspect-[16/10] bg-gray-100">
-                    <img
-                      src={item.featured_image || '/placeholder.svg'}
-                      alt={item.title}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      loading="lazy"
-                      decoding="async"
-                      onError={(e) => {
-                        const target = e.currentTarget as HTMLImageElement;
-                        target.onerror = null;
-                        target.src = '/placeholder.svg';
-                      }}
-                    />
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amani-secondary/20 text-amani-primary font-medium">
-                        {item.category_info?.name || 'Investissement'}
-                      </span>
-                      {item.published_at && (
-                        <span>{new Date(item.published_at).toLocaleDateString('fr-FR')}</span>
-                      )}
-                    </div>
-                    <h3 className="text-base font-semibold text-[#373B3A] leading-snug line-clamp-2 mb-1">{item.title}</h3>
-                    <p className="text-sm text-gray-600 line-clamp-2">{item.summary}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-          {(!investArticles || investArticles.length === 0) && (
-            <div className="text-gray-500">Aucun article investissement disponible pour le moment.</div>
-          )}
-        </div>
-      </section>
-
-      {/* Insights */}
-      <section className="py-14 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-end justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-bold text-amani-primary">Insights</h2>
-              <p className="text-gray-600 mt-1">Analyses et perspectives des experts</p>
-            </div>
-            <Link to="/insights" className="text-amani-primary hover:underline">Voir plus →</Link>
-          </div>
-          {loadingInsights ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl shadow overflow-hidden animate-pulse">
-                  <div className="aspect-[16/10] bg-gray-200" />
-                  <div className="p-4 space-y-2">
-                    <div className="h-4 bg-gray-200 rounded w-1/3" />
-                    <div className="h-5 bg-gray-200 rounded w-3/4" />
-                    <div className="h-4 bg-gray-200 rounded w-2/3" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {(insightsArticles || []).map((item) => (
-                <Link key={item.id} to={`/article/${item.id}`} className="group block bg-white rounded-xl shadow hover:shadow-lg transition-shadow overflow-hidden">
-                  <div className="relative aspect-[16/10] bg-gray-100">
-                    <img
-                      src={item.featured_image || '/placeholder.svg'}
-                      alt={item.title}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      loading="lazy"
-                      decoding="async"
-                      onError={(e) => {
-                        const target = e.currentTarget as HTMLImageElement;
-                        target.onerror = null;
-                        target.src = '/placeholder.svg';
-                      }}
-                    />
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amani-secondary/20 text-amani-primary font-medium">
-                        {item.category_info?.name || 'Insights'}
-                      </span>
-                      {item.published_at && (
-                        <span>{new Date(item.published_at).toLocaleDateString('fr-FR')}</span>
-                      )}
-                    </div>
-                    <h3 className="text-base font-semibold text-[#373B3A] leading-snug line-clamp-2 mb-1">{item.title}</h3>
-                    <p className="text-sm text-gray-600 line-clamp-2">{item.summary}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-          {(!insightsArticles || insightsArticles.length === 0) && (
-            <div className="text-gray-500">Aucun insight disponible pour le moment.</div>
-          )}
-        </div>
-      </section>
-
-      {/* Tech */}
-      <section className="py-14 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-end justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-bold text-amani-primary">Tech</h2>
-              <p className="text-gray-600 mt-1">Innovations et technologie au service de l'économie</p>
-            </div>
-            <Link to="/tech" className="text-amani-primary hover:underline">Voir plus →</Link>
-          </div>
-          {loadingTech ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl shadow overflow-hidden animate-pulse">
-                  <div className="aspect-[16/10] bg-gray-200" />
-                  <div className="p-4 space-y-2">
-                    <div className="h-4 bg-gray-200 rounded w-1/3" />
-                    <div className="h-5 bg-gray-200 rounded w-3/4" />
-                    <div className="h-4 bg-gray-200 rounded w-2/3" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {(techArticles || []).map((item) => (
-                <Link key={item.id} to={`/article/${item.id}`} className="group block bg-white rounded-xl shadow hover:shadow-lg transition-shadow overflow-hidden">
-                  <div className="relative aspect-[16/10] bg-gray-100">
-                    <img
-                      src={item.featured_image || '/placeholder.svg'}
-                      alt={item.title}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      loading="lazy"
-                      decoding="async"
-                      onError={(e) => {
-                        const target = e.currentTarget as HTMLImageElement;
-                        target.onerror = null;
-                        target.src = '/placeholder.svg';
-                      }}
-                    />
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amani-secondary/20 text-amani-primary font-medium">
-                        {item.category_info?.name || 'Tech'}
-                      </span>
-                      {item.published_at && (
-                        <span>{new Date(item.published_at).toLocaleDateString('fr-FR')}</span>
-                      )}
-                    </div>
-                    <h3 className="text-base font-semibold text-[#373B3A] leading-snug line-clamp-2 mb-1">{item.title}</h3>
-                    <p className="text-sm text-gray-600 line-clamp-2">{item.summary}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-          {(!techArticles || techArticles.length === 0) && (
-            <div className="text-gray-500">Aucun article tech disponible pour le moment.</div>
-          )}
-        </div>
-      </section>
-
-      {/* Podcast Section – données réelles Supabase */}
-      <section className="py-16 bg-amani-secondary/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold text-amani-primary">Podcasts</h2>
-            <Link to="/podcast" className="text-amani-primary hover:underline">
-              Tous les podcasts →
+            <Link
+              to="/actualites"
+              className="text-xs font-bold text-[#9C8464] hover:underline uppercase tracking-widest whitespace-nowrap"
+            >
+              Voir toutes les actualités →
             </Link>
           </div>
-          <div className="grid lg:grid-cols-2 gap-6 lg:gap-8">
-            {(podcasts || []).map((podcast) => (
-              <div
-                key={podcast.id}
-                className="bg-white rounded-xl shadow-md p-5 hover:shadow-lg transition-shadow"
-              >
-                <div className="flex gap-4">
-                  <div className="relative w-36 md:w-40 aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Left featured article (Overlay card style) */}
+            <div className="lg:col-span-2">
+              {articles && articles[0] ? (
+                <Link to={`/article/${articles[0].id}`} className="group relative block h-[450px] overflow-hidden rounded-xl bg-gray-900 shadow-lg">
+                  <img
+                    src={articles[0].featured_image || 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=1200&q=80'}
+                    alt={articles[0].title}
+                    className="absolute inset-0 w-full h-full object-cover opacity-85 group-hover:scale-105 transition-transform duration-700 ease-out"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+                  <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col justify-end h-full text-white">
+                    <span className="self-start mb-3 bg-[#9C8464] text-white text-[10px] uppercase tracking-widest font-black px-3 py-1.5 rounded-sm">
+                      À la une
+                    </span>
+                    <h3 className="text-2xl md:text-3xl font-extrabold leading-snug mb-3 drop-shadow-sm group-hover:text-[#EADFC9] transition-colors">
+                      {articles[0].title}
+                    </h3>
+                    <p className="text-sm text-gray-200 line-clamp-2 font-medium opacity-90 max-w-2xl">
+                      {articles[0].summary}
+                    </p>
+                  </div>
+                </Link>
+              ) : (
+                <div className="h-[450px] bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
+                  Aucun article disponible
+                </div>
+              )}
+            </div>
+
+            {/* Right stack list */}
+            <div className="lg:col-span-1 flex flex-col gap-3">
+              {(articles || []).slice(1, 5).map((item, index) => (
+                <Link key={index} to={`/article/${item.id}`} className="group flex gap-4 items-center bg-gray-50/50 p-3 rounded-lg border border-gray-100 hover:bg-white hover:shadow-md transition-all duration-300">
+                  <div className="relative w-28 h-20 overflow-hidden rounded-lg bg-gray-100 flex-shrink-0">
                     <img
-                      src={(podcast as any).featured_image || "/placeholder.svg"}
-                      alt={podcast.title}
-                      className="absolute inset-0 w-full h-full object-cover"
+                      src={item.featured_image || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=300&q=80'}
+                      alt={item.title}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-base md:text-lg font-semibold text-amani-primary leading-tight line-clamp-2 mb-1">
-                      {podcast.title}
-                    </h3>
-                    {podcast.summary && (
-                      <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                        {podcast.summary}
-                      </p>
+                    <span className="text-[9px] font-bold text-[#9C8464] tracking-widest uppercase mb-1 block">
+                      {item.category_info?.name || 'ACTUALITÉ'}
+                    </span>
+                    <h4 className="text-sm font-bold text-gray-950 leading-snug line-clamp-2 group-hover:text-[#9C8464] transition-colors mb-1">
+                      {item.title}
+                    </h4>
+                    {item.read_time && (
+                      <span className="text-[10px] text-gray-400 font-medium">
+                        {item.read_time} min de lecture
+                      </span>
                     )}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 text-xs md:text-sm text-gray-500">
-                        {(podcast as any)?.podcast_data?.duration && (
-                          <span>{(podcast as any).podcast_data.duration}</span>
-                        )}
-                        <span>{podcast.published_at ? new Date(podcast.published_at).toLocaleDateString('fr-FR') : ''}</span>
-                      </div>
-                      <button className="flex items-center gap-1.5 px-3 py-1.5 bg-amani-primary text-white rounded-md hover:bg-amani-primary/90 text-sm">
-                        <Play className="w-4 h-4" />
-                        <span className="hidden sm:inline">Écouter</span>
-                      </button>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 2. Actualités Économiques Section */}
+      <section className="py-12 bg-[#373B3A] text-white border-b border-[#2C2F2E]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="flex items-center justify-between pb-4 mb-8 border-b border-white/10">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-6 bg-[#9C8464] block rounded-sm"></span>
+              <h2 className="text-xl font-bold tracking-wider text-white uppercase">
+                Actualités Économiques
+              </h2>
+            </div>
+            <Link
+              to="/economie"
+              className="text-[10px] font-extrabold border border-white/10 text-white bg-transparent hover:bg-white/5 px-3 py-1.5 rounded uppercase tracking-wider transition-colors"
+            >
+              Voir +
+            </Link>
+          </div>
+
+          {/* Top Block: Split row */}
+          {ecoArticles && ecoArticles[0] ? (
+            <div className="grid lg:grid-cols-5 gap-8 items-start mb-8 pb-8 border-b border-white/10">
+              {/* Image Left */}
+              <div className="lg:col-span-3">
+                <Link to={`/article/${ecoArticles[0].id}`} className="group block overflow-hidden rounded-xl bg-gray-900 aspect-[16/9] shadow-sm relative">
+                  {ecoArticles[0].featured_image ? (
+                    <img
+                      src={ecoArticles[0].featured_image}
+                      alt={ecoArticles[0].title}
+                      className="w-full h-full object-cover opacity-90 group-hover:scale-102 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#2C2F2E] to-[#9C8464] flex items-center justify-center">
+                      <TrendingUp className="w-12 h-12 text-white/40" />
+                    </div>
+                  )}
+                </Link>
+              </div>
+              {/* Title & Summary Right */}
+              <div className="lg:col-span-2">
+                <Link to={`/article/${ecoArticles[0].id}`} className="group block">
+                  <h3 className="text-2xl md:text-3xl font-extrabold text-white leading-snug font-serif group-hover:text-[#EADFC9] transition-colors mb-4">
+                    {ecoArticles[0].title}
+                  </h3>
+                  <p className="text-sm text-gray-300 leading-relaxed line-clamp-4">
+                    {ecoArticles[0].summary}
+                  </p>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="h-[250px] bg-white/5 rounded-xl flex items-center justify-center text-gray-400 mb-8 border border-white/10">
+              Aucun article disponible
+            </div>
+          )}
+
+          {/* Bottom Block: 2x2 Grid */}
+          <div className="grid md:grid-cols-2 gap-x-8 gap-y-6">
+            {(ecoArticles || []).slice(1, 5).map((item, index) => (
+              <Link key={index} to={`/article/${item.id}`} className="group flex gap-4 items-center">
+                <div className="relative w-28 h-20 overflow-hidden rounded-lg bg-gray-900 flex-shrink-0 border border-white/10 shadow-sm flex items-center justify-center">
+                  {item.featured_image ? (
+                    <img
+                      src={item.featured_image}
+                      alt={item.title}
+                      className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#2C2F2E] to-[#3E342B] flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
+                      <BarChart3 className="w-6 h-6 text-[#9C8464]/60" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="text-[9px] font-bold text-[#9C8464] tracking-widest uppercase mb-1 block">
+                    {item.category_info?.name || 'ACTUALITÉ'}
+                  </span>
+                  <h4 className="text-sm font-bold text-white leading-snug line-clamp-2 group-hover:text-[#EADFC9] transition-colors">
+                    {item.title}
+                  </h4>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Bottom right see all button */}
+          <div className="flex justify-end mt-8">
+            <Link
+              to="/economie"
+              className="text-xs font-bold bg-transparent border border-white/20 text-white hover:bg-white/10 hover:border-white/40 px-4 py-2.5 rounded transition-all"
+            >
+              + Toute l'actualité éco
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Marchés & Indices BRVM (Clean dynamic flex row with vertical separators) */}
+      <section className="py-8 bg-white border-b border-[#F0EAE1]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between pb-3 mb-6 border-b border-gray-100">
+            <h3 className="text-xs font-extrabold tracking-widest text-gray-400 uppercase">
+              Marchés & Indices BRVM
+            </h3>
+            <button
+              onClick={() => {
+                if (ENABLE_MARKET_FETCH) {
+                  loadAllData(true);
+                } else {
+                  setLastUpdate(new Date());
+                }
+              }}
+              disabled={loading}
+              className="flex items-center gap-1 text-xs font-bold text-[#9C8464] hover:opacity-80 transition-opacity"
+            >
+              <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
+              <span className="text-[10px] tracking-wider uppercase">Actualiser les flux</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 divide-x divide-gray-100">
+            {[
+              { name: "BRVM 10", value: "185.42", change: "+0.32%", trend: "up" },
+              { name: "SONATEL", value: "16,250", change: "+1.85%", trend: "up" },
+              { name: "BOA / COTE D'IVOIRE", value: "655.957", change: "-0.08%", trend: "down" },
+              { name: "BOA NIGER", value: "1,450", change: "-0.37%", trend: "down" },
+              { name: "ORAGROUP", value: "2,890", change: "+0.85%", trend: "up" },
+              { name: "ECOBANK TG", value: "19", change: "0.00%", trend: "neutral" }
+            ].map((idx, i) => (
+              <div key={i} className="px-6 py-2 flex flex-col justify-center">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">
+                  {idx.name}
+                </span>
+                <div className="text-lg font-black text-gray-900 mb-1">
+                  {idx.value}
+                </div>
+                <div className={`flex items-center gap-0.5 text-xs font-extrabold ${
+                  idx.trend === 'up' ? 'text-green-600' : idx.trend === 'down' ? 'text-red-600' : 'text-gray-400'
+                }`}>
+                  {idx.trend === 'up' && <span>↗</span>}
+                  {idx.trend === 'down' && <span>↘</span>}
+                  {idx.trend === 'neutral' && <span>→</span>}
+                  <span>{idx.change}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 4. Industrie Section */}
+      <section className="py-12 bg-white border-b border-[#F0EAE1]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between pb-4 mb-8 border-b border-[#EADFC9]">
+            <div className="flex items-center gap-3">
+              <span className="w-1.5 h-6 bg-[#9C8464] block rounded-sm"></span>
+              <h2 className="text-xl font-bold tracking-wider text-gray-900 uppercase">
+                Industrie
+              </h2>
+            </div>
+            <Link
+              to="/industrie"
+              className="text-xs font-bold text-[#9C8464] hover:underline uppercase tracking-widest whitespace-nowrap"
+            >
+              Voir plus d'industrie →
+            </Link>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {(industryArticles || []).slice(0, 3).map((item, index) => (
+              <Link key={index} to={`/article/${item.id}`} className="group block bg-white rounded-xl overflow-hidden border border-gray-100 hover:shadow-md transition-shadow">
+                <div className="relative aspect-[16/10] overflow-hidden bg-gray-50">
+                  <img
+                    src={item.featured_image || 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=600&q=80'}
+                    alt={item.title}
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                  />
+                </div>
+                <div className="p-5">
+                  <span className="text-[10px] font-extrabold text-[#9C8464] tracking-widest uppercase mb-2 block">
+                    {item.category_info?.name || 'INDUSTRIE'}
+                  </span>
+                  <h3 className="text-base font-bold text-gray-950 leading-snug group-hover:text-[#9C8464] transition-colors mb-2 line-clamp-2">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs text-gray-500 line-clamp-3 leading-relaxed mb-4">
+                    {item.summary}
+                  </p>
+                </div>
+              </Link>
+            ))}
+            {(!industryArticles || industryArticles.length === 0) && (
+              <div className="col-span-3 text-center text-gray-400 py-12">Aucun article industriel disponible</div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Investissement Section */}
+      <section className="py-12 bg-white border-b border-[#F0EAE1]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between pb-4 mb-8 border-b border-[#EADFC9]">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-3">
+                <span className="w-1.5 h-6 bg-[#9C8464] block rounded-sm"></span>
+                <h2 className="text-xl font-bold tracking-wider text-gray-900 uppercase">
+                  Investissement
+                </h2>
+              </div>
+              <p className="text-xs text-gray-500 mt-2 font-medium italic">
+                Opportunités et mouvements d'investissement stratégiques
+              </p>
+            </div>
+            <Link
+              to="/investissement"
+              className="text-xs font-bold text-[#9C8464] hover:underline uppercase tracking-widest whitespace-nowrap"
+            >
+              Voir plus d'investissements →
+            </Link>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Block 1: Image Left, Content Right */}
+            {investArticles && investArticles[0] && (
+              <Link to={`/article/${investArticles[0].id}`} className="group flex flex-col md:flex-row overflow-hidden bg-white border border-[#EBE6DD] rounded-xl hover:shadow-md transition-shadow h-full">
+                <div className="relative md:w-1/2 aspect-video md:aspect-auto overflow-hidden bg-gray-50 min-h-[220px]">
+                  <img
+                    src={investArticles[0].featured_image || 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=600&q=80'}
+                    alt={investArticles[0].title}
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                  />
+                </div>
+                <div className="p-6 md:w-1/2 flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] font-extrabold text-[#9C8464] tracking-widest uppercase mb-2 block">
+                      FOCUS CAPITAL RISQUE
+                    </span>
+                    <h3 className="text-base font-bold text-gray-950 leading-snug group-hover:text-[#9C8464] transition-colors mb-2 line-clamp-3">
+                      {investArticles[0].title}
+                    </h3>
+                    <p className="text-xs text-gray-500 line-clamp-3 leading-relaxed mb-4">
+                      {investArticles[0].summary}
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-[#9C8464] uppercase tracking-widest group-hover:opacity-85 transition-opacity">
+                    Découvrir le dossier &gt;
+                  </span>
+                </div>
+              </Link>
+            )}
+
+            {/* Block 2: Content Left, Image Right */}
+            {investArticles && investArticles[1] && (
+              <Link to={`/article/${investArticles[1].id}`} className="group flex flex-col md:flex-row overflow-hidden bg-white border border-[#EBE6DD] rounded-xl hover:shadow-md transition-shadow h-full">
+                <div className="p-6 md:w-1/2 flex flex-col justify-between order-2 md:order-1">
+                  <div>
+                    <span className="text-[10px] font-extrabold text-[#9C8464] tracking-widest uppercase mb-2 block">
+                      PRIVATE EQUITY
+                    </span>
+                    <h3 className="text-base font-bold text-gray-950 leading-snug group-hover:text-[#9C8464] transition-colors mb-2 line-clamp-3">
+                      {investArticles[1].title}
+                    </h3>
+                    <p className="text-xs text-gray-500 line-clamp-3 leading-relaxed mb-4">
+                      {investArticles[1].summary}
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-[#9C8464] uppercase tracking-widest group-hover:opacity-85 transition-opacity">
+                    Voir l'analyse sectorielle &gt;
+                  </span>
+                </div>
+                <div className="relative md:w-1/2 aspect-video md:aspect-auto overflow-hidden bg-gray-50 min-h-[220px] order-1 md:order-2">
+                  <img
+                    src={investArticles[1].featured_image || 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=600&q=80'}
+                    alt={investArticles[1].title}
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                  />
+                </div>
+              </Link>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* 6. Insights (Expert Quotes) Section */}
+      <section className="py-12 bg-white border-b border-[#F0EAE1]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between pb-4 mb-8 border-b border-[#EADFC9]">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-3">
+                <span className="w-1.5 h-6 bg-[#9C8464] block rounded-sm"></span>
+                <h2 className="text-xl font-bold tracking-wider text-gray-900 uppercase">
+                  Insights
+                </h2>
+              </div>
+              <p className="text-xs text-gray-500 mt-2 font-medium italic">
+                Analyses et perspectives exclusives des leaders du secteur
+              </p>
+            </div>
+            <Link
+              to="/insights"
+              className="text-xs font-bold text-[#9C8464] hover:underline uppercase tracking-widest whitespace-nowrap"
+            >
+              Voir tous les insights →
+            </Link>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {(insightsArticles || []).slice(0, 2).map((item, index) => (
+              <div key={index} className="bg-white border border-[#EBE6DD] rounded-xl p-8 relative shadow-sm hover:shadow-md transition-shadow">
+                <div className="absolute top-6 right-8 text-6xl text-[#EADFC9] font-serif select-none leading-none">”</div>
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100">
+                    <img
+                      src={item.author?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80'}
+                      alt={item.author?.first_name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-extrabold text-gray-900">
+                      {item.author ? `${item.author.first_name} ${item.author.last_name}` : 'Dr. Karim Traoré'}
+                    </h4>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                      {item.author?.bio || 'Économiste Principal, CDAO'}
+                    </span>
+                  </div>
+                </div>
+
+                <blockquote className="text-sm font-bold text-gray-900 mb-4 italic leading-relaxed">
+                  "{item.title}"
+                </blockquote>
+                <p className="text-xs text-gray-500 mb-6 leading-relaxed">
+                  {item.summary}
+                </p>
+
+                <Link
+                  to={`/article/${item.id}`}
+                  className="text-[10px] font-bold text-[#9C8464] uppercase tracking-widest hover:underline"
+                >
+                  Lire l'analyse complète &gt;
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 7. Tech & Innovation Section (Dark background, futuristic aesthetics) */}
+      <section className="py-16 bg-[#181C1B] text-white border-b border-black">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between pb-4 mb-10 border-b border-gray-800">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-3">
+                <span className="w-1.5 h-6 bg-[#9C8464] block rounded-sm"></span>
+                <h2 className="text-xl font-bold tracking-wider text-white uppercase">
+                  Tech & Innovation
+                </h2>
+              </div>
+              <p className="text-xs text-gray-400 mt-2 font-medium italic">
+                Innovations technologiques au service de la transformation économique
+              </p>
+            </div>
+            <Link
+              to="/tech"
+              className="text-xs font-bold text-[#9C8464] hover:underline uppercase tracking-widest whitespace-nowrap"
+            >
+              Voir plus de tech →
+            </Link>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Left featured tech article (Full size with blueprint/code background) */}
+            <div className="lg:col-span-2">
+              {techArticles && techArticles[0] ? (
+                <Link to={`/article/${techArticles[0].id}`} className="group relative block h-[420px] overflow-hidden rounded-xl bg-[#101413] border border-gray-800">
+                  <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#9C8464_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                  <img
+                    src={techArticles[0].featured_image || 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80'}
+                    alt={techArticles[0].title}
+                    className="absolute inset-0 w-full h-full object-cover opacity-75 group-hover:scale-102 transition-transform duration-700 ease-out"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#101413] via-[#101413]/30 to-transparent"></div>
+                  <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col justify-end h-full">
+                    <span className="self-start mb-3 bg-[#9C8464] text-white text-[9px] uppercase tracking-widest font-black px-2.5 py-1 rounded-sm">
+                      Blockchain
+                    </span>
+                    <h3 className="text-xl md:text-2xl font-bold leading-snug mb-3 group-hover:text-[#EADFC9] transition-colors">
+                      {techArticles[0].title}
+                    </h3>
+                    <p className="text-xs text-gray-400 line-clamp-2">
+                      {techArticles[0].summary}
+                    </p>
+                  </div>
+                </Link>
+              ) : (
+                <div className="h-[420px] bg-[#111] rounded-xl border border-gray-800 flex items-center justify-center text-gray-600">
+                  Aucun contenu Tech disponible
+                </div>
+              )}
+            </div>
+
+            {/* Right side tech articles list */}
+            <div className="lg:col-span-1 flex flex-col justify-between gap-6">
+              {(techArticles || []).slice(1, 3).map((item, index) => (
+                <Link key={index} to={`/article/${item.id}`} className="group block bg-[#202524] border border-gray-800 rounded-xl p-6 hover:border-[#9C8464] transition-colors h-[200px] flex flex-col justify-between">
+                  <div>
+                    <span className="text-[9px] font-extrabold text-[#9C8464] tracking-widest uppercase mb-2 block">
+                      FINTECH
+                    </span>
+                    <h4 className="text-sm font-bold leading-snug line-clamp-2 group-hover:text-[#EADFC9] transition-colors mb-2">
+                      {item.title}
+                    </h4>
+                    <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
+                      {item.summary}
+                    </p>
+                  </div>
+                  <span className="text-[10px] text-gray-500 font-semibold block">
+                    {item.published_at ? new Date(item.published_at).toLocaleDateString('fr-FR') : ''}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 8. Podcast Section (Premium bronze layout) */}
+      <section className="py-16 bg-[#2B231A] text-white border-b border-[#1E1712]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-10 border-b border-[#3E342B]">
+            <div className="flex items-center gap-3">
+              <Mic className="w-5 h-5 text-[#9C8464]" />
+              <h2 className="text-xl font-bold tracking-wider uppercase">
+                Amani Podcast : L'Économie à l'oreille
+              </h2>
+            </div>
+            <button className="border border-[#9C8464] text-[#9C8464] text-[10px] font-extrabold uppercase tracking-widest px-4 py-2.5 rounded hover:bg-[#9C8464] hover:text-white transition-all self-start sm:self-auto">
+              S'abonner aux podcasts
+            </button>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-8">
+            {podcasts && podcasts[0] ? (
+              <div className="bg-[#1E1712] border border-[#3E342B] rounded-xl p-6 flex flex-col md:flex-row gap-6 hover:shadow-lg transition-shadow">
+                {/* Active Podcast visual & Play */}
+                <div className="relative w-full md:w-44 aspect-video md:aspect-square rounded-lg overflow-hidden bg-gray-900 flex-shrink-0">
+                  <img
+                    src={podcasts[0].featured_image || 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=300&q=80'}
+                    alt={podcasts[0].title}
+                    className="absolute inset-0 w-full h-full object-cover opacity-75"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <button className="w-12 h-12 bg-[#9C8464] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform">
+                      <Play className="w-5 h-5 fill-current ml-0.5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex-1 flex flex-col justify-between">
+                  <div>
+                    <span className="text-[9px] font-extrabold text-[#9C8464] tracking-widest uppercase mb-1 block">
+                      ÉMISSION EN COURS
+                    </span>
+                    <h3 className="text-base font-bold leading-snug mb-2 hover:text-[#EADFC9] cursor-pointer">
+                      {podcasts[0].title}
+                    </h3>
+                    <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed mb-4">
+                      {podcasts[0].summary}
+                    </p>
+                  </div>
+                  
+                  {/* progress track simulation */}
+                  <div className="space-y-2">
+                    <div className="w-full bg-[#3E342B] h-1.5 rounded-full overflow-hidden">
+                      <div className="bg-[#9C8464] w-2/3 h-full rounded-full"></div>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-gray-500 font-semibold">
+                      <span>{podcasts[0].podcast_data?.duration || '08:12'}</span>
+                      <span>12:45</span>
                     </div>
                   </div>
                 </div>
               </div>
-            ))}
-            {(!podcasts || podcasts.length === 0) && (
-              <div className="text-gray-500">Aucun podcast publié pour le moment.</div>
+            ) : (
+              <div className="bg-[#1E1712] border border-[#3E342B] rounded-xl p-8 text-center text-gray-500">
+                Aucun podcast disponible
+              </div>
+            )}
+
+            {podcasts && podcasts[1] ? (
+              <div className="bg-[#1E1712] border border-[#3E342B] rounded-xl p-6 flex flex-col md:flex-row gap-6 hover:shadow-lg transition-shadow">
+                {/* Active Podcast visual & Play */}
+                <div className="relative w-full md:w-44 aspect-video md:aspect-square rounded-lg overflow-hidden bg-gray-900 flex-shrink-0">
+                  <img
+                    src={podcasts[1].featured_image || 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?auto=format&fit=crop&w=300&q=80'}
+                    alt={podcasts[1].title}
+                    className="absolute inset-0 w-full h-full object-cover opacity-75"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <button className="w-12 h-12 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center backdrop-blur-sm shadow-lg hover:scale-105 transition-transform">
+                      <Play className="w-5 h-5 fill-current ml-0.5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex-1 flex flex-col justify-between">
+                  <div>
+                    <span className="text-[9px] font-extrabold text-[#9C8464] tracking-widest uppercase mb-1 block">
+                      ÉPISODE PRÉCÉDENT
+                    </span>
+                    <h3 className="text-base font-bold leading-snug mb-2 hover:text-[#EADFC9] cursor-pointer">
+                      {podcasts[1].title}
+                    </h3>
+                    <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed mb-4">
+                      {podcasts[1].summary}
+                    </p>
+                  </div>
+                  
+                  {/* duration badge */}
+                  <div className="flex items-center justify-between text-[10px] text-gray-500 font-semibold border-t border-[#3E342B] pt-3">
+                    <span>Durée : {podcasts[1].podcast_data?.duration || '15:30'}</span>
+                    <span>Publié le {podcasts[1].published_at ? new Date(podcasts[1].published_at).toLocaleDateString('fr-FR') : ''}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-[#1E1712] border border-[#3E342B] rounded-xl p-8 text-center text-gray-500">
+                Aucun second podcast disponible
+              </div>
             )}
           </div>
         </div>
@@ -1051,7 +1269,7 @@ export default function Index() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-amani-primary text-white py-16">
+      <footer className="bg-[#373B3A] text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-4 gap-8">
             <div>

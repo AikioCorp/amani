@@ -4,6 +4,7 @@ import { useArticle } from '@/hooks/useArticles';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 export const ArticleDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -98,7 +99,7 @@ export const ArticleDetail: React.FC = () => {
 
       <div className="prose max-w-none">
         {article.content ? (
-          <div dangerouslySetInnerHTML={{ __html: article.content }} />
+          <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.content) }} />
         ) : (
           <p className="text-gray-600">Contenu non disponible.</p>
         )}
