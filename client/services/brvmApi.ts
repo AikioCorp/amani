@@ -19,6 +19,8 @@ export interface BRVMData {
   sectoriels?: BRVMIndex[];
   timestamp?: string;
   source?: string;
+  dataStatus?: "live" | "partial" | "simulated";
+  disclaimer?: string;
 }
 
 // Fonction pour récupérer les données BRVM

@@ -150,9 +150,9 @@ export default function Indices() {
               Indices & Commodités
             </h1>
             <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
-              Suivez en temps réel les marchés financiers, indices boursiers et
-              prix des matières premières. Guide complet pour comprendre
-              l'économie africaine et mondiale.
+              Suivez les marchés financiers, indices boursiers et prix des
+              matières premières. Guide complet pour comprendre l'économie
+              africaine et mondiale.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -177,6 +177,24 @@ export default function Indices() {
           </div>
         </div>
       </section>
+
+      {/* Bannière de transparence : les données de marché ne sont pas encore
+          toutes en temps réel. On l'indique honnêtement au lecteur. */}
+      {((brvmData && brvmData.dataStatus !== "live") ||
+        (commoditiesData && commoditiesData.dataStatus !== "live")) && (
+        <section className="bg-amber-50 border-y border-amber-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex items-start gap-3 text-amber-800">
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <p className="text-sm">
+                {commoditiesData?.disclaimer ||
+                  brvmData?.disclaimer ||
+                  "Une partie des données de marché est estimée à titre indicatif et peut ne pas refléter les cours réels en temps réel."}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Filtres de catégories */}
       <section className="py-8 bg-gray-100">

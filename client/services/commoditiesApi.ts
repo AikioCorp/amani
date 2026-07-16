@@ -27,6 +27,8 @@ export interface CommoditiesData {
   cocoa: Commodity;
   timestamp: string;
   source: string;
+  dataStatus?: "live" | "simulated";
+  disclaimer?: string;
 }
 
 // Fonction pour récupérer les prix des commodités
