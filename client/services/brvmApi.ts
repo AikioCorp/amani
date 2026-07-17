@@ -17,6 +17,21 @@ export interface BRVMData {
   inflation: BRVMIndex;
   taux_bceao: BRVMIndex;
   sectoriels?: BRVMIndex[];
+  topStocks?: Array<{
+    symbol: string;
+    name: string;
+    price: string;
+    change: string;
+    changePercent: string;
+    volume: string;
+    isPositive: boolean;
+    lastUpdate: string;
+  }>;
+  activity?: {
+    transactionValue: string;
+    equityCap: string;
+    bondCap: string;
+  };
   timestamp?: string;
   source?: string;
   dataStatus?: "live" | "partial" | "simulated";

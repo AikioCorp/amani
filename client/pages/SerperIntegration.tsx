@@ -32,7 +32,7 @@ export default function SerperIntegration() {
   const [errorMessage, setErrorMessage] = useState("");
   const [importedArticles, setImportedArticles] = useState<Record<string, string>>({});
   const [categories, setCategories] = useState<any[]>([]);
-  const [articleSettings, setArticleSettings] = useState<Record<string, { categoryId: string; featuredImage: string; publishedAt: string; status: 'draft' | 'published' }>>({});
+  const [articleSettings, setArticleSettings] = useState<Record<string, { categoryId?: string; featuredImage?: string; publishedAt?: string; status?: 'draft' | 'published'; summary?: string }>>({});
 
   useEffect(() => {
     const fetchCategories = async () => {

@@ -85,6 +85,12 @@ const SECTIONS: Section[] = [
         icon: ListChecks,
         permission: "create_articles",
       },
+      {
+        label: "Monitoring",
+        to: "/dashboard/monitoring",
+        icon: Activity,
+        permission: "create_articles",
+      },
     ],
   },
   {

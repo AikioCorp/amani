@@ -162,27 +162,15 @@ export const useArticles = ({
   const createArticle = useCallback(async (articleData: Omit<Article, 'id' | 'created_at' | 'updated_at' | 'views' | 'likes' | 'shares' | 'comment_count' | 'is_liked_by_user'>) => {
     try {
       setLoading(true);
-      
-      // Récupérer le token d'auth du localStorage
-      const token = getSessionToken();
-      
-      const response = await fetch("http://localhost:5000/api/contents", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": token ? `Bearer ${token}` : "",
-        },
-        body: JSON.stringify({
-          ...articleData,
-          type: 'article',
-        }),
+
+      // createContent (contentService) gère l'URL d'API (dev/prod) et le jeton d'auth.
+      const data = await createContent({
+        ...(articleData as any),
+        type: 'article',
       });
 
-      if (!response.ok) throw new Error("Erreur de création de l'article");
-      const result = await response.json();
-      
       await fetchArticles();
-      return result.data as Article;
+      return data as Article;
     } catch (err: any) {
       console.error('Error creating article:', err);
       setError(err as Error);

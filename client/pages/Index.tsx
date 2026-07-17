@@ -42,9 +42,10 @@ import {
 
 // Feature flags for market widgets (BRVM & Commodities)
 // - ENABLE_MARKET_WIDGET: controls rendering of the section
-// - ENABLE_MARKET_FETCH: controls calling remote APIs; keep false to use simulated data only
+// - ENABLE_MARKET_FETCH: activé — l'API sert désormais des données réelles
+//   (brvm.org + sikafinance) depuis un snapshot en base, réponse rapide.
 const ENABLE_MARKET_WIDGET = true;
-const ENABLE_MARKET_FETCH = false;
+const ENABLE_MARKET_FETCH = true;
 
 interface ArticleSectionProps {
   title: string;
@@ -346,6 +347,32 @@ export default function Index() {
     ];
   }, [brvmData]);
 
+  // Bandeau « Marchés & Indices BRVM » : composite + top actions réelles.
+  const tickerItems = React.useMemo(() => {
+    if (!brvmData) {
+      return [
+        { name: "BRVM Composite", value: "—", change: "", trend: "neutral" as const },
+      ];
+    }
+    const items: Array<{ name: string; value: string; change: string; trend: "up" | "down" | "neutral" }> = [
+      {
+        name: "BRVM Composite",
+        value: brvmData.composite.value,
+        change: brvmData.composite.changePercent,
+        trend: brvmData.composite.isPositive ? "up" : "down",
+      },
+    ];
+    (brvmData.topStocks || []).slice(0, 5).forEach((s) => {
+      items.push({
+        name: s.symbol,
+        value: s.price,
+        change: s.changePercent,
+        trend: s.changePercent?.startsWith("0") || s.changePercent === "+0.00%" ? "neutral" : s.isPositive ? "up" : "down",
+      });
+    });
+    return items;
+  }, [brvmData]);
+
   // Dérivés pour l'affichage public
   const heroArticle = React.useMemo(() => articles?.[0], [articles]);
   const otherArticles = React.useMemo(() => (articles || []).slice(1, 4), [articles]);
@@ -645,14 +672,7 @@ export default function Index() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 divide-x divide-gray-100">
-            {[
-              { name: "BRVM 10", value: "185.42", change: "+0.32%", trend: "up" },
-              { name: "SONATEL", value: "16,250", change: "+1.85%", trend: "up" },
-              { name: "BOA / COTE D'IVOIRE", value: "655.957", change: "-0.08%", trend: "down" },
-              { name: "BOA NIGER", value: "1,450", change: "-0.37%", trend: "down" },
-              { name: "ORAGROUP", value: "2,890", change: "+0.85%", trend: "up" },
-              { name: "ECOBANK TG", value: "19", change: "0.00%", trend: "neutral" }
-            ].map((idx, i) => (
+            {tickerItems.map((idx, i) => (
               <div key={i} className="px-6 py-2 flex flex-col justify-center">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">
                   {idx.name}

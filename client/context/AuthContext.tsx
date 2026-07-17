@@ -228,10 +228,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Permissions par défaut selon le rôle : évite qu'un compte au tableau
+  // `permissions` vide soit totalement bloqué (les permissions explicites
+  // en base s'ajoutent à ces défauts).
+  const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
+    editor: ["view_dashboard", "create_articles", "create_podcasts", "create_indices", "view_analytics"],
+    analyst: ["view_dashboard", "create_articles", "view_analytics"],
+    moderator: ["view_dashboard"],
+  };
+
   const hasPermission = useCallback(
     (permission: string): boolean => {
       if (!user) return false;
       if (user.role === "admin") return true;
+      const defaults = ROLE_DEFAULT_PERMISSIONS[user.role] || [];
+      if (defaults.includes(permission)) return true;
       if (!Array.isArray(user.permissions)) return false;
       return user.permissions.includes(permission);
     },

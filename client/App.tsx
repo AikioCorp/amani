@@ -13,6 +13,8 @@ import { ToastProvider } from "./context/ToastContext";
 
 // Components
 import ProtectedRoute from "./components/ProtectedRoute";
+import ErrorBoundary from "./components/ErrorBoundary";
+import NotFound from "./pages/NotFound";
 import LoadingSpinner from "./components/LoadingSpinner";
 import ScrollToTop from "./components/ScrollToTop";
 import { Navigation } from "./components/Navigation";
@@ -42,6 +44,7 @@ import Tech from "./pages/Tech";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import SerperIntegration from "./pages/SerperIntegration";
+import PipelineMonitoring from "./pages/PipelineMonitoring";
 import ImportsManagement from "./pages/ImportsManagement";
 
 // Dashboard Pages
@@ -87,6 +90,23 @@ const queryClient = new QueryClient({
 // Main App Content Component
 const AppContent = () => {
   const { isLoading } = useAuth();
+
+  // Filet de sécurité global : toute image qui échoue à charger (ex: anciennes
+  // URLs Supabase mortes stockées en base) est remplacée par le placeholder.
+  // Les événements error des <img> ne bubblent pas → écoute en phase capture.
+  React.useEffect(() => {
+    const onImgError = (e: Event) => {
+      const el = e.target as HTMLElement;
+      if (el?.tagName === "IMG") {
+        const img = el as HTMLImageElement;
+        if (!img.src.endsWith("/placeholder.svg")) {
+          img.src = "/placeholder.svg";
+        }
+      }
+    };
+    document.addEventListener("error", onImgError, true);
+    return () => document.removeEventListener("error", onImgError, true);
+  }, []);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -137,6 +157,7 @@ const AppContent = () => {
         >
           <Route index element={<DashboardMain />} />
           <Route path="content" element={<ContentManagement />} />
+          <Route path="content-management" element={<ContentManagement />} />
           <Route path="articles" element={<Articles />} />
           <Route path="articles/new" element={<NewArticle />} />
           <Route path="articles/edit/:id" element={<EditArticle />} />
@@ -167,23 +188,13 @@ const AppContent = () => {
           <Route path="integrations" element={<Integrations />} />
           <Route path="serper" element={<SerperIntegration />} />
           <Route path="imports" element={<ImportsManagement />} />
+          <Route path="monitoring" element={<PipelineMonitoring />} />
         </Route>
 
         {/* 404 route */}
         <Route
           path="*"
-          element={
-            <div className="flex items-center justify-center min-h-screen">
-              <div className="text-center">
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-                  404
-                </h1>
-                <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
-                  Page not found
-                </p>
-              </div>
-            </div>
-          }
+          element={<NotFound />}
         />
       </Routes>
     </BrowserRouter>
@@ -199,7 +210,9 @@ const App = () => {
           <ToastProvider>
             <Toaster />
             <Sonner />
-            <AppContent />
+            <ErrorBoundary>
+              <AppContent />
+            </ErrorBoundary>
           </ToastProvider>
         </AuthProvider>
       </TooltipProvider>

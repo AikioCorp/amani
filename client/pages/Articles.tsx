@@ -73,7 +73,7 @@ export default function Articles() {
       categorySlug: article.category_info?.slug || '',
       status: article.status,
       views: article.views || 0,
-      commentsCount: article._count?.comments || 0,
+      commentsCount: (article as any)._count?.comments || 0,
       publishedAt: article.published_at 
         ? new Date(article.published_at).toLocaleDateString('fr-FR', {
             day: 'numeric',

@@ -98,7 +98,17 @@ export default function BrvmLatest() {
                         {r.latest_change ?? "-"}
                       </td>
                       <td className="py-2 pr-4">{r.latest_change_percent ?? "-"}%</td>
-                      <td className="py-2 pr-4 text-xs text-gray-500">{r.latest_at ?? "-"}</td>
+                      <td className="py-2 pr-4 text-xs text-gray-500">
+                        {r.latest_at
+                          ? new Date(r.latest_at).toLocaleString("fr-FR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "-"}
+                      </td>
                     </tr>
                   );
                 })}

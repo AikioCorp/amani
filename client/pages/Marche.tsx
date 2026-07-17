@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Footer from '../components/Footer';
+import { fetchBRVMData, BRVMData } from "../services/brvmApi";
 import {
   TrendingUp,
   TrendingDown,
@@ -32,104 +33,114 @@ export default function Marche() {
   const { articles: marketBoursArticles, loading: loadingMarketBours } = useArticles({ status: 'published', limit: 10, category: 'marches-boursiers' });
   const loadingNews = loadingMarketFin || loadingMarketBours;
 
-  const marketData = [
-    {
-      name: "BRVM Composite",
-      value: "185.42",
-      change: "+2.3%",
-      changeValue: "+4.16",
-      isPositive: true,
-      volume: "2.8M FCFA",
+  // Données de marché réelles (API /api/brvm — scrapées depuis brvm.org)
+  const [brvmData, setBrvmData] = useState<BRVMData | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const data = await fetchBRVMData();
+        if (!cancelled) setBrvmData(data);
+      } catch (e) {
+        console.error("Erreur chargement données BRVM:", e);
+      }
+    };
+    load();
+    const interval = setInterval(load, 5 * 60 * 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Formate un montant FCFA brut ("18 488 207 038 541 FCFA") en forme courte ("18,49 T FCFA")
+  const formatFcfa = (raw?: string): string => {
+    if (!raw) return "—";
+    const n = parseFloat(raw.replace(/[^\d]/g, ""));
+    if (!n || isNaN(n)) return "—";
+    if (n >= 1e12) return `${(n / 1e12).toFixed(2).replace(".", ",")} T FCFA`;
+    if (n >= 1e9) return `${(n / 1e9).toFixed(2).replace(".", ",")} Md FCFA`;
+    if (n >= 1e6) return `${(n / 1e6).toFixed(1).replace(".", ",")} M FCFA`;
+    return `${n.toLocaleString("fr-FR")} FCFA`;
+  };
+
+  const marketData = useMemo(() => {
+    if (!brvmData) return [];
+
+    const rows: Array<{
+      name: string;
+      value: string;
+      change: string;
+      changeValue: string;
+      isPositive: boolean;
+      volume: string;
+      category: string;
+      high: string;
+      low: string;
+      marketCap: string;
+    }> = [];
+
+    // Indice composite + indices sectoriels (réels)
+    rows.push({
+      name: brvmData.composite.name,
+      value: brvmData.composite.value,
+      change: brvmData.composite.changePercent,
+      changeValue: brvmData.composite.change,
+      isPositive: brvmData.composite.isPositive,
+      volume: "—",
       category: "Indice",
-      high: "187.12",
-      low: "183.45",
-      marketCap: "12.5T FCFA",
-    },
-    {
-      name: "BRVM 30",
-      value: "98.76",
-      change: "+1.8%",
-      changeValue: "+1.74",
-      isPositive: true,
-      volume: "1.2M FCFA",
-      category: "Indice",
-      high: "99.21",
-      low: "97.83",
-      marketCap: "8.2T FCFA",
-    },
-    {
-      name: "USD/FCFA",
-      value: "602.50",
-      change: "-0.8%",
-      changeValue: "-4.85",
-      isPositive: false,
-      volume: "45.6M USD",
-      category: "Devise",
-      high: "605.20",
-      low: "601.75",
-      marketCap: "N/A",
-    },
-    {
+      high: "—",
+      low: "—",
+      marketCap: formatFcfa(brvmData.activity?.equityCap),
+    });
+    (brvmData.sectoriels || []).forEach((s) => {
+      rows.push({
+        name: s.name,
+        value: s.value,
+        change: s.changePercent,
+        changeValue: s.change,
+        isPositive: s.isPositive,
+        volume: "—",
+        category: "Indice",
+        high: "—",
+        low: "—",
+        marketCap: "—",
+      });
+    });
+
+    // Devise (parité fixe)
+    rows.push({
       name: "EUR/FCFA",
-      value: "655.96",
-      change: "-0.5%",
-      changeValue: "-3.28",
-      isPositive: false,
-      volume: "23.1M EUR",
+      value: brvmData.fcfa_eur.value,
+      change: "0%",
+      changeValue: "0",
+      isPositive: true,
+      volume: "—",
       category: "Devise",
-      high: "658.45",
-      low: "654.12",
-      marketCap: "N/A",
-    },
-    {
-      name: "Banque Atlantique",
-      value: "4,250",
-      change: "+3.2%",
-      changeValue: "+131",
-      isPositive: true,
-      volume: "156K FCFA",
-      category: "Action",
-      high: "4,285",
-      low: "4,120",
-      marketCap: "425B FCFA",
-    },
-    {
-      name: "Ecobank Transnational",
-      value: "7,800",
-      change: "-1.1%",
-      changeValue: "-87",
-      isPositive: false,
-      volume: "234K FCFA",
-      category: "Action",
-      high: "7,920",
-      low: "7,750",
-      marketCap: "780B FCFA",
-    },
-    {
-      name: "Orange Côte d'Ivoire",
-      value: "12,500",
-      change: "+2.7%",
-      changeValue: "+329",
-      isPositive: true,
-      volume: "89K FCFA",
-      category: "Action",
-      high: "12,650",
-      low: "12,200",
-      marketCap: "1.25T FCFA",
-    },
-    {
-      name: "SONATEL",
-      value: "15,200",
-      change: "+1.9%",
-      changeValue: "+283",
-      isPositive: true,
-      volume: "67K FCFA",
-      category: "Action",
-      high: "15,350",
-      low: "14,950",
-      marketCap: "1.52T FCFA",
-    },
-  ];
+      high: "—",
+      low: "—",
+      marketCap: "N/A (parité fixe)",
+    });
+
+    // Actions réelles (top movers BRVM)
+    (brvmData.topStocks || []).forEach((s) => {
+      rows.push({
+        name: s.name || s.symbol,
+        value: s.price,
+        change: s.changePercent,
+        changeValue: s.change,
+        isPositive: s.isPositive,
+        volume: `${s.volume} titres`,
+        category: "Action",
+        high: "—",
+        low: "—",
+        marketCap: "—",
+      });
+    });
+
+    return rows;
+  }, [brvmData]);
 
   const recentNews = useMemo(() => {
     const list = [...(marketFinArticles || []), ...(marketBoursArticles || [])];
@@ -150,11 +161,11 @@ export default function Marche() {
   }, [marketFinArticles, marketBoursArticles]);
 
   const marketSummary = {
-    gainers: marketData.filter(item => item.isPositive).length,
+    gainers: marketData.filter(item => item.isPositive && item.change !== "0%").length,
     losers: marketData.filter(item => !item.isPositive).length,
-    unchanged: 2,
-    totalVolume: "125.8M FCFA",
-    marketCap: "45.2T FCFA",
+    unchanged: marketData.filter(item => item.change === "0%").length,
+    totalVolume: formatFcfa(brvmData?.activity?.transactionValue),
+    marketCap: formatFcfa(brvmData?.activity?.equityCap),
   };
 
   const categories = ["all", "Indice", "Action", "Devise", "Obligation"];
