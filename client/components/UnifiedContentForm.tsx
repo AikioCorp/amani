@@ -70,7 +70,7 @@ function formatDatetimeLocal(val: any): string {
   try {
     const d = new Date(val);
     if (isNaN(d.getTime())) return "";
-    return d.toISOString().slice(0, 16);
+    return d.toISOString().slice(0, 10);
   } catch {
     return "";
   }
@@ -109,7 +109,7 @@ export default function UnifiedContentForm({
       meta_description: "",
       featured_image: "",
       featured_image_alt: "",
-      published_at: new Date().toISOString().slice(0, 16),
+      published_at: new Date().toISOString().slice(0, 10),
       article_data: {} as ArticleData,
       podcast_data: {} as PodcastData,
       indice_data: {} as IndiceData,
