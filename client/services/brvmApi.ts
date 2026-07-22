@@ -1,5 +1,6 @@
 // Service pour récupérer les données BRVM
 import React from "react";
+import { getApiUrl } from "./apiConfig";
 
 export interface BRVMIndex {
   name: string;
@@ -41,13 +42,7 @@ export interface BRVMData {
 // Fonction pour récupérer les données BRVM
 export const fetchBRVMData = async (): Promise<BRVMData> => {
   try {
-    const isLocal =
-      window.location.hostname === "localhost" ||
-      window.location.hostname.includes("127.0.0.1");
-
-    const apiUrl = isLocal
-      ? "http://localhost:5000/api/brvm"
-      : "/api/brvm";
+    const apiUrl = getApiUrl("/brvm");
 
     const response = await fetch(apiUrl);
 

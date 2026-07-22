@@ -11,11 +11,7 @@ export type UserProfile = {
   updated_at: string;
 };
 
-const isLocal =
-  window.location.hostname === "localhost" ||
-  window.location.hostname.includes("127.0.0.1");
-
-const API_BASE_URL = isLocal ? "http://localhost:5000/api" : "/api";
+import { API_BASE_URL } from "./apiConfig";
 
 // Helper pour lire le token d'accès Supabase stocké localement
 export const getSessionToken = (): string | null => {

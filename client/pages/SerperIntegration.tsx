@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { API_BASE_URL } from "../services/apiConfig";
 import { Link } from "react-router-dom";
 import { Search, Globe, Plus, AlertCircle, CheckCircle2, Loader2, ArrowUpRight, ArrowLeft } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -15,11 +16,16 @@ interface NewsArticle {
   imageUrl?: string | null;
 }
 
-const isLocal =
-  window.location.hostname === "localhost" ||
-  window.location.hostname.includes("127.0.0.1");
+function formatNewsDate(dateStr: string): string {
+  if (!dateStr) return new Date().toLocaleDateString("fr-FR");
+  const d = new Date(dateStr);
+  if (!isNaN(d.getTime())) {
+    return d.toLocaleDateString("fr-FR");
+  }
+  return dateStr;
+}
 
-const API_BASE_URL = isLocal ? "http://localhost:5000/api" : "/api";
+
 
 export default function SerperIntegration() {
   const { user, hasPermission } = useAuth();
@@ -92,19 +98,21 @@ export default function SerperIntegration() {
       const initialSettings: Record<string, any> = {};
       const defaultCatId = categories.length > 0 ? categories[0].id : "";
       fetchedNews.forEach((item: NewsArticle) => {
-        let formattedDate = "";
-        try {
-          formattedDate = new Date(item.date).toISOString().substring(0, 10);
-        } catch (e) {
-          formattedDate = new Date().toISOString().substring(0, 10);
+        let formattedDate = new Date().toISOString().substring(0, 10);
+        if (item.date) {
+          const d = new Date(item.date);
+          if (!isNaN(d.getTime())) {
+            formattedDate = d.toISOString().substring(0, 10);
+          }
         }
+        const cleanedSnippet = (item.snippet || "").replace(/(\s*\.\.\.\s*)+$/, "").replace(/\s+[a-z]{1,3}\.?$/i, "").trim();
 
         initialSettings[item.link] = {
           categoryId: defaultCatId,
           featuredImage: item.imageUrl || "",
           publishedAt: formattedDate,
           status: "draft",
-          summary: item.snippet || ""
+          summary: cleanedSnippet || item.snippet || ""
         };
       });
       setArticleSettings(initialSettings);
@@ -272,7 +280,7 @@ export default function SerperIntegration() {
                       <span className="font-semibold text-amani-primary px-2.5 py-1 bg-amani-primary/10 rounded-full">
                         {item.source}
                       </span>
-                      <span>{new Date(item.date).toLocaleDateString("fr-FR")}</span>
+                      <span>{formatNewsDate(item.date)}</span>
                     </div>
                     <h4 className="font-bold text-gray-900 text-base mb-3 leading-snug line-clamp-2">
                       {item.title}

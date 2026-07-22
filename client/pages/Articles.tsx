@@ -16,8 +16,31 @@ import {
   FileText,
   Sparkles,
   Bell,
-  Calendar
+  Calendar,
+  MoreVertical,
+  Edit2,
+  Trash2,
+  Play,
+  Pause
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from "../components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "../components/ui/alert-dialog";
+import { Button } from "../components/ui/button";
 
 export default function Articles() {
   const { user, hasPermission } = useAuth();
@@ -26,13 +49,17 @@ export default function Articles() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [articleToDelete, setArticleToDelete] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // Fetch articles
   const { 
     articles: supabaseArticles = [], 
     loading, 
     error: articlesError,
-    deleteArticle
+    deleteArticle,
+    updateArticle
   } = useArticles({
     status: filterStatus === "all" ? "all" : filterStatus as any,
     limit: 100,
@@ -207,15 +234,29 @@ export default function Articles() {
     return Array.from(map.entries()).map(([slug, name]) => ({ id: slug, label: name }));
   }, [articles]);
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer cet article ?")) {
-      try {
-        await deleteArticle(id);
-        success("Suppression", "Article supprimé avec succès");
-      } catch (err) {
-        error("Erreur", "Impossible de supprimer l'article");
-      }
+  const handleDeleteConfirm = async () => {
+    if (!articleToDelete) return;
+    try {
+      setActionLoading(articleToDelete);
+      await deleteArticle(articleToDelete);
+      success("Suppression", "Article supprimé avec succès");
+    } catch (err) {
+      error("Erreur", "Impossible de supprimer l'article");
+    } finally {
+      setActionLoading(null);
+      setArticleToDelete(null);
+    }
+  };
+
+  const handleUpdateStatus = async (id: string, newStatus: any) => {
+    try {
+      setActionLoading(id);
+      await updateArticle(id, { status: newStatus });
+      success("Mise à jour", `Statut mis à jour : ${newStatus === 'published' ? 'Publié' : newStatus === 'archived' ? 'En Pause' : 'Brouillon'}`);
+    } catch (err) {
+      error("Erreur", "Impossible de mettre à jour le statut");
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -406,33 +447,100 @@ export default function Articles() {
                       {article.categoryName}
                     </td>
                     <td className="p-4 whitespace-nowrap">
-                      {article.status === 'published' ? (
-                        <span className="text-[10px] font-bold bg-[#EAF7F0] text-[#2E7D32] px-3 py-1.5 rounded uppercase tracking-wider">
+                      {article.status === 'published' && (
+                        <span className="text-[10px] font-bold bg-[#EAF7F0] text-[#2E7D32] px-3 py-1 rounded-full uppercase tracking-wider">
                           Publié
                         </span>
-                      ) : (
-                        <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-3 py-1.5 rounded uppercase tracking-wider">
+                      )}
+                      {article.status === 'draft' && (
+                        <span className="text-[10px] font-bold bg-[#FFF8E1] text-[#F57F17] px-3 py-1 rounded-full uppercase tracking-wider">
                           Brouillon
+                        </span>
+                      )}
+                      {article.status === 'archived' && (
+                        <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-full uppercase tracking-wider">
+                          En Pause
                         </span>
                       )}
                     </td>
                     <td className="p-4 text-sm text-gray-500 whitespace-nowrap">
                       {article.publishedAt}
                     </td>
-                    <td className="p-4 text-right whitespace-nowrap flex items-center justify-end gap-3">
-                      <div>
-                        <div className="font-extrabold text-gray-900">{formattedViews}</div>
-                        <div className="text-[10px] text-gray-400">
-                          {article.commentsCount} commentaires
+                    <td className="p-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-3">
+                        <div className="text-right">
+                          <div className="font-extrabold text-gray-900">{formattedViews}</div>
+                          <div className="text-[10px] text-gray-400">
+                            {article.commentsCount} commentaires
+                          </div>
                         </div>
+
+                        {actionLoading === article.id ? (
+                          <div className="w-8 h-8 flex items-center justify-center">
+                            <Loader2 className="w-4 h-4 animate-spin text-[#9C8464]" />
+                          </div>
+                        ) : (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-gray-900 rounded-full hover:bg-gray-100">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48 bg-white border border-[#EAEAEA] shadow-md rounded-md p-1 z-50">
+                              <DropdownMenuItem 
+                                onClick={() => navigate(`/dashboard/articles/edit/${article.id}`)}
+                                className="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded cursor-pointer transition-colors"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                                <span>Modifier l'article</span>
+                              </DropdownMenuItem>
+
+                              {article.status !== 'published' && (
+                                <DropdownMenuItem 
+                                  onClick={() => handleUpdateStatus(article.id, 'published')}
+                                  className="flex items-center gap-2 px-3 py-2 text-xs text-green-700 hover:bg-green-50 rounded cursor-pointer transition-colors"
+                                >
+                                  <Play className="w-3.5 h-3.5" />
+                                  <span>Publier</span>
+                                </DropdownMenuItem>
+                              )}
+
+                              {article.status !== 'draft' && (
+                                <DropdownMenuItem 
+                                  onClick={() => handleUpdateStatus(article.id, 'draft')}
+                                  className="flex items-center gap-2 px-3 py-2 text-xs text-orange-700 hover:bg-orange-50 rounded cursor-pointer transition-colors"
+                                >
+                                  <Pause className="w-3.5 h-3.5" />
+                                  <span>Mettre en brouillon</span>
+                                </DropdownMenuItem>
+                              )}
+
+                              {article.status !== 'archived' && (
+                                <DropdownMenuItem 
+                                  onClick={() => handleUpdateStatus(article.id, 'archived')}
+                                  className="flex items-center gap-2 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 rounded cursor-pointer transition-colors"
+                                >
+                                  <Pause className="w-3.5 h-3.5" />
+                                  <span>Mettre en pause (Archiver)</span>
+                                </DropdownMenuItem>
+                              )}
+
+                              <DropdownMenuSeparator className="my-1 border-t border-[#EAEAEA]" />
+
+                              <DropdownMenuItem 
+                                onClick={() => {
+                                  setArticleToDelete(article.id);
+                                  setDeleteConfirmOpen(true);
+                                }}
+                                className="flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50 rounded cursor-pointer font-semibold transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Supprimer</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                       </div>
-                      <button 
-                        onClick={(e) => handleDelete(article.id, e)}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 text-red-500 hover:bg-red-50 rounded transition-opacity"
-                        title="Supprimer l'article"
-                      >
-                        Supprimer
-                      </button>
                     </td>
                   </tr>
                 );
@@ -501,9 +609,9 @@ export default function Articles() {
                       <div 
                         className={`w-6 rounded-t-md transition-all duration-300 ${
                           isMax 
-                            ? 'bg-gradient-to-t from-[#8E7554] to-[#9C8464]' 
+                            ? 'bg-[#9C8464]' 
                             : day.count > 0 
-                              ? 'bg-gradient-to-t from-gray-300 to-gray-400' 
+                              ? 'bg-gray-400' 
                               : 'bg-gray-100'
                         }`} 
                         style={{ height: day.height }}
@@ -573,6 +681,30 @@ export default function Articles() {
           </div>
         </div>
       </div>
+      {/* Sleek Custom Alert Dialog for Deletion Confirmation */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent className="bg-white border border-[#EAEAEA] rounded-xl shadow-lg max-w-md p-6 z-[100]">
+          <AlertDialogHeader className="space-y-3">
+            <AlertDialogTitle className="text-lg font-bold text-gray-900">
+              Confirmer la suppression
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-gray-500 leading-relaxed">
+              Êtes-vous sûr de vouloir supprimer définitivement cet article ? Cette action est irréversible et effacera l'article de la base de données.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6 flex items-center justify-end gap-3">
+            <AlertDialogCancel className="px-4 py-2 border border-[#EAEAEA] text-gray-700 hover:bg-gray-50 rounded text-xs font-bold transition-colors">
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-bold transition-colors"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

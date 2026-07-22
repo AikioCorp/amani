@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { getApiUrl } from "../services/apiConfig";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
@@ -353,8 +354,7 @@ export default function UnifiedContentForm({
     const loadCategories = async () => {
       try {
         console.log('🔍 Chargement des catégories...');
-        const isLocal = window.location.hostname === "localhost" || window.location.hostname.includes("127.0.0.1");
-        const apiUrl = isLocal ? "http://localhost:5000/api/categories" : "/api/categories";
+        const apiUrl = getApiUrl("/categories");
         
         const resp = await fetch(apiUrl);
         if (!resp.ok) throw new Error("Erreur de récupération des catégories via l'API");

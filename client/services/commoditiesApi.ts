@@ -1,5 +1,6 @@
 // Service pour récupérer les prix des commodités (or, coton, pétrole, métaux précieux)
 import React from "react";
+import { getApiUrl } from "./apiConfig";
 
 export interface Commodity {
   name: string;
@@ -34,13 +35,7 @@ export interface CommoditiesData {
 // Fonction pour récupérer les prix des commodités
 export const fetchCommoditiesData = async (): Promise<CommoditiesData> => {
   try {
-    const isLocal =
-      window.location.hostname === "localhost" ||
-      window.location.hostname.includes("127.0.0.1");
-
-    const apiUrl = isLocal
-      ? "http://localhost:5000/api/commodities"
-      : "/api/commodities";
+    const apiUrl = getApiUrl("/commodities");
 
     const response = await fetch(apiUrl);
 

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import React from "react";
+import { API_BASE_URL as API_BASE } from "../services/apiConfig";
 import {
   TrendingUp,
   TrendingDown,
@@ -254,8 +255,7 @@ export default function Index() {
   const loadHomepageContent = async () => {
     try {
       setLoadingContent(true);
-      const isLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname.includes("127.0.0.1"));
-      const API_BASE = isLocal ? "http://localhost:5000/api" : "/api";
+
 
       const res = await fetch(`${API_BASE}/contents/homepage`);
       if (!res.ok) throw new Error("API error");

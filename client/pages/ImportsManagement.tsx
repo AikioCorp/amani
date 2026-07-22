@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { API_BASE_URL } from "../services/apiConfig";
 import { 
   Globe, Plus, AlertCircle, CheckCircle2, Loader2, 
   ArrowUpRight, RefreshCw, Check, X, Edit3, Trash2, Eye, ShieldCheck, Sparkles, AlertTriangle, Clock
@@ -46,11 +47,7 @@ interface ArticleImport {
   };
 }
 
-const isLocal =
-  window.location.hostname === "localhost" ||
-  window.location.hostname.includes("127.0.0.1");
 
-const API_BASE_URL = isLocal ? "http://localhost:5000/api" : "/api";
 
 export default function ImportsManagement() {
   const { success, error, warning } = useToast();

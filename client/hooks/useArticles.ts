@@ -182,7 +182,6 @@ export const useArticles = ({
 
   const updateArticle = useCallback(async (id: string, updates: Partial<Article>) => {
     try {
-      setLoading(true);
       const data = await updateContent(id, updates as any);
       
       setArticles(prev => 
@@ -196,14 +195,11 @@ export const useArticles = ({
       console.error('Error updating article:', err);
       setError(err as Error);
       throw err;
-    } finally {
-      setLoading(false);
     }
   }, []);
 
   const deleteArticle = useCallback(async (id: string) => {
     try {
-      setLoading(true);
       await deleteContentApi(id);
       
       setArticles(prev => prev.filter(article => article.id !== id));
@@ -212,8 +208,6 @@ export const useArticles = ({
       console.error('Error deleting article:', err);
       setError(err as Error);
       throw err;
-    } finally {
-      setLoading(false);
     }
   }, []);
 

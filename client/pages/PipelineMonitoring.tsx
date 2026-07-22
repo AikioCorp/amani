@@ -3,10 +3,7 @@ import { Activity, RefreshCw, PlayCircle, CheckCircle2, XCircle, Clock, AlertTri
 import { getSessionToken } from "../services/authService";
 import { useToast } from "../context/ToastContext";
 
-const isLocal =
-  typeof window !== "undefined" &&
-  (window.location.hostname === "localhost" || window.location.hostname.includes("127.0.0.1"));
-const API_BASE_URL = isLocal ? "http://localhost:5000/api" : "/api";
+import { API_BASE_URL } from "../services/apiConfig";
 
 interface SystemJob {
   name: string;

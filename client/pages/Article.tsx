@@ -1,4 +1,5 @@
 import React from "react";
+import { API_BASE_URL as API_BASE } from "../services/apiConfig";
 import { useParams, Link } from "react-router-dom";
 import { Calendar, ArrowLeft, Share2, Mail, Send } from "lucide-react";
 import { useArticles } from "../hooks/useArticles";
@@ -181,10 +182,7 @@ function CategoriesSidebar() {
 
   React.useEffect(() => {
     let mounted = true;
-    const isLocal =
-      typeof window !== "undefined" &&
-      (window.location.hostname === "localhost" || window.location.hostname.includes("127.0.0.1"));
-    const API_BASE = isLocal ? "http://localhost:5000/api" : "/api";
+
 
     const load = async () => {
       try {
