@@ -802,51 +802,57 @@ export default function UnifiedContentForm({
               Image mise en avant
             </h3>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => handleSearchNewImageAI()}
-            disabled={isSearchingImage || !formData.title}
-            className="border-gray-900 text-gray-900 rounded-none hover:bg-gray-50 flex items-center gap-2 font-bold text-xs uppercase tracking-widest"
-          >
-            {isSearchingImage ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Recherche HD en cours…
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 text-blue-600" />
-                Rechercher par IA
-              </>
-            )}
-          </Button>
+          {/* Recherche d'image par IA : non disponible pour les podcasts —
+              la couverture est uploadée manuellement uniquement. */}
+          {type !== "podcast" && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleSearchNewImageAI()}
+              disabled={isSearchingImage || !formData.title}
+              className="border-gray-900 text-gray-900 rounded-none hover:bg-gray-50 flex items-center gap-2 font-bold text-xs uppercase tracking-widest"
+            >
+              {isSearchingImage ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Recherche HD en cours…
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 text-blue-600" />
+                  Rechercher par IA
+                </>
+              )}
+            </Button>
+          )}
         </div>
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4 flex flex-wrap gap-2 items-center">
-          <input
-            type="text"
-            value={customImagePrompt}
-            onChange={(e) => setCustomImagePrompt(e.target.value)}
-            placeholder="Rechercher par sujet (ex: Seydou Keïta, Dangote, Banque Mali...)"
-            className="flex-1 min-w-[200px] px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleSearchNewImageAI();
-              }
-            }}
-          />
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => handleSearchNewImageAI()}
-            disabled={isSearchingImage}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs flex items-center gap-1.5"
-          >
-            {isSearchingImage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-            Rechercher cette image HD
-          </Button>
-        </div>
+        {type !== "podcast" && (
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4 flex flex-wrap gap-2 items-center">
+            <input
+              type="text"
+              value={customImagePrompt}
+              onChange={(e) => setCustomImagePrompt(e.target.value)}
+              placeholder="Rechercher par sujet (ex: Seydou Keïta, Dangote, Banque Mali...)"
+              className="flex-1 min-w-[200px] px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSearchNewImageAI();
+                }
+              }}
+            />
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => handleSearchNewImageAI()}
+              disabled={isSearchingImage}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-xs flex items-center gap-1.5"
+            >
+              {isSearchingImage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              Rechercher cette image HD
+            </Button>
+          </div>
+        )}
 
         <ImageUpload
           onImageSelect={(file) => {
@@ -906,11 +912,11 @@ export default function UnifiedContentForm({
               </div>
             </div>
 
-            {/* Liens principaux */}
+            {/* Liens principaux OU upload direct de fichier */}
             <div className="grid md:grid-cols-2 gap-8">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-                  Lien Audio Principal
+                  Audio Principal — lien ou fichier
                 </label>
                 <input
                   type="url"
@@ -921,11 +927,32 @@ export default function UnifiedContentForm({
                   className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 hover:border-gray-300 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors"
                   placeholder="https://anchor.fm/votre-podcast"
                 />
+                <div className="mt-3 flex items-center gap-3">
+                  <label className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-xs font-bold uppercase tracking-widest cursor-pointer hover:bg-gray-50 transition-colors">
+                    {uploadingMedia === "audio_url" ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Mic className="w-3.5 h-3.5" />
+                    )}
+                    {uploadingMedia === "audio_url" ? "Envoi..." : "Téléverser un fichier audio"}
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      className="hidden"
+                      disabled={uploadingMedia !== null}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleMediaFileUpload(file, "audio_url");
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-                  Lien Vidéo Principal
+                  Vidéo Principale — lien ou fichier
                 </label>
                 <input
                   type="url"
@@ -936,6 +963,27 @@ export default function UnifiedContentForm({
                   className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 hover:border-gray-300 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors"
                   placeholder="https://youtube.com/watch?v=..."
                 />
+                <div className="mt-3 flex items-center gap-3">
+                  <label className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-xs font-bold uppercase tracking-widest cursor-pointer hover:bg-gray-50 transition-colors">
+                    {uploadingMedia === "video_url" ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Video className="w-3.5 h-3.5" />
+                    )}
+                    {uploadingMedia === "video_url" ? "Envoi..." : "Téléverser un fichier vidéo"}
+                    <input
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      disabled={uploadingMedia !== null}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleMediaFileUpload(file, "video_url");
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
               </div>
             </div>
 
