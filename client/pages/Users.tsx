@@ -117,6 +117,7 @@ export default function Users() {
     }
   };
 
+
   const handleDeleteUser = (userId: string) => {
     const userToDelete = users.find((u) => u.id === userId);
     if (userToDelete) {
@@ -296,115 +297,116 @@ export default function Users() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
+    <div className="max-w-7xl mx-auto space-y-12">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-gray-200 pb-6">
         <div>
-          <h1 className="text-2xl font-bold text-amani-primary">Gestion des utilisateurs</h1>
-          <p className="text-gray-600">Gérez les comptes utilisateurs, rôles et permissions</p>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Utilisateurs</h1>
+          <p className="text-sm text-gray-500 mt-2 font-medium">Gérez les comptes utilisateurs, rôles et permissions</p>
         </div>
-        {/* Navigation */}
-        <div className="mb-8">
-          <Link
-            to="/dashboard"
-            className="inline-flex items-center gap-2 text-amani-primary hover:text-amani-primary/80 mb-4"
+      </div>
+
+      {/* Navigation */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <Link
+          to="/dashboard"
+          className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors uppercase tracking-widest"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Retour au dashboard
+        </Link>
+        <div className="flex gap-3">
+          <button
+            onClick={handleExportUsers}
+            className="flex items-center gap-2 px-5 py-2.5 border border-gray-200 text-sm font-bold text-gray-900 hover:bg-gray-50 transition-colors uppercase tracking-widest"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Retour au tableau de bord
+            <Download className="w-4 h-4" />
+            Exporter
+          </button>
+          <Link
+            to="/dashboard/users/new"
+            className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white text-sm font-bold hover:bg-black transition-colors uppercase tracking-widest"
+          >
+            <UserPlus className="w-4 h-4" />
+            Nouvel utilisateur
           </Link>
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="flex gap-3">
-              <button
-                onClick={handleExportUsers}
-                className="flex items-center gap-2 px-4 py-2 border border-amani-primary text-amani-primary rounded-lg hover:bg-amani-secondary/30 transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                Exporter
-              </button>
-              <Link
-                to="/dashboard/users/new"
-                className="flex items-center gap-2 px-4 py-2 bg-amani-primary text-white rounded-lg hover:bg-amani-primary/90 transition-colors"
-              >
-                <UserPlus className="w-4 h-4" />
-                Nouvel utilisateur
-              </Link>
-            </div>
-          </div>
         </div>
+      </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-white/50">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-gray-600">Total</h3>
-              <UsersIcon className="w-5 h-5 text-blue-600" />
+          <div className="bg-white border border-gray-200 p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Total</h3>
+              <UsersIcon className="w-5 h-5 text-gray-900" />
             </div>
-            <div className="text-2xl font-bold text-amani-primary">
+            <div className="text-4xl font-black text-gray-900 tracking-tight">
               {userStats.total}
             </div>
-            <div className="text-sm text-gray-600">utilisateurs</div>
+            <div className="text-sm font-medium text-gray-500 mt-2">utilisateurs</div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-white/50">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-gray-600">Actifs</h3>
-              <CheckCircle className="w-5 h-5 text-green-600" />
+          <div className="bg-white border border-gray-200 p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Actifs</h3>
+              <CheckCircle className="w-5 h-5 text-gray-900" />
             </div>
-            <div className="text-2xl font-bold text-amani-primary">
+            <div className="text-4xl font-black text-gray-900 tracking-tight">
               {userStats.active}
             </div>
-            <div className="text-sm text-gray-600">cette semaine</div>
+            <div className="text-sm font-medium text-gray-500 mt-2">cette semaine</div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-white/50">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-gray-600">Admins</h3>
-              <Shield className="w-5 h-5 text-red-600" />
+          <div className="bg-white border border-gray-200 p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Admins</h3>
+              <Shield className="w-5 h-5 text-gray-900" />
             </div>
-            <div className="text-2xl font-bold text-amani-primary">
+            <div className="text-4xl font-black text-gray-900 tracking-tight">
               {userStats.admins}
             </div>
-            <div className="text-sm text-gray-600">administrateurs</div>
+            <div className="text-sm font-medium text-gray-500 mt-2">administrateurs</div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-white/50">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-gray-600">Premium</h3>
-              <Eye className="w-5 h-5 text-purple-600" />
+          <div className="bg-white border border-gray-200 p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Premium</h3>
+              <Eye className="w-5 h-5 text-gray-900" />
             </div>
-            <div className="text-2xl font-bold text-amani-primary">
+            <div className="text-4xl font-black text-gray-900 tracking-tight">
               {userStats.premium}
             </div>
-            <div className="text-sm text-gray-600">abonnés</div>
+            <div className="text-sm font-medium text-gray-500 mt-2">abonnés</div>
           </div>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-white/50">
-          <div className="flex flex-col lg:flex-row gap-4">
+        <div className="bg-white border border-gray-200 p-6 mb-8">
+          <div className="flex flex-col lg:flex-row gap-6">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-0 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Rechercher par nom, email ou organisation..."
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amani-primary focus:border-transparent"
+                placeholder="RECHERCHER PAR NOM, EMAIL OU ORGANISATION..."
+                className="w-full pl-10 pr-4 py-3 border-0 border-b-2 border-gray-200 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors placeholder-gray-400 text-sm font-medium uppercase tracking-wider"
               />
             </div>
             <div className="flex gap-4">
               <select
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amani-primary focus:border-transparent"
+                className="px-4 py-3 border-0 border-b-2 border-gray-200 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 text-sm font-bold text-gray-900 uppercase tracking-widest cursor-pointer"
               >
-                <option value="all">Tous les rôles</option>
+                <option value="all">TOUS LES RÔLES</option>
                 {roles.map((role) => (
                   <option key={role} value={role}>
-                    {getRoleDisplayName(role)}
+                    {getRoleDisplayName(role).toUpperCase()}
                   </option>
                 ))}
               </select>
-              <button className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              <button className="flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-900 text-sm font-bold hover:bg-gray-200 transition-colors uppercase tracking-widest">
                 <Filter className="w-4 h-4" />
                 Filtres
               </button>
@@ -414,36 +416,35 @@ export default function Users() {
 
         {/* Bulk Actions */}
         {selectedUsers.length > 0 && (
-          <div className="bg-amani-primary text-white rounded-lg p-4 mb-6">
-            <div className="flex items-center justify-between">
-              <span className="font-medium">
-                {selectedUsers.length} utilisateur(s) sélectionné(s)
-              </span>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleBulkRoleChange}
-                  className="px-4 py-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
-                >
-                  Modifier le rôle
-                </button>
-                <button
-                  onClick={handleBulkDelete}
-                  className="px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Supprimer
-                </button>
-              </div>
+          <div className="bg-gray-900 text-white p-4 mb-6 flex items-center justify-between">
+            <span className="font-bold text-sm uppercase tracking-widest">
+              {selectedUsers.length} utilisateur(s) sélectionné(s)
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={handleBulkRoleChange}
+                className="px-5 py-2.5 bg-white/10 text-white text-sm font-bold hover:bg-white/20 transition-colors uppercase tracking-widest"
+              >
+                Modifier le rôle
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                className="px-5 py-2.5 bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition-colors uppercase tracking-widest"
+              >
+                Supprimer
+              </button>
             </div>
           </div>
         )}
 
         {/* Users Table */}
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-white/50">
+        {/* Users Table */}
+        <div className="bg-white border border-gray-200">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50/50">
                 <tr>
-                  <th className="px-6 py-3 text-left">
+                  <th className="px-6 py-4 text-left border-b border-gray-200">
                     <input
                       type="checkbox"
                       checked={
@@ -451,54 +452,54 @@ export default function Users() {
                         filteredUsers.length > 0
                       }
                       onChange={handleSelectAll}
-                      className="h-4 w-4 text-amani-primary focus:ring-amani-primary border-gray-300 rounded"
+                      className="h-4 w-4 text-gray-900 focus:ring-gray-900 border-gray-300 rounded-none cursor-pointer"
                     />
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200">
                     Utilisateur
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200">
                     Rôle
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200">
                     Organisation
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200">
                     Dernière connexion
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200">
                     Statut
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-100">
                 {filteredUsers.map((u) => {
                   const isRecent = new Date(u.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
                   const userRole = u.roles?.[0] || 'user';
                   return (
-                    <tr key={u.id} className="hover:bg-gray-50">
+                    <tr key={u.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <input
                           type="checkbox"
                           checked={selectedUsers.includes(u.id)}
                           onChange={() => handleSelectUser(u.id)}
-                          className="h-4 w-4 text-amani-primary focus:ring-amani-primary border-gray-300 rounded"
+                          className="h-4 w-4 text-gray-900 focus:ring-gray-900 border-gray-300 rounded-none cursor-pointer"
                         />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 bg-gradient-to-br from-amani-primary to-amani-primary/80 rounded-full flex items-center justify-center text-white font-semibold">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-gray-900 rounded-none flex items-center justify-center text-white font-bold tracking-widest text-sm">
                             {u.first_name?.charAt(0) || 'U'}
                             {u.last_name?.charAt(0) || ''}
                           </div>
-                          <div className="ml-4">
-                            <div className="font-medium text-amani-primary">
+                          <div>
+                            <div className="font-black text-gray-900 tracking-tight">
                               {u.first_name} {u.last_name}
                             </div>
-                            <div className="text-sm text-gray-600 flex items-center gap-1">
+                            <div className="text-xs font-medium text-gray-500 flex items-center gap-1 mt-0.5">
                               <Mail className="w-3 h-3" />
                               {u.email}
                             </div>
@@ -507,29 +508,29 @@ export default function Users() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(userRole)}`}
+                          className={`px-3 py-1 rounded-none text-xs font-bold uppercase tracking-widest ${getRoleColor(userRole)}`}
                         >
                           {getRoleDisplayName(userRole)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-500 uppercase tracking-widest">
                         {u.organization || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
                           <Calendar className="w-4 h-4" />
                           {new Date(u.created_at).toLocaleDateString('fr-FR')}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
                           {isRecent ? (
-                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            <CheckCircle className="w-4 h-4 text-gray-900" />
                           ) : (
-                            <XCircle className="w-4 h-4 text-gray-400" />
+                            <XCircle className="w-4 h-4 text-gray-300" />
                           )}
                           <span
-                            className={`text-sm ${isRecent ? "text-green-600" : "text-gray-600"}`}
+                            className={`text-xs font-bold uppercase tracking-widest ${isRecent ? "text-gray-900" : "text-gray-400"}`}
                           >
                             {isRecent ? "En ligne" : "Hors ligne"}
                           </span>
@@ -539,48 +540,48 @@ export default function Users() {
                         <div className="flex items-center gap-2 justify-end">
                           <button
                             onClick={() => handleViewUser(u.id)}
-                            className="text-amani-primary hover:text-amani-primary/80 p-1 rounded hover:bg-amani-secondary/20 transition-colors"
+                            className="text-gray-400 hover:text-gray-900 p-2 border border-transparent hover:border-gray-200 transition-colors"
                             title="Voir les détails"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleEditUser(u.id)}
-                            className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 transition-colors"
+                            className="text-gray-400 hover:text-gray-900 p-2 border border-transparent hover:border-gray-200 transition-colors"
                             title="Modifier l'utilisateur"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteUser(u.id)}
-                            className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
+                            className="text-red-400 hover:text-red-600 p-2 border border-transparent hover:border-red-200 transition-colors"
                             title="Supprimer l'utilisateur"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
                           <div className="relative group">
-                            <button className="text-gray-600 hover:text-gray-800 p-1 rounded hover:bg-gray-50 transition-colors">
+                            <button className="text-gray-400 hover:text-gray-900 p-2 border border-transparent hover:border-gray-200 transition-colors">
                               <MoreHorizontal className="w-4 h-4" />
                             </button>
                             {/* Dropdown menu */}
-                            <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                            <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-200 shadow-2xl z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
                               <button
                                 onClick={() => handleSendPasswordReset(u.id)}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                className="w-full text-left px-5 py-3 text-xs font-bold uppercase tracking-widest text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors border-b border-gray-100"
                               >
-                                Réinitialiser le mot de passe
+                                Réinitialiser MDP
                               </button>
                               <button
                                 onClick={() => handleSendMessage(u.id)}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                className="w-full text-left px-5 py-3 text-xs font-bold uppercase tracking-widest text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors border-b border-gray-100"
                               >
-                                Envoyer un message
+                                Envoyer message
                               </button>
                               <button
                                 onClick={() => handleSuspendUser(u.id)}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                className="w-full text-left px-5 py-3 text-xs font-bold uppercase tracking-widest text-red-600 hover:bg-red-50 transition-colors"
                               >
-                                Suspendre le compte
+                                Suspendre
                               </button>
                             </div>
                           </div>
@@ -595,8 +596,8 @@ export default function Users() {
         </div>
 
         {/* Permissions Management */}
-        <div className="mt-8 bg-white rounded-2xl shadow-lg p-8 border border-white/50">
-          <h2 className="text-2xl font-bold text-amani-primary mb-6">
+        <div className="mt-8 bg-white border border-gray-200 p-8">
+          <h2 className="text-2xl font-black text-gray-900 tracking-tight mb-8">
             Gestion des permissions par rôle
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -607,47 +608,47 @@ export default function Users() {
               return (
                 <div
                   key={role}
-                  className="border border-gray-200 rounded-lg p-6"
+                  className="border border-gray-200 p-8 bg-gray-50/30 hover:bg-white transition-colors"
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-amani-primary">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-black text-gray-900 uppercase tracking-widest">
                       {getRoleDisplayName(role)}
                     </h3>
                     <span
-                      className={`px-2 py-1 rounded text-xs ${getRoleColor(role)}`}
+                      className={`px-3 py-1 rounded-none text-xs font-bold uppercase tracking-widest ${getRoleColor(role)}`}
                     >
-                      {roleUsers.length} utilisateur(s)
+                      {roleUsers.length} usager(s)
                     </span>
                   </div>
                   {sampleUser && (
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">
-                        Informations:
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200 pb-2 mb-4">
+                        Échantillon
                       </h4>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-xs">
-                          <CheckCircle className="w-3 h-3 text-green-500" />
-                          <span className="text-gray-600">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3 text-sm">
+                          <CheckCircle className="w-4 h-4 text-gray-900" />
+                          <span className="font-bold text-gray-900">
                             {sampleUser.first_name} {sampleUser.last_name}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-xs">
-                          <Mail className="w-3 h-3 text-gray-500" />
-                          <span className="text-gray-600">
+                        <div className="flex items-center gap-3 text-sm">
+                          <Mail className="w-4 h-4 text-gray-400" />
+                          <span className="font-medium text-gray-600">
                             {sampleUser.email}
                           </span>
                         </div>
                         {sampleUser.organization && (
-                          <div className="flex items-center gap-2 text-xs">
-                            <Shield className="w-3 h-3 text-gray-500" />
-                            <span className="text-gray-600">
+                          <div className="flex items-center gap-3 text-sm">
+                            <Shield className="w-4 h-4 text-gray-400" />
+                            <span className="font-medium text-gray-600 uppercase tracking-widest">
                               {sampleUser.organization}
                             </span>
                           </div>
                         )}
                       </div>
-                      <button className="w-full mt-4 text-amani-primary text-sm font-medium hover:underline">
-                        Voir tous les utilisateurs
+                      <button className="w-full mt-6 px-4 py-3 border border-gray-200 text-gray-900 text-xs font-bold uppercase tracking-widest hover:bg-gray-900 hover:text-white transition-colors">
+                        Voir tout
                       </button>
                     </div>
                   )}
@@ -659,36 +660,36 @@ export default function Users() {
 
         {/* User Details Modal */}
         {showUserModal && selectedUser && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-gray-200">
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+            <div className="bg-white border border-gray-200 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-none">
+              <div className="p-8 border-b border-gray-200">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-amani-primary">
-                    Détails de l'utilisateur
+                  <h2 className="text-xl font-black text-gray-900 uppercase tracking-widest">
+                    Détails utilisateur
                   </h2>
                   <button
                     onClick={() => setShowUserModal(false)}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-gray-400 hover:text-gray-900 transition-colors"
                   >
                     <X className="w-6 h-6" />
                   </button>
                 </div>
               </div>
-              <div className="p-6">
-                <div className="space-y-6">
+              <div className="p-8">
+                <div className="space-y-8">
                   {/* User Info */}
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-gradient-to-br from-amani-primary to-amani-primary/80 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                  <div className="flex items-center gap-6">
+                    <div className="w-16 h-16 bg-gray-900 rounded-none flex items-center justify-center text-white font-black text-2xl tracking-widest">
                       {selectedUser.firstName.charAt(0)}
                       {selectedUser.lastName.charAt(0)}
                     </div>
                     <div>
-                      <h3 className="text-xl font-semibold text-amani-primary">
+                      <h3 className="text-2xl font-black text-gray-900 tracking-tight">
                         {selectedUser.firstName} {selectedUser.lastName}
                       </h3>
-                      <p className="text-gray-600">{selectedUser.email}</p>
+                      <p className="text-gray-500 font-medium mb-3">{selectedUser.email}</p>
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(selectedUser.role)}`}
+                        className={`px-3 py-1 rounded-none text-xs font-bold uppercase tracking-widest ${getRoleColor(selectedUser.role)}`}
                       >
                         {getRoleDisplayName(selectedUser.role)}
                       </span>
@@ -696,10 +697,10 @@ export default function Users() {
                   </div>
 
                   {/* Details Grid */}
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid md:grid-cols-2 gap-8">
                     <div>
-                      <h4 className="font-semibold text-gray-700 mb-3">
-                        Informations personnelles
+                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200 pb-2 mb-4">
+                        Infos Personnelles
                       </h4>
                       <div className="space-y-2 text-sm">
                         <div>
@@ -719,116 +720,56 @@ export default function Users() {
                       </div>
                     </div>
                     <div>
-                      <h4 className="font-semibold text-gray-700 mb-3">
+                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200 pb-2 mb-4">
                         Préférences
                       </h4>
-                      <div className="space-y-2 text-sm">
-                        <div>
-                          <span className="font-medium">Newsletter:</span>{" "}
-                          {selectedUser.preferences.newsletter
-                            ? "Activée"
-                            : "Désactivée"}
+                      <div className="space-y-3 text-sm">
+                        <div className="flex justify-between items-center border-b border-gray-50 pb-2">
+                          <span className="font-medium text-gray-500 uppercase tracking-widest text-xs">Newsletter:</span>
+                          <span className="font-bold text-gray-900">
+                            {selectedUser.preferences.newsletter ? "Activée" : "Désactivée"}
+                          </span>
                         </div>
-                        <div>
-                          <span className="font-medium">Alertes:</span>{" "}
-                          {selectedUser.preferences.alerts
-                            ? "Activées"
-                            : "Désactivées"}
+                        <div className="flex justify-between items-center border-b border-gray-50 pb-2">
+                          <span className="font-medium text-gray-500 uppercase tracking-widest text-xs">Alertes:</span>
+                          <span className="font-bold text-gray-900">
+                            {selectedUser.preferences.alerts ? "Activées" : "Désactivées"}
+                          </span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Sectors */}
-                  <div>
-                    <h4 className="font-semibold text-gray-700 mb-3">
-                      Secteurs d'intérêt
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedUser.preferences.sectors.map(
-                        (sector: string, i: number) => (
-                          <span
-                            key={i}
-                            className="px-2 py-1 bg-amani-secondary/50 text-amani-primary rounded text-xs"
-                          >
-                            {sector}
-                          </span>
-                        ),
-                      )}
-                    </div>
+                  {/* Actions */}
+                  <div className="flex flex-col sm:flex-row gap-3 pt-8 mt-8 border-t border-gray-200">
+                    <button
+                      onClick={() => {
+                        handleEditUser(selectedUser.id);
+                        setShowUserModal(false);
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 px-5 py-3 border border-gray-200 text-gray-900 text-xs font-bold uppercase tracking-widest hover:bg-gray-50 transition-colors"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Modifier
+                    </button>
+                    <button
+                      onClick={() => handleSendPasswordReset(selectedUser.id)}
+                      className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-gray-900 text-white text-xs font-bold uppercase tracking-widest hover:bg-black transition-colors"
+                    >
+                      <Lock className="w-4 h-4" />
+                      Réinitialiser MDP
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleDeleteUser(selectedUser.id);
+                        setShowUserModal(false);
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-red-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-red-700 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Supprimer
+                    </button>
                   </div>
-
-                  {/* Countries */}
-                  <div>
-                    <h4 className="font-semibold text-gray-700 mb-3">
-                      Pays suivis
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedUser.preferences.countries.map(
-                        (country: string, i: number) => (
-                          <span
-                            key={i}
-                            className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
-                          >
-                            {country}
-                          </span>
-                        ),
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Permissions */}
-                  <div>
-                    <h4 className="font-semibold text-gray-700 mb-3">
-                      Permissions
-                    </h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {selectedUser.permissions.map(
-                        (permission: string, i: number) => (
-                          <div
-                            key={i}
-                            className="flex items-center gap-2 text-xs"
-                          >
-                            <CheckCircle className="w-3 h-3 text-green-500" />
-                            <span className="text-gray-600">
-                              {permission.replace(/_/g, " ")}
-                            </span>
-                          </div>
-                        ),
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-3 mt-8 pt-6 border-t border-gray-200">
-                  <button
-                    onClick={() => {
-                      handleEditUser(selectedUser.id);
-                      setShowUserModal(false);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-amani-primary text-white rounded-lg hover:bg-amani-primary/90 transition-colors"
-                  >
-                    <Edit className="w-4 h-4" />
-                    Modifier
-                  </button>
-                  <button
-                    onClick={() => handleSendPasswordReset(selectedUser.id)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <Lock className="w-4 h-4" />
-                    Réinitialiser le mot de passe
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleDeleteUser(selectedUser.id);
-                      setShowUserModal(false);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Supprimer
-                  </button>
                 </div>
               </div>
             </div>
@@ -837,25 +778,25 @@ export default function Users() {
 
         {/* Delete Confirmation Modal */}
         {showDeleteConfirm && userToDelete && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full">
-              <div className="p-6">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+            <div className="bg-white border border-gray-200 shadow-2xl max-w-md w-full rounded-none">
+              <div className="p-8">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 bg-red-50 rounded-none flex items-center justify-center border border-red-100">
                     <AlertCircle className="w-6 h-6 text-red-600" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Confirmer la suppression
+                    <h3 className="text-lg font-black text-gray-900 uppercase tracking-widest">
+                      Confirmation
                     </h3>
-                    <p className="text-gray-600">
-                      Cette action est irréversible
+                    <p className="text-sm font-medium text-red-600 mt-1 uppercase tracking-widest">
+                      Action irréversible
                     </p>
                   </div>
                 </div>
-                <p className="text-gray-700 mb-6">
+                <p className="text-gray-600 mb-8 leading-relaxed">
                   Êtes-vous sûr de vouloir supprimer l'utilisateur{" "}
-                  <span className="font-semibold">
+                  <span className="font-bold text-gray-900">
                     {userToDelete.firstName} {userToDelete.lastName}
                   </span>{" "}
                   ({userToDelete.email}) ?
@@ -863,13 +804,13 @@ export default function Users() {
                 <div className="flex gap-3 justify-end">
                   <button
                     onClick={() => setShowDeleteConfirm(false)}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="px-6 py-3 border border-gray-200 text-gray-900 text-xs font-bold uppercase tracking-widest hover:bg-gray-50 transition-colors"
                   >
                     Annuler
                   </button>
                   <button
                     onClick={confirmDeleteUser}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    className="px-6 py-3 bg-red-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-red-700 transition-colors"
                   >
                     Supprimer
                   </button>
@@ -881,31 +822,31 @@ export default function Users() {
 
         {/* Bulk Role Change Modal */}
         {showBulkRoleModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full">
-              <div className="p-6">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Shield className="w-6 h-6 text-blue-600" />
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+            <div className="bg-white border border-gray-200 shadow-2xl max-w-md w-full rounded-none">
+              <div className="p-8">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="w-12 h-12 bg-gray-50 border border-gray-200 flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-gray-900" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Modifier le rôle en lot
+                    <h3 className="text-lg font-black text-gray-900 uppercase tracking-widest">
+                      Modification en lot
                     </h3>
-                    <p className="text-gray-600">
-                      {selectedUsers.length} utilisateur(s) sélectionné(s)
+                    <p className="text-xs font-bold text-gray-500 mt-1 uppercase tracking-widest">
+                      {selectedUsers.length} usager(s) sélectionné(s)
                     </p>
                   </div>
                 </div>
 
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="mb-8">
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
                     Nouveau rôle
                   </label>
                   <select
                     value={newBulkRole}
                     onChange={(e) => setNewBulkRole(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amani-primary focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-none focus:outline-none focus:ring-0 focus:border-gray-900 bg-transparent text-sm font-bold text-gray-900 uppercase tracking-widest cursor-pointer"
                   >
                     <option value="visiteur">Visiteur</option>
                     <option value="abonne">Abonné Premium</option>
@@ -919,15 +860,15 @@ export default function Users() {
                 <div className="flex gap-3 justify-end">
                   <button
                     onClick={() => setShowBulkRoleModal(false)}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="px-6 py-3 border border-gray-200 text-gray-900 text-xs font-bold uppercase tracking-widest hover:bg-gray-50 transition-colors"
                   >
                     Annuler
                   </button>
                   <button
                     onClick={confirmBulkRoleChange}
-                    className="px-4 py-2 bg-amani-primary text-white rounded-lg hover:bg-amani-primary/90 transition-colors"
+                    className="px-6 py-3 bg-gray-900 text-white text-xs font-bold uppercase tracking-widest hover:bg-black transition-colors"
                   >
-                    Modifier les rôles
+                    Appliquer
                   </button>
                 </div>
               </div>

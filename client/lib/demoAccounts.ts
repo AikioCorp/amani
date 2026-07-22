@@ -294,14 +294,14 @@ export const getRoleDisplayName = (role: string): string => {
 
 export const getRoleColor = (role: string): string => {
   const roleColors = {
-    admin: "bg-red-100 text-red-800",
-    editeur: "bg-blue-100 text-blue-800",
-    analyste: "bg-green-100 text-green-800",
-    moderateur: "bg-yellow-100 text-yellow-800",
-    abonne: "bg-purple-100 text-purple-800",
-    visiteur: "bg-gray-100 text-gray-800",
+    admin: "border border-red-200 text-red-700 bg-red-50/50",
+    editeur: "border border-blue-200 text-blue-700 bg-blue-50/50",
+    analyste: "border border-green-200 text-green-700 bg-green-50/50",
+    moderateur: "border border-yellow-200 text-yellow-700 bg-yellow-50/50",
+    abonne: "border border-purple-200 text-purple-700 bg-purple-50/50",
+    visiteur: "border border-gray-200 text-gray-700 bg-gray-50/50",
   };
   return (
-    roleColors[role as keyof typeof roleColors] || "bg-gray-100 text-gray-800"
+    roleColors[role as keyof typeof roleColors] || "border border-gray-200 text-gray-700 bg-gray-50/50"
   );
 };
