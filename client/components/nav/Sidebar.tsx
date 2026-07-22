@@ -44,7 +44,7 @@ interface Section {
 
 const SECTIONS: Section[] = [
   {
-    title: "✏️ Création de contenu",
+    title: "📝 Édition",
     items: [
       {
         label: "Articles",
@@ -52,7 +52,7 @@ const SECTIONS: Section[] = [
         permission: "create_articles",
         children: [
           { label: "Tous les articles", to: "/dashboard/articles", icon: FileText, permission: "create_articles" },
-          { label: "Nouvel article", to: "/dashboard/articles/new", icon: FileText, permission: "create_articles" },
+          { label: "Nouvel article", to: "/dashboard/articles/new", icon: Plus, permission: "create_articles" },
         ],
       },
       {
@@ -61,76 +61,53 @@ const SECTIONS: Section[] = [
         permission: "create_podcasts",
         children: [
           { label: "Tous les podcasts", to: "/dashboard/podcasts", icon: Mic, permission: "create_podcasts" },
-          { label: "Nouveau podcast", to: "/dashboard/podcasts/new", icon: Mic, permission: "create_podcasts" },
+          { label: "Nouveau podcast", to: "/dashboard/podcasts/new", icon: Plus, permission: "create_podcasts" },
         ],
       },
       {
-        label: "Indices",
-        icon: LineChart,
-        permission: "create_indices",
-        children: [
-          { label: "Tous les indices", to: "/dashboard/indices-management", icon: LineChart, permission: "create_indices" },
-          { label: "Nouvel indice", to: "/dashboard/indices/new", icon: Plus, permission: "create_indices" },
-        ],
-      },
-      {
-        label: "Import Serper",
-        to: "/dashboard/serper",
+        label: "Imports",
         icon: Globe,
         permission: "create_articles",
+        children: [
+          { label: "Imports Amani", to: "/dashboard/imports", icon: ListChecks, permission: "create_articles" },
+          { label: "Recherche Serper", to: "/dashboard/serper", icon: Globe, permission: "create_articles" },
+        ],
       },
-      {
-        label: "Imports Amani",
-        to: "/dashboard/imports",
-        icon: ListChecks,
-        permission: "create_articles",
-      },
-      {
-        label: "Monitoring",
-        to: "/dashboard/monitoring",
-        icon: Activity,
-        permission: "create_articles",
-      },
-    ],
-  },
-  {
-    title: "📚 Gestion de contenu",
-    items: [
       { label: "Vue unifiée", to: "/dashboard/content-management", icon: Layers, permission: "view_dashboard" },
     ],
   },
   {
-    title: "📊 Données",
+    title: "📈 Marchés & Données",
     items: [
-      { label: "Matières premières", to: "/dashboard/commodities-management", icon: Layers, permission: "create_indices" },
+      { label: "Matières premières", to: "/dashboard/commodities-management", icon: LineChart, permission: "create_indices" },
+      { label: "Indices BRVM", to: "/dashboard/indices-management", icon: BarChart3, permission: "create_indices" },
+      { label: "Opportunités d'investissement", to: "/dashboard/investment-opportunities", icon: BarChart3, permission: "create_indices" },
     ],
   },
   {
-    title: "📈 Analyse",
+    title: "📊 Analytique",
     items: [
       { label: "Tableaux de bord", to: "/dashboard/analytics", icon: BarChart2, permission: "view_analytics" },
-      { label: "Rapports", to: "/dashboard/reports", icon: Activity, permission: "view_analytics" },
+      { label: "Rapports", to: "/dashboard/reports", icon: FileText, permission: "view_analytics" },
+      { label: "Monitoring Système", to: "/dashboard/monitoring", icon: Activity, permission: "create_articles" },
     ],
   },
   {
-    title: "🛡️ Modération",
+    title: "👥 Communauté",
     items: [
-      { label: "Centre de modération", to: "/dashboard/moderation", icon: Shield, permission: "manage_users" },
+      { label: "Utilisateurs", to: "/dashboard/users", icon: Users, permission: "manage_users" },
+      { label: "Modération", to: "/dashboard/moderation", icon: Shield, permission: "manage_users" },
       { label: "Signalements", to: "/dashboard/reports-moderation", icon: FileWarning, permission: "manage_users" },
     ],
   },
   {
-    title: "⚙️ Administration",
+    title: "⚙️ Réglages",
     items: [
-      { label: "Utilisateurs", to: "/dashboard/users", icon: Users, permission: "manage_users" },
+      { label: "Mon Profil", to: "/dashboard/profile", icon: UserIcon, permission: "view_dashboard" },
+      { label: "Notifications", to: "/dashboard/notifications", icon: Bell, permission: "view_dashboard" },
       { label: "Permissions", to: "/dashboard/permissions", icon: ListChecks, permission: "manage_users" },
-      { label: "Paramètres", to: "/dashboard/settings", icon: Settings, permission: "manage_settings" },
-    ],
-  },
-  {
-    title: "👤 Mon compte",
-    items: [
-      { label: "Profil", to: "/dashboard/profile", icon: UserIcon, permission: "view_dashboard" },
+      { label: "Intégrations", to: "/dashboard/integrations", icon: Plug, permission: "manage_settings" },
+      { label: "Paramètres Généraux", to: "/dashboard/settings", icon: Settings, permission: "manage_settings" },
     ],
   },
 ];

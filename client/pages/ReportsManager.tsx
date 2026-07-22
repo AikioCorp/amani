@@ -51,8 +51,8 @@ export default function ReportsManager() {
 
   if (!user || (!canViewEconomicReports && !canViewModerationReports)) {
     return (
-      <DashboardLayout title="Accès refusé">
-        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md mx-auto">
+      <div className="p-4 sm:p-6">
+        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md mx-auto text-center border border-white/50">
           <h2 className="text-2xl font-bold text-amani-primary mb-4">
             Accès refusé
           </h2>
@@ -61,7 +61,7 @@ export default function ReportsManager() {
             rapports.
           </p>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
@@ -286,22 +286,26 @@ export default function ReportsManager() {
   });
 
   return (
-    <DashboardLayout
-      title="Rapports et signalements"
-      subtitle="Gérez les rapports économiques et les signalements de modération"
-      actions={
-        activeTab === "economic" &&
-        hasPermission("create_economic_reports") && (
-          <Link
-            to="/dashboard/reports/new"
-            className="flex items-center gap-2 px-4 py-2 bg-amani-primary text-white rounded-lg hover:bg-amani-primary/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Nouveau rapport
-          </Link>
-        )
-      }
-    >
+    <div className="p-4 sm:p-6 space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Rapports et signalements</h1>
+          <p className="text-slate-500 mt-1">Gérez les rapports économiques et les signalements de modération</p>
+        </div>
+        <div className="flex items-center gap-3">
+          {activeTab === "economic" && hasPermission("create_economic_reports") && (
+            <Link
+              to="/dashboard/reports/new"
+              className="flex items-center gap-2 px-4 py-2 bg-amani-primary text-white rounded-lg hover:bg-amani-primary/90 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Nouveau rapport
+            </Link>
+          )}
+        </div>
+      </div>
+
       <div className="space-y-8">
         {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -742,6 +746,6 @@ export default function ReportsManager() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }

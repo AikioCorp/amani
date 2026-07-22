@@ -34,6 +34,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import InteractiveMap from "../components/InteractiveMap";
+import { Skeleton } from "../components/ui/skeleton";
 import { fetchBRVMData, BRVMData } from "../services/brvmApi";
 import {
   fetchCommoditiesData,
@@ -117,7 +118,7 @@ const ArticleSection: React.FC<ArticleSectionProps> = ({
             {/* Featured Article */}
             <div className="lg:col-span-2">
               {featured && (
-                <Link to={`/article/${featured.id}`} className="group block">
+                <Link to={`/article/${featured.slug || featured.id}`} className="group block">
                   <div className="relative aspect-[16/10] overflow-hidden rounded-lg bg-gray-100">
                     <img
                       src={featured.featured_image || '/placeholder.svg'}
@@ -155,7 +156,7 @@ const ArticleSection: React.FC<ArticleSectionProps> = ({
             {/* Sidebar list */}
             <div className="lg:col-span-1 flex flex-col gap-6">
               {listItems.map((item, index) => (
-                <Link key={index} to={`/article/${item.id}`} className="group flex gap-4">
+                <Link key={index} to={`/article/${item.slug || item.id}`} className="group flex gap-4">
                   <img
                     src={item.featured_image || '/placeholder.svg'}
                     alt={item.title}
@@ -384,93 +385,122 @@ export default function Index() {
       <section className="bg-[#373B3A] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-4xl lg:text-5xl font-extrabold mb-6 tracking-tight">À la une</h1>
-              <h2 className="text-2xl lg:text-3xl font-bold mb-4 leading-snug">
-                <Link
-                  to={heroArticle ? `/article/${heroArticle.id}` : "/article/1"}
-                  className="hover:text-[#EADFC9] transition-colors"
-                >
-                  {heroArticle ? heroArticle.title : "La Plateforme Interopérable du Système de Paiement Instantané (PI-SPI) de la BCEAO"}
-                </Link>
-              </h2>
-            </div>
-            <div className="relative">
-              <img
-                src={heroArticle?.featured_image || "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=800&q=80"}
-                alt={heroArticle?.title || "La Plateforme Interopérable du Système de Paiement Instantané (PI-SPI) de la BCEAO"}
-                className="w-full h-80 object-cover rounded-2xl shadow-2xl"
-                loading="lazy"
-                decoding="async"
-                onError={(e) => {
-                  const target = e.currentTarget as HTMLImageElement;
-                  target.onerror = null;
-                  target.src = "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=800&q=80";
-                }}
-              />
-            </div>
+            {loadingContent ? (
+              <>
+                <div className="space-y-6">
+                  <Skeleton className="h-14 w-48 bg-white/10 rounded-lg" />
+                  <Skeleton className="h-20 w-full bg-white/10 rounded-lg" />
+                </div>
+                <div className="relative">
+                  <Skeleton className="w-full h-80 rounded-2xl bg-white/10" />
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <h1 className="text-4xl lg:text-5xl font-extrabold mb-6 tracking-tight">À la une</h1>
+                  <h2 className="text-2xl lg:text-3xl font-bold mb-4 leading-snug">
+                    <Link
+                      to={heroArticle ? `/article/${heroArticle.slug || heroArticle.id}` : "#"}
+                      className="hover:text-[#EADFC9] transition-colors"
+                    >
+                      {heroArticle?.title}
+                    </Link>
+                  </h2>
+                </div>
+                <div className="relative">
+                  {heroArticle?.featured_image && (
+                    <img
+                      src={heroArticle.featured_image}
+                      alt={heroArticle.title}
+                      className="w-full h-80 object-cover rounded-2xl shadow-2xl"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </section>
 
-      {/* Key Indices Widget - BRVM en temps réel */}
-      {ENABLE_MARKET_WIDGET && (
-        <section className="py-8 bg-white border-b border-[#F0EAE1]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between pb-4 mb-6 border-b border-gray-100">
-              <h2 className="text-lg font-bold text-gray-900">
-                Indices BRVM en temps réel
-              </h2>
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => {
-                    if (ENABLE_MARKET_FETCH) {
-                      loadAllData(true);
-                    } else {
-                      setLastUpdate(new Date());
-                    }
-                  }}
-                  disabled={loading}
-                  className="flex items-center gap-1 text-xs font-semibold text-gray-400 hover:text-gray-600 disabled:opacity-50 transition-colors"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-                  Actualiser
-                </button>
-                <Link to="/indices" className="text-xs font-semibold text-gray-400 hover:text-gray-600 transition-colors">
-                  Voir tous les indices →
-                </Link>
-              </div>
+      {/* 3. Marchés & Indices BRVM (Clean dynamic flex row with vertical separators) */}
+      <section className="py-8 bg-white border-b border-[#F0EAE1]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between pb-3 mb-6 border-b border-gray-100">
+            <h3 className="text-xs font-extrabold tracking-widest text-gray-400 uppercase">
+              Marchés & Indices BRVM
+            </h3>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => {
+                  if (ENABLE_MARKET_FETCH) {
+                    loadAllData(true);
+                  } else {
+                    setLastUpdate(new Date());
+                  }
+                }}
+                disabled={loading}
+                className="flex items-center gap-1 text-xs font-bold text-[#9C8464] hover:opacity-80 transition-opacity"
+              >
+                <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
+                <span className="text-[10px] tracking-wider uppercase hidden sm:inline">Actualiser les flux</span>
+              </button>
+              <Link
+                to="/indices"
+                className="text-xs font-bold text-[#9C8464] hover:opacity-80 transition-opacity"
+              >
+                <span className="text-[10px] tracking-wider uppercase">Voir la page des indices →</span>
+              </Link>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {keyIndices.map((index, i) => (
-                <div
-                  key={i}
-                  className="bg-[#FDFDFD] border border-gray-100 p-6 rounded-xl relative hover:shadow-sm transition-all"
-                >
-                  <div className="absolute top-3 right-3 w-1.5 h-1.5 bg-yellow-400 rounded-full" />
-                  <div className="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-3">
-                    {index.name}
+          </div>
+
+          <div className="overflow-hidden whitespace-nowrap flex group border-t border-gray-100 pt-2">
+            <div className="flex animate-marquee group-hover:[animation-play-state:paused]">
+              {tickerItems.map((idx, i) => (
+                <div key={i} className="px-8 flex flex-col justify-center min-w-[200px] border-r border-gray-100">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">
+                    {idx.name}
+                  </span>
+                  <div className="text-lg font-black text-gray-900 mb-1">
+                    {idx.value}
                   </div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-2xl font-black text-gray-900">
-                      {index.value}
-                    </span>
-                    <RefreshCw className="w-3.5 h-3.5 text-gray-300 cursor-pointer hover:text-[#9C8464] transition-colors" />
-                  </div>
-                  <div className={`flex items-center gap-0.5 text-xs font-bold ${
-                    index.trend === "up" ? "text-green-600" : index.trend === "down" ? "text-red-600" : "text-gray-400"
+                  <div className={`flex items-center gap-0.5 text-xs font-extrabold ${
+                    idx.trend === 'up' ? 'text-green-600' : idx.trend === 'down' ? 'text-red-600' : 'text-gray-400'
                   }`}>
-                    {index.trend === "up" && <span>↗</span>}
-                    {index.trend === "down" && <span>↘</span>}
-                    {index.trend === "neutral" && <span>→</span>}
-                    <span>{index.change}</span>
+                    {idx.trend === 'up' && <span>↗</span>}
+                    {idx.trend === 'down' && <span>↘</span>}
+                    {idx.trend === 'neutral' && <span>→</span>}
+                    <span>{idx.change}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Duplicate for seamless looping */}
+            <div className="flex animate-marquee group-hover:[animation-play-state:paused]" aria-hidden="true">
+              {tickerItems.map((idx, i) => (
+                <div key={`dup-${i}`} className="px-8 flex flex-col justify-center min-w-[200px] border-r border-gray-100">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">
+                    {idx.name}
+                  </span>
+                  <div className="text-lg font-black text-gray-900 mb-1">
+                    {idx.value}
+                  </div>
+                  <div className={`flex items-center gap-0.5 text-xs font-extrabold ${
+                    idx.trend === 'up' ? 'text-green-600' : idx.trend === 'down' ? 'text-red-600' : 'text-gray-400'
+                  }`}>
+                    {idx.trend === 'up' && <span>↗</span>}
+                    {idx.trend === 'down' && <span>↘</span>}
+                    {idx.trend === 'neutral' && <span>→</span>}
+                    <span>{idx.change}</span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       {/* 1. Dernières Actualités Section */}
       <section className="py-12 bg-white border-b border-[#F0EAE1]">
@@ -491,62 +521,84 @@ export default function Index() {
           </div>
 
           <div className="grid lg:grid-cols-3 gap-8">
-            {/* Left featured article (Overlay card style) */}
-            <div className="lg:col-span-2">
-              {articles && articles[0] ? (
-                <Link to={`/article/${articles[0].id}`} className="group relative block h-[450px] overflow-hidden rounded-xl bg-gray-900 shadow-lg">
-                  <img
-                    src={articles[0].featured_image || 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=1200&q=80'}
-                    alt={articles[0].title}
-                    className="absolute inset-0 w-full h-full object-cover opacity-85 group-hover:scale-105 transition-transform duration-700 ease-out"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
-                  <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col justify-end h-full text-white">
-                    <span className="self-start mb-3 bg-[#9C8464] text-white text-[10px] uppercase tracking-widest font-black px-3 py-1.5 rounded-sm">
-                      À la une
-                    </span>
-                    <h3 className="text-2xl md:text-3xl font-extrabold leading-snug mb-3 drop-shadow-sm group-hover:text-[#EADFC9] transition-colors">
-                      {articles[0].title}
-                    </h3>
-                    <p className="text-sm text-gray-200 line-clamp-2 font-medium opacity-90 max-w-2xl">
-                      {articles[0].summary}
-                    </p>
-                  </div>
-                </Link>
-              ) : (
-                <div className="h-[450px] bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
-                  Aucun article disponible
+            {loadingContent ? (
+              <>
+                <div className="lg:col-span-2">
+                  <Skeleton className="w-full h-[450px] rounded-xl" />
                 </div>
-              )}
-            </div>
+                <div className="lg:col-span-1 flex flex-col gap-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="flex gap-4 items-center bg-gray-50/50 p-3 rounded-lg border border-gray-100">
+                      <Skeleton className="w-28 h-20 rounded-lg flex-shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-3 w-1/3" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-2/3" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Left featured article (Overlay card style) */}
+                <div className="lg:col-span-2">
+                  {articles && articles[0] ? (
+                    <Link to={`/article/${articles[0].slug || articles[0].id}`} className="group relative block h-[450px] overflow-hidden rounded-xl bg-gray-900 shadow-lg">
+                      <img
+                        src={articles[0].featured_image || 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=1200&q=80'}
+                        alt={articles[0].title}
+                        className="absolute inset-0 w-full h-full object-cover opacity-85 group-hover:scale-105 transition-transform duration-700 ease-out"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+                      <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col justify-end h-full text-white">
+                        <span className="self-start mb-3 bg-[#9C8464] text-white text-[10px] uppercase tracking-widest font-black px-3 py-1.5 rounded-sm">
+                          À la une
+                        </span>
+                        <h3 className="text-2xl md:text-3xl font-extrabold leading-snug mb-3 drop-shadow-sm group-hover:text-[#EADFC9] transition-colors">
+                          {articles[0].title}
+                        </h3>
+                        <p className="text-sm text-gray-200 line-clamp-2 font-medium opacity-90 max-w-2xl">
+                          {articles[0].summary}
+                        </p>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className="h-[450px] bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
+                      Aucun article disponible
+                    </div>
+                  )}
+                </div>
 
-            {/* Right stack list */}
-            <div className="lg:col-span-1 flex flex-col gap-3">
-              {(articles || []).slice(1, 5).map((item, index) => (
-                <Link key={index} to={`/article/${item.id}`} className="group flex gap-4 items-center bg-gray-50/50 p-3 rounded-lg border border-gray-100 hover:bg-white hover:shadow-md transition-all duration-300">
-                  <div className="relative w-28 h-20 overflow-hidden rounded-lg bg-gray-100 flex-shrink-0">
-                    <img
-                      src={item.featured_image || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=300&q=80'}
-                      alt={item.title}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-[9px] font-bold text-[#9C8464] tracking-widest uppercase mb-1 block">
-                      {item.category_info?.name || 'ACTUALITÉ'}
-                    </span>
-                    <h4 className="text-sm font-bold text-gray-950 leading-snug line-clamp-2 group-hover:text-[#9C8464] transition-colors mb-1">
-                      {item.title}
-                    </h4>
-                    {item.read_time && (
-                      <span className="text-[10px] text-gray-400 font-medium">
-                        {item.read_time} min de lecture
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              ))}
-            </div>
+                {/* Right stack list */}
+                <div className="lg:col-span-1 flex flex-col gap-3">
+                  {(articles || []).slice(1, 5).map((item, index) => (
+                    <Link key={index} to={`/article/${item.slug || item.id}`} className="group flex gap-4 items-center bg-gray-50/50 p-3 rounded-lg border border-gray-100 hover:bg-white hover:shadow-md transition-all duration-300">
+                      <div className="relative w-28 h-20 overflow-hidden rounded-lg bg-gray-100 flex-shrink-0">
+                        <img
+                          src={item.featured_image || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=300&q=80'}
+                          alt={item.title}
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[9px] font-bold text-[#9C8464] tracking-widest uppercase mb-1 block">
+                          {item.category_info?.name || 'ACTUALITÉ'}
+                        </span>
+                        <h4 className="text-sm font-bold text-gray-950 leading-snug line-clamp-2 group-hover:text-[#9C8464] transition-colors mb-1">
+                          {item.title}
+                        </h4>
+                        {item.read_time && (
+                          <span className="text-[10px] text-gray-400 font-medium">
+                            {item.read_time} min de lecture
+                          </span>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -575,7 +627,7 @@ export default function Index() {
             <div className="grid lg:grid-cols-5 gap-8 items-start mb-8 pb-8 border-b border-white/10">
               {/* Image Left */}
               <div className="lg:col-span-3">
-                <Link to={`/article/${ecoArticles[0].id}`} className="group block overflow-hidden rounded-xl bg-gray-900 aspect-[16/9] shadow-sm relative">
+                <Link to={`/article/${ecoArticles[0].slug || ecoArticles[0].id}`} className="group block overflow-hidden rounded-xl bg-gray-900 aspect-[16/9] shadow-sm relative">
                   {ecoArticles[0].featured_image ? (
                     <img
                       src={ecoArticles[0].featured_image}
@@ -591,7 +643,7 @@ export default function Index() {
               </div>
               {/* Title & Summary Right */}
               <div className="lg:col-span-2">
-                <Link to={`/article/${ecoArticles[0].id}`} className="group block">
+                <Link to={`/article/${ecoArticles[0].slug || ecoArticles[0].id}`} className="group block">
                   <h3 className="text-2xl md:text-3xl font-extrabold text-white leading-snug font-serif group-hover:text-[#EADFC9] transition-colors mb-4">
                     {ecoArticles[0].title}
                   </h3>
@@ -610,7 +662,7 @@ export default function Index() {
           {/* Bottom Block: 2x2 Grid */}
           <div className="grid md:grid-cols-2 gap-x-8 gap-y-6">
             {(ecoArticles || []).slice(1, 5).map((item, index) => (
-              <Link key={index} to={`/article/${item.id}`} className="group flex gap-4 items-center">
+              <Link key={index} to={`/article/${item.slug || item.id}`} className="group flex gap-4 items-center">
                 <div className="relative w-28 h-20 overflow-hidden rounded-lg bg-gray-900 flex-shrink-0 border border-white/10 shadow-sm flex items-center justify-center">
                   {item.featured_image ? (
                     <img
@@ -648,51 +700,7 @@ export default function Index() {
         </div>
       </section>
 
-      {/* 3. Marchés & Indices BRVM (Clean dynamic flex row with vertical separators) */}
-      <section className="py-8 bg-white border-b border-[#F0EAE1]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between pb-3 mb-6 border-b border-gray-100">
-            <h3 className="text-xs font-extrabold tracking-widest text-gray-400 uppercase">
-              Marchés & Indices BRVM
-            </h3>
-            <button
-              onClick={() => {
-                if (ENABLE_MARKET_FETCH) {
-                  loadAllData(true);
-                } else {
-                  setLastUpdate(new Date());
-                }
-              }}
-              disabled={loading}
-              className="flex items-center gap-1 text-xs font-bold text-[#9C8464] hover:opacity-80 transition-opacity"
-            >
-              <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
-              <span className="text-[10px] tracking-wider uppercase">Actualiser les flux</span>
-            </button>
-          </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 divide-x divide-gray-100">
-            {tickerItems.map((idx, i) => (
-              <div key={i} className="px-6 py-2 flex flex-col justify-center">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">
-                  {idx.name}
-                </span>
-                <div className="text-lg font-black text-gray-900 mb-1">
-                  {idx.value}
-                </div>
-                <div className={`flex items-center gap-0.5 text-xs font-extrabold ${
-                  idx.trend === 'up' ? 'text-green-600' : idx.trend === 'down' ? 'text-red-600' : 'text-gray-400'
-                }`}>
-                  {idx.trend === 'up' && <span>↗</span>}
-                  {idx.trend === 'down' && <span>↘</span>}
-                  {idx.trend === 'neutral' && <span>→</span>}
-                  <span>{idx.change}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* 4. Industrie Section */}
       <section className="py-12 bg-white border-b border-[#F0EAE1]">
@@ -714,7 +722,7 @@ export default function Index() {
 
           <div className="grid md:grid-cols-3 gap-8">
             {(industryArticles || []).slice(0, 3).map((item, index) => (
-              <Link key={index} to={`/article/${item.id}`} className="group block bg-white rounded-xl overflow-hidden border border-gray-100 hover:shadow-md transition-shadow">
+              <Link key={index} to={`/article/${item.slug || item.id}`} className="group block bg-white rounded-xl overflow-hidden border border-gray-100 hover:shadow-md transition-shadow">
                 <div className="relative aspect-[16/10] overflow-hidden bg-gray-50">
                   <img
                     src={item.featured_image || 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=600&q=80'}
@@ -768,7 +776,7 @@ export default function Index() {
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Block 1: Image Left, Content Right */}
             {investArticles && investArticles[0] && (
-              <Link to={`/article/${investArticles[0].id}`} className="group flex flex-col md:flex-row overflow-hidden bg-white border border-[#EBE6DD] rounded-xl hover:shadow-md transition-shadow h-full">
+              <Link to={`/article/${investArticles[0].slug || investArticles[0].id}`} className="group flex flex-col md:flex-row overflow-hidden bg-white border border-[#EBE6DD] rounded-xl hover:shadow-md transition-shadow h-full">
                 <div className="relative md:w-1/2 aspect-video md:aspect-auto overflow-hidden bg-gray-50 min-h-[220px]">
                   <img
                     src={investArticles[0].featured_image || 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=600&q=80'}
@@ -797,7 +805,7 @@ export default function Index() {
 
             {/* Block 2: Content Left, Image Right */}
             {investArticles && investArticles[1] && (
-              <Link to={`/article/${investArticles[1].id}`} className="group flex flex-col md:flex-row overflow-hidden bg-white border border-[#EBE6DD] rounded-xl hover:shadow-md transition-shadow h-full">
+              <Link to={`/article/${investArticles[1].slug || investArticles[1].id}`} className="group flex flex-col md:flex-row overflow-hidden bg-white border border-[#EBE6DD] rounded-xl hover:shadow-md transition-shadow h-full">
                 <div className="p-6 md:w-1/2 flex flex-col justify-between order-2 md:order-1">
                   <div>
                     <span className="text-[10px] font-extrabold text-[#9C8464] tracking-widest uppercase mb-2 block">
@@ -880,7 +888,7 @@ export default function Index() {
                 </p>
 
                 <Link
-                  to={`/article/${item.id}`}
+                  to={`/article/${item.slug || item.id}`}
                   className="text-[10px] font-bold text-[#9C8464] uppercase tracking-widest hover:underline"
                 >
                   Lire l'analyse complète &gt;
@@ -918,7 +926,7 @@ export default function Index() {
             {/* Left featured tech article (Full size with blueprint/code background) */}
             <div className="lg:col-span-2">
               {techArticles && techArticles[0] ? (
-                <Link to={`/article/${techArticles[0].id}`} className="group relative block h-[420px] overflow-hidden rounded-xl bg-[#101413] border border-gray-800">
+                <Link to={`/article/${techArticles[0].slug || techArticles[0].id}`} className="group relative block h-[420px] overflow-hidden rounded-xl bg-[#101413] border border-gray-800">
                   <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#9C8464_1px,transparent_1px)] [background-size:16px_16px]"></div>
                   <img
                     src={techArticles[0].featured_image || 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80'}
@@ -948,7 +956,7 @@ export default function Index() {
             {/* Right side tech articles list */}
             <div className="lg:col-span-1 flex flex-col justify-between gap-6">
               {(techArticles || []).slice(1, 3).map((item, index) => (
-                <Link key={index} to={`/article/${item.id}`} className="group block bg-[#202524] border border-gray-800 rounded-xl p-6 hover:border-[#9C8464] transition-colors h-[200px] flex flex-col justify-between">
+                <Link key={index} to={`/article/${item.slug || item.id}`} className="group block bg-[#202524] border border-gray-800 rounded-xl p-6 hover:border-[#9C8464] transition-colors h-[200px] flex flex-col justify-between">
                   <div>
                     <span className="text-[9px] font-extrabold text-[#9C8464] tracking-widest uppercase mb-2 block">
                       FINTECH
@@ -1080,65 +1088,80 @@ export default function Index() {
 
       {/* Commodities Section */}
       {commoditiesData && (
-        <section className="py-16 bg-gradient-to-br from-amber-50 to-orange-100">
+        <section className="py-20 bg-white border-y border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-amani-primary mb-4">
-                Matières Premières
-              </h2>
-              <p className="text-xl text-gray-600">
-                Prix en temps réel des commodités importantes pour l'Afrique
-              </p>
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+              <div>
+                <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">
+                  Matières Premières
+                </h2>
+                <h3 className="text-3xl font-black text-gray-900 tracking-tight">
+                  Prix en temps réel
+                </h3>
+              </div>
+              <Link
+                to="/indices"
+                className="inline-flex items-center gap-2 text-[#9C8464] font-semibold hover:text-[#7A664B] transition-colors"
+              >
+                Voir tous les prix
+                <ArrowRight className="w-5 h-5" />
+              </Link>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {[
                 commoditiesData.gold,
                 commoditiesData.cotton,
                 commoditiesData.oil_brent,
                 commoditiesData.cocoa,
-              ].map((commodity, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-2xl">
-                      {getCommodityIcon(commodity.symbol)}
-                    </span>
-                    <div
-                      className={`flex items-center gap-1 text-sm font-semibold ${commodity.isPositive ? "text-green-600" : "text-red-600"}`}
-                    >
-                      {commodity.isPositive ? (
-                        <TrendingUp className="w-4 h-4" />
-                      ) : (
-                        <TrendingDown className="w-4 h-4" />
-                      )}
-                      {commodity.changePercent}
+              ].map((commodity, index) => {
+                // Map symbol to Lucide icons
+                const getIcon = (sym: string) => {
+                  switch (sym) {
+                    case "XAU/USD": return <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100"><span className="font-bold text-sm">Au</span></div>; // Gold
+                    case "CT": return <div className="w-10 h-10 rounded-full bg-slate-50 text-slate-600 flex items-center justify-center border border-slate-200"><Heart className="w-5 h-5" /></div>; // Cotton
+                    case "BZ": return <div className="w-10 h-10 rounded-full bg-zinc-100 text-zinc-800 flex items-center justify-center border border-zinc-200"><Zap className="w-5 h-5" /></div>; // Oil
+                    case "CC": return <div className="w-10 h-10 rounded-full bg-orange-50 text-[#857053] flex items-center justify-center border border-orange-100"><Target className="w-5 h-5" /></div>; // Cocoa
+                    default: return <div className="w-10 h-10 rounded-full bg-gray-50 text-gray-600 flex items-center justify-center border border-gray-200"><BarChart3 className="w-5 h-5" /></div>;
+                  }
+                };
+
+                return (
+                  <div
+                    key={index}
+                    className="bg-[#FDFBF9] border border-[#EBE6DD] rounded-2xl p-6 hover:border-[#9C8464]/40 hover:shadow-sm transition-all duration-300 group"
+                  >
+                    <div className="flex items-start justify-between mb-6">
+                      {getIcon(commodity.symbol)}
+                      <div
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${commodity.isPositive ? "bg-green-50 text-green-700 border border-green-100" : "bg-red-50 text-red-700 border border-red-100"}`}
+                      >
+                        {commodity.isPositive ? (
+                          <TrendingUp className="w-3.5 h-3.5" />
+                        ) : (
+                          <TrendingDown className="w-3.5 h-3.5" />
+                        )}
+                        {commodity.changePercent}
+                      </div>
+                    </div>
+
+                    <h4 className="text-gray-500 font-medium text-sm mb-1 uppercase tracking-wide">
+                      {commodity.name}
+                    </h4>
+                    <div className="flex items-baseline gap-2 mb-1">
+                      <span className="text-2xl font-black text-gray-900 tracking-tight">
+                        ${commodity.price}
+                      </span>
+                    </div>
+                    <div className="text-xs font-medium text-gray-400">
+                      {commodity.unit}
                     </div>
                   </div>
-
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">
-                    {commodity.name}
-                  </h3>
-                  <div className="text-2xl font-bold text-amani-primary mb-1">
-                    ${commodity.price}
-                  </div>
-                  <div className="text-sm text-gray-500">{commodity.unit}</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            <div className="text-center">
-              <Link
-                to="/indices"
-                className="inline-flex items-center gap-2 bg-amani-primary text-white px-8 py-4 rounded-xl hover:bg-gray-700 transition-colors font-semibold text-lg"
-              >
-                <Globe className="w-6 h-6" />
-                Voir tous les prix
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-            </div>
+
           </div>
         </section>
       )}
@@ -1154,76 +1177,73 @@ export default function Index() {
       </section>
 
       {/* Services Section */}
-      <section className="py-20 bg-white">
+      <section className="py-24 bg-white border-y border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-[#373B3A] mb-6">
-              Nos Services
+            <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-3">
+              Notre Expertise
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <h3 className="text-4xl font-black text-gray-900 tracking-tight mb-4">
+              Nos Services
+            </h3>
+            <p className="text-lg text-gray-500 max-w-2xl mx-auto">
               Une gamme complète de services pour comprendre l'économie
-              africaine
+              africaine et investir intelligemment.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
                 icon: BarChart3,
                 title: "Analyses de Marché",
                 description:
-                  "Données en temps réel sur les indices boursiers, taux de change et indicateurs économiques",
-                color: "bg-blue-500",
+                  "Données en temps réel sur les indices boursiers, taux de change et indicateurs économiques clés.",
               },
               {
                 icon: Lightbulb,
                 title: "Insights Stratégiques",
                 description:
-                  "Analyses approfondies et prospectives par nos experts économistes",
-                color: "bg-yellow-500",
+                  "Analyses approfondies et prospectives pointues rédigées par nos experts économistes.",
               },
               {
                 icon: Globe,
                 title: "Veille Économique",
                 description:
-                  "Actualités et tendances des économies africaines mises à jour quotidiennement",
-                color: "bg-green-500",
+                  "Actualités et grandes tendances des économies africaines mises à jour quotidiennement.",
               },
               {
                 icon: Video,
                 title: "Podcasts Experts",
                 description:
-                  "Interviews exclusives avec les leaders économiques et analyses sectorielles",
-                color: "bg-purple-500",
+                  "Interviews exclusives avec les leaders économiques et décryptages sectoriels.",
               },
               {
                 icon: Target,
                 title: "Opportunités d'Investissement",
                 description:
-                  "Identification et analyse des meilleures opportunités d'investissement",
-                color: "bg-red-500",
+                  "Identification et analyse rigoureuse des meilleures opportunités de marché.",
               },
               {
                 icon: Shield,
                 title: "Conseil Stratégique",
                 description:
-                  "Accompagnement personnalisé pour vos décisions d'investissement",
-                color: "bg-indigo-500",
+                  "Accompagnement personnalisé et sur-mesure pour sécuriser vos décisions d'investissement.",
               },
             ].map((service, index) => (
               <div
                 key={index}
-                className="bg-gray-50 rounded-2xl p-8 hover:shadow-xl transition-all duration-300 group"
+                className="bg-[#FDFBF9] border border-[#EBE6DD] rounded-2xl p-8 hover:border-[#9C8464]/40 hover:shadow-sm transition-all duration-300 group"
               >
                 <div
-                  className={`${service.color} w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}
+                  className="w-14 h-14 rounded-xl flex items-center justify-center mb-6 bg-white border border-gray-100 group-hover:bg-[#9C8464] group-hover:border-[#9C8464] transition-all duration-300"
                 >
-                  <service.icon className="w-8 h-8 text-white" />
+                  <service.icon className="w-6 h-6 text-[#9C8464] group-hover:text-white transition-colors duration-300" />
                 </div>
-                <h3 className="text-xl font-bold text-[#373B3A] mb-4">
+                <h3 className="text-xl font-bold text-gray-900 mb-3">
                   {service.title}
                 </h3>
-                <p className="text-gray-600 leading-relaxed">
+                <p className="text-sm text-gray-500 leading-relaxed font-medium">
                   {service.description}
                 </p>
               </div>
@@ -1233,53 +1253,56 @@ export default function Index() {
       </section>
 
       {/* Why Choose Amani Section */}
-      <section className="py-20 bg-gradient-to-br from-[#373B3A] to-gray-700 text-white">
+      <section className="py-24 bg-[#FDFBF9] border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-6">
-              Pourquoi Choisir Amani Finance ?
+            <h2 className="text-sm font-bold text-[#9C8464] uppercase tracking-widest mb-3">
+              L'Avantage Amani
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Notre expertise au service de votre compréhension de l'économie
-              africaine
+            <h3 className="text-4xl font-black mb-4 tracking-tight text-gray-900">
+              Pourquoi nous choisir ?
+            </h3>
+            <p className="text-lg text-gray-500 max-w-2xl mx-auto font-medium">
+              Notre expertise pointue au service de votre compréhension de l'économie
+              africaine.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
             {[
               {
                 icon: CheckCircle,
                 title: "Expertise Locale",
                 description:
-                  "Une équipe d'experts basés en Afrique avec une connaissance approfondie des marchés locaux",
+                  "Une équipe d'experts basés en Afrique avec une connaissance approfondie des marchés.",
               },
               {
                 icon: Zap,
-                title: "Données en Temps Réel",
+                title: "Temps Réel",
                 description:
-                  "Accès instantané aux dernières données économiques et financières",
+                  "Accès instantané aux toutes dernières données économiques et financières.",
               },
               {
                 icon: Heart,
-                title: "Information Digestible",
+                title: "Clarté",
                 description:
-                  "Notre mission : rendre l'information économique accessible et compréhensible",
+                  "Notre mission : rendre l'information économique complexe enfin lisible.",
               },
               {
                 icon: Globe,
-                title: "Couverture Complète",
+                title: "Couverture globale",
                 description:
-                  "Analyse de tous les secteurs économiques clés d'Afrique de l'Ouest",
+                  "Analyse exhaustive de tous les secteurs clés d'Afrique de l'Ouest.",
               },
             ].map((feature, index) => (
-              <div key={index} className="text-center group">
-                <div className="bg-white/10 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-white/20 transition-colors duration-300">
-                  <feature.icon className="w-10 h-10 text-[#E5DDD5]" />
+              <div key={index} className="flex flex-col items-center text-center group">
+                <div className="w-16 h-16 rounded-full border border-[#EBE6DD] bg-white flex items-center justify-center mb-6 group-hover:border-[#9C8464] group-hover:bg-[#FDFBF9] transition-all duration-300">
+                  <feature.icon className="w-6 h-6 text-[#9C8464]" />
                 </div>
-                <h3 className="text-xl font-bold mb-4 text-white">
+                <h3 className="text-lg font-bold mb-3 text-gray-900">
                   {feature.title}
                 </h3>
-                <p className="text-gray-300 leading-relaxed">
+                <p className="text-sm text-gray-500 leading-relaxed font-medium">
                   {feature.description}
                 </p>
               </div>
@@ -1288,150 +1311,6 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-[#373B3A] text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-4 gap-8">
-            <div>
-              <img
-                src="https://cdn.builder.io/api/v1/image/assets%2Fa7441c9084eb43e6855cf7e960c5c609%2F6ebebc1a91e8447db48a68aa5b391a28?format=webp&width=800"
-                alt="Amani"
-                className="h-12 w-auto mb-4 brightness-0 invert"
-              />
-              <p className="text-gray-300 mb-4">
-                Votre source d'information économique pour l'Afrique de l'Ouest
-                et le Mali.
-              </p>
-              <div className="flex gap-4">
-                <a
-                  href="#"
-                  className="text-gray-300 hover:text-white transition-colors"
-                >
-                  <Facebook className="w-5 h-5" />
-                </a>
-                <a
-                  href="#"
-                  className="text-gray-300 hover:text-white transition-colors"
-                >
-                  <Twitter className="w-5 h-5" />
-                </a>
-                <a
-                  href="#"
-                  className="text-gray-300 hover:text-white transition-colors"
-                >
-                  <Linkedin className="w-5 h-5" />
-                </a>
-                <a
-                  href="#"
-                  className="text-gray-300 hover:text-white transition-colors"
-                >
-                  <Youtube className="w-5 h-5" />
-                </a>
-              </div>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Navigation</h4>
-              <ul className="space-y-2 text-gray-300">
-                <li>
-                  <Link to="/marche" className="hover:text-white">
-                    Marché
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/economie" className="hover:text-white">
-                    Économie
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/industrie" className="hover:text-white">
-                    Industrie
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/investissement" className="hover:text-white">
-                    Investissement
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Contenu</h4>
-              <ul className="space-y-2 text-gray-300">
-                <li>
-                  <Link to="/insights" className="hover:text-white">
-                    Insights
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/tech" className="hover:text-white">
-                    Tech
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/podcast" className="hover:text-white">
-                    Podcast
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/indices" className="hover:text-white">
-                    Indices
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Contact</h4>
-              <ul className="space-y-2 text-gray-300">
-                <li className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  <span>Faladie, Bamako, Mali</span>
-                </li>
-                <li>
-                  <a
-                    href="mailto:info@amani-finance.com"
-                    className="hover:text-white flex items-center gap-2"
-                  >
-                    📧 info@amani-finance.com
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="tel:+22320224567"
-                    className="hover:text-white flex items-center gap-2"
-                  >
-                    📞 +223 20 22 45 67
-                  </a>
-                </li>
-                <li>
-                  <Link to="/newsletter" className="hover:text-white">
-                    Newsletter
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/about" className="hover:text-white">
-                    À propos
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-white/20 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center text-gray-300">
-            <p>&copy; 2025 Amani Finance. Tous droits réservés.</p>
-            <p className="flex items-center gap-1 mt-2 md:mt-0">
-              Créé avec <Heart className="w-4 h-4 text-red-500 fill-current" />{" "}
-              par
-              <a
-                href="https://www.aikio.co"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-white hover:text-gray-200 font-medium ml-1 transition-colors"
-              >
-                Aikio Corp SAS
-              </a>
-            </p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

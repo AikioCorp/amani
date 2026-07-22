@@ -175,7 +175,7 @@ export default function Actualites() {
         </div>
 
         <Link
-          to={`/article/${article.id}`}
+          to={`/article/${article.slug || article.id}`}
           className="inline-flex items-center gap-2 text-blue-600 font-semibold hover:text-blue-800 transition-colors"
         >
           Lire l'article complet

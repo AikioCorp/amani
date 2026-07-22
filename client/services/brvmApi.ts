@@ -134,3 +134,33 @@ export const useBRVMData = () => {
 
   return { data, loading, error };
 };
+
+export interface BRVMHistoryData {
+  id: string;
+  symbol: string;
+  category: string;
+  date: string;
+  price: number;
+  change: number | null;
+  change_pct: number | null;
+  volume: number | null;
+}
+
+export const fetchBRVMSymbolHistory = async (symbol: string, timeframe: string = "1y"): Promise<BRVMHistoryData[]> => {
+  try {
+    const encodedSymbol = encodeURIComponent(symbol);
+    const apiUrl = getApiUrl(`/brvm/history/${encodedSymbol}?timeframe=${timeframe}`);
+    const response = await fetch(apiUrl);
+    
+    if (response.ok) {
+      const result = await response.json();
+      if (result.success && Array.isArray(result.data)) {
+        return result.data;
+      }
+    }
+    return [];
+  } catch (error) {
+    console.error("Error fetching symbol history:", error);
+    return [];
+  }
+};

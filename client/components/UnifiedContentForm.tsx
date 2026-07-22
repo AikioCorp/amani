@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { getApiUrl } from "../services/apiConfig";
+import { getSessionToken } from "../services/authService";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
@@ -7,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Badge } from "./ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { FileText, Mic, BarChart3, Plus, X, AlertCircle } from "lucide-react";
+import { FileText, Mic, BarChart3, Plus, X, AlertCircle, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
@@ -40,6 +41,41 @@ interface UnifiedContentFormProps {
   onCancel: () => void;
 }
 
+function parseCategorySlug(data: any): string {
+  if (!data) return "";
+  if (data.category_info && typeof data.category_info === "object") {
+    return data.category_info.slug || "";
+  }
+  if (data.category && typeof data.category === "object") {
+    return data.category.slug || data.category.name || "";
+  }
+  if (typeof data.category === "string") return data.category;
+  return "";
+}
+
+function parseCategoryId(data: any): string {
+  if (!data) return "";
+  if (data.category_id && typeof data.category_id === "string") return data.category_id;
+  if (data.category_info && typeof data.category_info === "object" && data.category_info.id) {
+    return data.category_info.id;
+  }
+  if (data.category && typeof data.category === "object" && data.category.id) {
+    return data.category.id;
+  }
+  return "";
+}
+
+function formatDatetimeLocal(val: any): string {
+  if (!val) return "";
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return "";
+    return d.toISOString().slice(0, 16);
+  } catch {
+    return "";
+  }
+}
+
 export default function UnifiedContentForm({
   type,
   initialData,
@@ -57,88 +93,65 @@ export default function UnifiedContentForm({
     (initialData as any)?.featured_image || ""
   );
 
-  // FORMULAIRE UNIFIÉ
-  const [formData, setFormData] = useState(() => {
-    const baseData = {
-      // CHAMPS COMMUNS
+  const [formData, setFormData] = useState<any>(() => {
+    const baseData: any = {
       title: "",
       slug: "",
-      summary: "", // RÉSUMÉ OBLIGATOIRE
+      summary: "",
       description: "",
-      content: "", // Contenu complet optionnel
+      content: "",
       status: "draft" as "draft" | "published",
       category: "",
+      category_id: "",
       country: "mali",
       tags: [] as string[],
-
-      // SEO
       meta_title: "",
       meta_description: "",
       featured_image: "",
       featured_image_alt: "",
-
-      // DATES
-      published_at: new Date().toISOString().split("T")[0],
-
-      // DONNÉES SPÉCIFIQUES
+      published_at: new Date().toISOString().slice(0, 16),
       article_data: {} as ArticleData,
       podcast_data: {} as PodcastData,
       indice_data: {} as IndiceData,
     };
 
-    // Fusionner initialData en convertissant null vers string vide
     if (initialData) {
       const mergedData: any = { ...baseData };
       Object.entries(initialData).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
-          (mergedData as any)[key] = value as any;
+          mergedData[key] = value;
         }
       });
-      // Pré-remplir la catégorie en PRIORITÉ avec le slug (category_info.slug),
-      // sinon fallback sur l'ancien champ texte `category`
-      const initialCategory = (initialData as any)?.category_info?.slug
-        || (initialData as any).category
-        || "";
-      mergedData.category = initialCategory;
-      // Garder category_id tel quel pour la DB si fourni
-      if ((initialData as any).category_id) {
-        mergedData.category_id = (initialData as any).category_id;
+      mergedData.category = parseCategorySlug(initialData);
+      mergedData.category_id = parseCategoryId(initialData) || mergedData.category_id;
+      if (initialData.published_at) {
+        mergedData.published_at = formatDatetimeLocal(initialData.published_at);
       }
-      console.log('🔍 FormData initialisé avec:', mergedData);
       return mergedData;
     }
 
     return baseData;
   });
 
-  // Effet pour synchroniser avec initialData (approche simplifiée)
   useEffect(() => {
     if (initialData) {
-      console.log('🔄 initialData reçu:', initialData);
-      // Pendant la synchronisation, privilégier également le slug
-      const derivedCategory = (initialData as any)?.category_info?.slug
-        || (initialData as any).category
-        || "";
+      const derivedCategory = parseCategorySlug(initialData);
+      const derivedCategoryId = parseCategoryId(initialData);
+      const formattedPublishedAt = formatDatetimeLocal(initialData.published_at || (initialData as any).created_at);
 
-      setFormData(prev => {
-        const currentCategory = prev.category;
-        const needsUpdate = derivedCategory !== currentCategory;
-        if (needsUpdate) {
-          console.log('📝 Mise à jour catégorie (sync):', derivedCategory);
-        }
-        return {
-          ...prev,
-          ...(needsUpdate ? { category: derivedCategory, category_id: (initialData as any).category_id || prev.category_id } : {}),
-          ...Object.fromEntries(
-            Object.entries(initialData).map(([key, value]) => [
-              key,
-              value === null ? "" : value
-            ])
-          )
-        } as any;
-      });
+      setFormData(prev => ({
+        ...prev,
+        ...Object.fromEntries(
+          Object.entries(initialData).map(([key, value]) => [
+            key,
+            value === null ? "" : value
+          ])
+        ),
+        category: derivedCategory || prev.category,
+        category_id: derivedCategoryId || prev.category_id,
+        published_at: formattedPublishedAt || prev.published_at,
+      }) as any);
 
-      // Mettre à jour l'image actuelle si elle existe
       if ((initialData as any)?.featured_image) {
         setCurrentImageUrl((initialData as any).featured_image);
       }
@@ -147,6 +160,120 @@ export default function UnifiedContentForm({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [newTag, setNewTag] = useState("");
+  const [isEnriching, setIsEnriching] = useState(false);
+  const [isSearchingImage, setIsSearchingImage] = useState(false);
+  const [customImagePrompt, setCustomImagePrompt] = useState("");
+  const [uploadingMedia, setUploadingMedia] = useState<"audio_url" | "video_url" | null>(null);
+
+  // Upload direct d'un fichier audio ou vidéo (podcast) — aucun traitement IA,
+  // le fichier est stocké tel quel et son URL remplit le champ de lien correspondant.
+  const handleMediaFileUpload = async (
+    file: File,
+    field: "audio_url" | "video_url",
+  ) => {
+    setUploadingMedia(field);
+    try {
+      const token = getSessionToken();
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch(getApiUrl("/upload/media"), {
+        method: "POST",
+        headers: { Authorization: token ? `Bearer ${token}` : "" },
+        body,
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || "Échec de l'upload du fichier.");
+      }
+      handleSpecificDataChange(field, result.data.url);
+      success(
+        "Fichier envoyé",
+        `${field === "audio_url" ? "Audio" : "Vidéo"} téléversé avec succès.`,
+      );
+    } catch (err: any) {
+      error("Erreur d'upload", err.message || "Impossible d'envoyer le fichier.");
+    } finally {
+      setUploadingMedia(null);
+    }
+  };
+
+  const handleSearchNewImageAI = async (overridePrompt?: string) => {
+    const searchTerm = overridePrompt || customImagePrompt || formData.title;
+    if (!searchTerm) {
+      error("Titre ou recherche requis", "Veuillez saisir un sujet ou titre d'article avant de rechercher une image.");
+      return;
+    }
+    setIsSearchingImage(true);
+    try {
+      const token = getSessionToken();
+      const res = await fetch(getApiUrl("/news/enrich-image"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": token ? `Bearer ${token}` : "",
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          category: formData.category,
+          customQuery: searchTerm,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.data?.imageUrl) {
+        setFormData(prev => ({ ...prev, featured_image: data.data.imageUrl }));
+        setCurrentImageUrl(data.data.imageUrl);
+        success("Image HD trouvée !", `Photo de presse HD attribuée pour "${searchTerm}".`);
+      } else {
+        throw new Error(data.error || "Impossible de trouver une image HD.");
+      }
+    } catch (err: any) {
+      error("Erreur image", err.message || "Échec de la recherche d'image par IA.");
+    } finally {
+      setIsSearchingImage(false);
+    }
+  };
+
+  const handleEnrichWithAI = async () => {
+    if (!formData.title && !formData.summary && !(formData as any).article_data?.original_link) {
+      error("Information insuffisante", "Veuillez remplir au moins le titre de l'article pour lancer la génération par l'IA.");
+      return;
+    }
+    setIsEnriching(true);
+    try {
+      const token = getSessionToken();
+      const response = await fetch(getApiUrl("/news/enrich"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": token ? `Bearer ${token}` : ""
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          summary: formData.summary,
+          content: formData.content,
+          link: (formData as any).article_data?.original_link || ""
+        })
+      });
+      const result = await response.json();
+      if (response.ok && result.success && result.data) {
+        setFormData(prev => ({
+          ...prev,
+          title: result.data.title || prev.title,
+          summary: result.data.summary || prev.summary,
+          content: result.data.content || prev.content,
+          meta_title: result.data.seo_title || prev.meta_title,
+          meta_description: result.data.seo_description || prev.meta_description
+        }));
+        success("Génération IA réussie", "Le résumé professionnel et le contenu long ont été générés par l'IA.");
+      } else {
+        throw new Error(result.error || "Erreur d'enrichissement IA.");
+      }
+    } catch (err: any) {
+      error("Erreur", err.message || "Impossible de générer le résumé par IA.");
+    } finally {
+      setIsEnriching(false);
+    }
+  };
 
   // Auto-génération du slug
   useEffect(() => {
@@ -282,15 +409,40 @@ export default function UnifiedContentForm({
     setIsSaving(true);
 
     try {
-      // Upload de l'image si nécessaire
+      // Upload de l'image si un fichier local a été sélectionné
       let imageUrl = formData.featured_image;
       if (featuredImage) {
         try {
-          const { StorageService } = await import("../services/supabase");
-          imageUrl = await StorageService.uploadImage(featuredImage, "images", "content");
-        } catch (imgError) {
+          const base64Data = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(featuredImage);
+          });
+
+          const token = getSessionToken();
+          const uploadRes = await fetch(getApiUrl("/upload"), {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": token ? `Bearer ${token}` : "",
+            },
+            body: JSON.stringify({
+              imageBase64: base64Data,
+              filename: featuredImage.name,
+            }),
+          });
+
+          const uploadData = await uploadRes.json();
+          if (uploadRes.ok && uploadData.success && uploadData.data?.url) {
+            imageUrl = uploadData.data.url;
+          } else {
+            throw new Error(uploadData.error || "Impossible d'uploader l'image.");
+          }
+        } catch (imgError: any) {
           console.error("Erreur upload image:", imgError);
-          error("Erreur", "Impossible d'uploader l'image. Veuillez réessayer.");
+          error("Erreur d'image", imgError.message || "Impossible d'uploader l'image. Veuillez réessayer.");
+          setIsSaving(false);
           return;
         }
       }
@@ -399,34 +551,31 @@ export default function UnifiedContentForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* EN-TÊTE UNIFIÉ */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-blue-600 text-white rounded-xl">
+      <div className="border-b border-gray-200 pb-4 mb-8">
+        <div className="flex items-center gap-3">
+          <div className="text-gray-900">
             {getTypeIcon()}
           </div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              {initialData
-                ? `Modifier ${getTypeLabel()}`
-                : `Nouveau ${getTypeLabel()}`}
-            </h2>
-          </div>
+          <h2 className="text-xl font-bold text-gray-900 uppercase tracking-widest">
+            {initialData
+              ? `Formulaire d'édition`
+              : `Nouveau formulaire`}
+          </h2>
         </div>
       </div>
 
       {/* INFORMATIONS PRINCIPALES */}
-      <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
-        <div className="flex items-center gap-3 mb-6">
-          <FileText className="w-6 h-6 text-blue-600" />
-          <h3 className="text-xl font-semibold text-gray-900">
+      <div className="bg-white border border-gray-200 p-8">
+        <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-100">
+          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">
             Informations principales
           </h3>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Titre */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
               Titre *
             </label>
             <input
@@ -434,14 +583,14 @@ export default function UnifiedContentForm({
               name="title"
               value={formData.title || ""}
               onChange={handleInputChange}
-              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.title ? "border-red-300" : "border-gray-300"
+              className={`w-full px-0 py-3 border-0 border-b-2 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 text-lg font-medium transition-colors ${
+                errors.title ? "border-red-500" : "border-gray-200 hover:border-gray-300"
               }`}
-              placeholder={`Titre de votre ${getTypeLabel().toLowerCase()}`}
+              placeholder={`Saisissez le titre ici...`}
             />
             {errors.title && (
-              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                <AlertCircle className="w-4 h-4" />
+              <p className="mt-2 text-xs font-bold text-red-500 flex items-center gap-1 uppercase tracking-widest">
+                <AlertCircle className="w-3.5 h-3.5" />
                 {errors.title}
               </p>
             )}
@@ -449,75 +598,98 @@ export default function UnifiedContentForm({
 
           {/* Slug */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
               URL (Slug)
             </label>
             <div className="flex items-center">
-              <span className="text-gray-500 text-sm">amani-finance.com/</span>
+              <span className="text-gray-400 text-sm font-medium">amani-finance.com/</span>
               <input
                 type="text"
                 name="slug"
                 value={formData.slug || ""}
                 onChange={handleInputChange}
-                className="flex-1 ml-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 ml-1 px-0 py-2 border-0 border-b-2 border-gray-200 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors"
                 placeholder="url-de-votre-contenu"
               />
             </div>
           </div>
 
+          {/* Assistant Rédaction IA */}
+          <div className="bg-gray-50 border border-gray-200 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 my-8">
+            <div>
+              <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2 uppercase tracking-widest">
+                <Sparkles className="w-4 h-4 text-gray-900" />
+                Assistant Rédaction IA
+              </h4>
+              <p className="text-xs text-gray-500 mt-1 font-medium">
+                Générez un résumé professionnel complet et un article long structuré en un clic.
+              </p>
+            </div>
+            <Button
+              type="button"
+              onClick={handleEnrichWithAI}
+              disabled={isEnriching}
+              className="bg-gray-900 hover:bg-black text-white font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-none flex items-center gap-2 shrink-0 transition-colors"
+            >
+              {isEnriching ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Génération par l'IA...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Générer Résumé & Contenu Long IA
+                </>
+              )}
+            </Button>
+          </div>
+
           {/* Résumé OBLIGATOIRE */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Résumé *{" "}
-              <span className="text-blue-600">
-                (Utilisé pour l'extrait et le SEO)
-              </span>
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
+              Résumé *
             </label>
             <textarea
               name="summary"
               value={formData.summary || ""}
               onChange={handleInputChange}
-              rows={4}
-              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.summary ? "border-red-300" : "border-gray-300"
+              rows={3}
+              className={`w-full px-4 py-3 bg-gray-50 border-0 rounded-none focus:ring-0 focus:bg-gray-100 transition-colors resize-none ${
+                errors.summary ? "border-b-2 border-red-500" : ""
               }`}
-              placeholder="Résumé captivant qui sera affiché sur la page d'accueil et dans les extraits..."
+              placeholder="Un résumé percutant pour accrocher l'auditeur..."
             />
             {errors.summary && (
-              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                <AlertCircle className="w-4 h-4" />
+              <p className="mt-2 text-xs font-bold text-red-500 flex items-center gap-1 uppercase tracking-widest">
+                <AlertCircle className="w-3.5 h-3.5" />
                 {errors.summary}
               </p>
             )}
-            <p className="mt-1 text-sm text-gray-500">
-              Ce résumé sera utilisé comme extrait sur la page d'accueil et pour
-              le SEO
+            <p className="mt-2 text-[10px] uppercase tracking-widest text-gray-400">
+              Utilisé pour l'extrait et le référencement (SEO).
             </p>
           </div>
 
           {/* Contenu complet (optionnel) */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Contenu complet <span className="text-gray-500">(Optionnel)</span>
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
+              Notes / Description détaillée (Optionnel)
             </label>
             <textarea
               name="content"
               value={formData.content || ""}
               onChange={handleInputChange}
               rows={8}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Contenu détaillé de votre article (peut être ajouté plus tard)..."
+              className="w-full px-4 py-3 bg-gray-50 border-0 rounded-none focus:ring-0 focus:bg-gray-100 transition-colors"
+              placeholder="Notes de l'épisode, transcription ou article long..."
             />
-            <p className="mt-1 text-sm text-gray-500">
-              Le contenu peut être ajouté plus tard. Le résumé suffit pour
-              publier.
-            </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
             {/* Catégorie */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
                 Catégorie *
               </label>
               <select
@@ -538,8 +710,8 @@ export default function UnifiedContentForm({
                     setErrors((prev) => ({ ...prev, category: "" }));
                   }
                 }}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.category ? "border-red-300" : "border-gray-300"
+                className={`w-full px-0 py-3 border-0 border-b-2 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors ${
+                  errors.category ? "border-red-500" : "border-gray-200 hover:border-gray-300"
                 }`}
               >
                 <option value="">Sélectionner une catégorie</option>
@@ -559,14 +731,14 @@ export default function UnifiedContentForm({
 
             {/* Pays */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
                 Pays/Région
               </label>
               <select
                 name="country"
                 value={formData.country || "mali"}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 hover:border-gray-300 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors"
               >
                 {countries.map((country) => (
                   <option key={country.value} value={country.value}>
@@ -579,16 +751,16 @@ export default function UnifiedContentForm({
 
           {/* Étiquettes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
               Étiquettes
             </label>
-            <div className="flex gap-2 mb-3">
+            <div className="flex gap-2 mb-4">
               <input
                 type="text"
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
                 placeholder="Ajouter une étiquette"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-0 py-2 border-0 border-b-2 border-gray-200 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors"
                 onKeyPress={(e) =>
                   e.key === "Enter" && (e.preventDefault(), addTag())
                 }
@@ -596,7 +768,7 @@ export default function UnifiedContentForm({
               <button
                 type="button"
                 onClick={addTag}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-6 py-2 bg-gray-900 text-white font-bold text-xs uppercase tracking-widest rounded-none hover:bg-black transition-colors"
               >
                 Ajouter
               </button>
@@ -623,12 +795,57 @@ export default function UnifiedContentForm({
       </div>
 
       {/* IMAGE MISE EN AVANT */}
-      <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
-        <div className="flex items-center gap-3 mb-6">
-          <ImageIcon className="w-6 h-6 text-blue-600" />
-          <h3 className="text-xl font-semibold text-gray-900">
-            Image mise en avant
-          </h3>
+      <div className="bg-white border border-gray-200 p-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-8 pb-4 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">
+              Image mise en avant
+            </h3>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => handleSearchNewImageAI()}
+            disabled={isSearchingImage || !formData.title}
+            className="border-gray-900 text-gray-900 rounded-none hover:bg-gray-50 flex items-center gap-2 font-bold text-xs uppercase tracking-widest"
+          >
+            {isSearchingImage ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Recherche HD en cours…
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 text-blue-600" />
+                Rechercher par IA
+              </>
+            )}
+          </Button>
+        </div>
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4 flex flex-wrap gap-2 items-center">
+          <input
+            type="text"
+            value={customImagePrompt}
+            onChange={(e) => setCustomImagePrompt(e.target.value)}
+            placeholder="Rechercher par sujet (ex: Seydou Keïta, Dangote, Banque Mali...)"
+            className="flex-1 min-w-[200px] px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleSearchNewImageAI();
+              }
+            }}
+          />
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => handleSearchNewImageAI()}
+            disabled={isSearchingImage}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-xs flex items-center gap-1.5"
+          >
+            {isSearchingImage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+            Rechercher cette image HD
+          </Button>
         </div>
 
         <ImageUpload
@@ -660,47 +877,39 @@ export default function UnifiedContentForm({
 
       {/* DONNÉES SPÉCIFIQUES AU TYPE */}
       {type === "podcast" && (
-        <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
-          <div className="flex items-center gap-3 mb-6">
-            <Mic className="w-6 h-6 text-purple-600" />
-            <h3 className="text-xl font-semibold text-gray-900">
+        <div className="bg-white border border-gray-200 p-8">
+          <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-100">
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">
               Podcast Audio & Vidéo
             </h3>
-            <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-              Liens externes uniquement
+            <span className="bg-gray-100 text-gray-900 text-[10px] font-bold px-2 py-0.5 uppercase tracking-widest">
+              Liens externes
             </span>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Type de contenu */}
-            <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border border-purple-200">
-              <h4 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
-                <span className="text-purple-600">🎧</span>
-                Choisissez votre format
+            <div className="bg-gray-50 p-6 border border-gray-200 mb-8">
+              <h4 className="text-sm font-bold text-gray-900 mb-2 uppercase tracking-widest">
+                Format
               </h4>
-              <p className="text-sm text-gray-600 mb-3">
-                Vous pouvez créer un podcast audio uniquement, vidéo uniquement,
-                ou les deux.
+              <p className="text-sm text-gray-500 mb-4">
+                Vous pouvez lier un podcast audio, vidéo, ou les deux.
               </p>
               <div className="grid grid-cols-2 gap-3">
-                <div className="text-sm">
-                  <span className="font-medium text-purple-700">
-                    🎤 Audio :
-                  </span>{" "}
-                  Anchor, Spotify, Apple Podcasts
+                <div className="text-xs text-gray-500 font-medium">
+                  <span className="font-bold text-gray-900 uppercase tracking-widest">Audio :</span> Anchor, Spotify, Apple
                 </div>
-                <div className="text-sm">
-                  <span className="font-medium text-blue-700">🎥 Vidéo :</span>{" "}
-                  YouTube, Vimeo, Dailymotion
+                <div className="text-xs text-gray-500 font-medium">
+                  <span className="font-bold text-gray-900 uppercase tracking-widest">Vidéo :</span> YouTube, Vimeo
                 </div>
               </div>
             </div>
 
             {/* Liens principaux */}
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 gap-8">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <Mic className="w-4 h-4 text-purple-600" />
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
                   Lien Audio Principal
                 </label>
                 <input
@@ -709,17 +918,13 @@ export default function UnifiedContentForm({
                   onChange={(e) =>
                     handleSpecificDataChange("audio_url", e.target.value)
                   }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 hover:border-gray-300 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors"
                   placeholder="https://anchor.fm/votre-podcast"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Anchor, SoundCloud, ou autre plateforme audio
-                </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <Video className="w-4 h-4 text-blue-600" />
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
                   Lien Vidéo Principal
                 </label>
                 <input
@@ -728,25 +933,20 @@ export default function UnifiedContentForm({
                   onChange={(e) =>
                     handleSpecificDataChange("video_url", e.target.value)
                   }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 hover:border-gray-300 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors"
                   placeholder="https://youtube.com/watch?v=..."
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  YouTube, Vimeo, ou autre plateforme vidéo
-                </p>
               </div>
             </div>
 
             {/* Plateformes supplémentaires */}
             <div>
-              <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                <span>🔗</span>
+              <h4 className="text-xs font-bold text-gray-900 mb-4 uppercase tracking-widest">
                 Plateformes supplémentaires (optionnel)
               </h4>
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-2 gap-8">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    <span className="text-green-600">🎵</span>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
                     Spotify
                   </label>
                   <input
@@ -755,14 +955,13 @@ export default function UnifiedContentForm({
                     onChange={(e) =>
                       handleSpecificDataChange("spotify_url", e.target.value)
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 hover:border-gray-300 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors"
                     placeholder="https://open.spotify.com/..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    <span className="text-gray-600">🎧</span>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
                     Apple Podcasts
                   </label>
                   <input
@@ -771,7 +970,7 @@ export default function UnifiedContentForm({
                     onChange={(e) =>
                       handleSpecificDataChange("apple_url", e.target.value)
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                    className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 hover:border-gray-300 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors"
                     placeholder="https://podcasts.apple.com/..."
                   />
                 </div>
@@ -779,8 +978,8 @@ export default function UnifiedContentForm({
             </div>
 
             {errors.podcast_url && (
-              <p className="text-sm text-red-600 flex items-center gap-1">
-                <AlertCircle className="w-4 h-4" />
+              <p className="text-xs font-bold text-red-500 flex items-center gap-1 uppercase tracking-widest">
+                <AlertCircle className="w-3.5 h-3.5" />
                 {errors.podcast_url}
               </p>
             )}
@@ -882,20 +1081,19 @@ export default function UnifiedContentForm({
       )}
 
       {/* SEO & MÉTADONNÉES */}
-      <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
-        <div className="flex items-center gap-3 mb-6">
-          <Sparkles className="w-6 h-6 text-blue-600" />
-          <h3 className="text-xl font-semibold text-gray-900">
+      <div className="bg-white border border-gray-200 p-8">
+        <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-100">
+          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">
             SEO & Métadonnées
           </h3>
-          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+          <span className="text-[10px] uppercase tracking-widest font-bold bg-gray-100 text-gray-900 px-2 py-1">
             Auto-généré
           </span>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-8">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
               Titre SEO (Meta Title)
             </label>
             <input
@@ -903,16 +1101,13 @@ export default function UnifiedContentForm({
               name="meta_title"
               value={formData.meta_title || ""}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 hover:border-gray-300 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors"
               placeholder="Auto-généré depuis le titre"
             />
-            <p className="mt-1 text-sm text-gray-500">
-              {formData.meta_title.length}/60 caractères recommandés
-            </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
               Description SEO (Meta Description)
             </label>
             <textarea
@@ -920,34 +1115,32 @@ export default function UnifiedContentForm({
               value={formData.meta_description || ""}
               onChange={handleInputChange}
               rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 hover:border-gray-300 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors resize-none"
               placeholder="Auto-généré depuis le résumé"
             />
-            <p className="mt-1 text-sm text-gray-500">
-              {formData.meta_description.length}/155 caractères recommandés
-            </p>
           </div>
         </div>
       </div>
 
       {/* STATUT & PUBLICATION */}
-      <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
-        <div className="flex items-center gap-3 mb-6">
-          <Calendar className="w-6 h-6 text-blue-600" />
-          <h3 className="text-xl font-semibold text-gray-900">Publication</h3>
+      <div className="bg-white border border-gray-200 p-8">
+        <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-100">
+          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">
+            Publication
+          </h3>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-8">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-4">
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">
               Statut
             </label>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div
-                className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                className={`border-b-2 py-3 cursor-pointer transition-colors ${
                   formData.status === "draft"
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-blue-300"
+                    ? "border-gray-900"
+                    : "border-gray-200 hover:border-gray-300"
                 }`}
                 onClick={() =>
                   setFormData((prev) => ({ ...prev, status: "draft" }))
@@ -960,11 +1153,11 @@ export default function UnifiedContentForm({
                     value="draft"
                     checked={formData.status === "draft"}
                     onChange={handleInputChange}
-                    className="h-4 w-4 text-blue-600"
+                    className="h-4 w-4 text-gray-900 focus:ring-0"
                   />
                   <div>
-                    <div className="font-medium text-gray-900">Brouillon</div>
-                    <div className="text-sm text-gray-500">
+                    <div className="font-bold text-gray-900 uppercase tracking-widest text-xs">Brouillon</div>
+                    <div className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">
                       Sauvegarder sans publier
                     </div>
                   </div>
@@ -972,10 +1165,10 @@ export default function UnifiedContentForm({
               </div>
 
               <div
-                className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                className={`border-b-2 py-3 cursor-pointer transition-colors ${
                   formData.status === "published"
-                    ? "border-green-500 bg-green-50"
-                    : "border-gray-200 hover:border-green-300"
+                    ? "border-green-600"
+                    : "border-gray-200 hover:border-gray-300"
                 }`}
                 onClick={() =>
                   setFormData((prev) => ({ ...prev, status: "published" }))
@@ -988,11 +1181,11 @@ export default function UnifiedContentForm({
                     value="published"
                     checked={formData.status === "published"}
                     onChange={handleInputChange}
-                    className="h-4 w-4 text-green-600"
+                    className="h-4 w-4 text-green-600 focus:ring-0"
                   />
                   <div>
-                    <div className="font-medium text-gray-900">Publier</div>
-                    <div className="text-sm text-gray-500">
+                    <div className="font-bold text-gray-900 uppercase tracking-widest text-xs">Publier</div>
+                    <div className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">
                       Visible par tous
                     </div>
                   </div>
@@ -1002,7 +1195,7 @@ export default function UnifiedContentForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
               Date de publication
             </label>
             <input
@@ -1010,47 +1203,37 @@ export default function UnifiedContentForm({
               name="published_at"
               value={formData.published_at || ""}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors"
             />
           </div>
         </div>
       </div>
 
       {/* ACTIONS */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-end">
+      <div className="flex flex-col sm:flex-row gap-4 justify-end pt-8">
         <button
           type="button"
           onClick={onCancel}
-          className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          className="px-8 py-4 border border-gray-200 text-gray-900 font-bold text-xs uppercase tracking-widest hover:bg-gray-50 transition-colors"
         >
           Annuler
         </button>
 
         <button
-          type="button"
-          onClick={() => setIsPreview(!isPreview)}
-          className="flex items-center gap-2 px-6 py-3 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors"
-        >
-          <Eye className="w-4 h-4" />
-          {isPreview ? "Masquer" : "Prévisualiser"}
-        </button>
-
-        <button
           type="submit"
           disabled={isSaving}
-          className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className="flex items-center justify-center gap-3 px-10 py-4 bg-gray-900 text-white font-bold text-xs uppercase tracking-widest hover:bg-black transition-colors disabled:opacity-50"
         >
           {isSaving ? (
             <>
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
               {formData.status === "published"
-                ? "Publication..."
+                ? "Publication en cours..."
                 : "Sauvegarde..."}
             </>
           ) : (
             <>
-              <Save className="w-4 h-4" />
-              {formData.status === "published" ? "Publier" : "Sauvegarder"}
+              {formData.status === "published" ? "Publier le contenu" : "Sauvegarder le brouillon"}
             </>
           )}
         </button>

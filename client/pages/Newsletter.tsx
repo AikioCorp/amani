@@ -1,21 +1,16 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useToast } from "../context/ToastContext";
+import { getApiUrl } from "../services/apiConfig";
 import {
   Mail,
   Send,
-  Calendar,
-  Download,
-  Eye,
   Users,
   BarChart3,
   CheckCircle,
   AlertCircle,
-  Globe,
   TrendingUp,
-  FileText,
   Clock,
-  Star,
   ArrowRight,
   Bell,
   Settings,
@@ -44,15 +39,28 @@ export default function Newsletter() {
     }
 
     setIsSubscribing(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const res = await fetch(getApiUrl("/newsletter/subscribe"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, source: "newsletter_page" }),
+      });
+      const result = await res.json();
 
-    success(
-      "Abonnement confirmé",
-      `Vous êtes maintenant abonné à notre newsletter avec l'email ${email}`,
-    );
-    setEmail("");
-    setIsSubscribing(false);
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || "Échec de l'inscription.");
+      }
+
+      success(
+        "Abonnement confirmé",
+        `Vous êtes maintenant abonné à notre newsletter avec l'email ${email}`,
+      );
+      setEmail("");
+    } catch (e: any) {
+      error("Échec de l'inscription", e.message || "Veuillez réessayer plus tard.");
+    } finally {
+      setIsSubscribing(false);
+    }
   };
 
   const handlePreferenceToggle = (preference: string) => {
@@ -62,92 +70,6 @@ export default function Newsletter() {
         : [...prev, preference],
     );
   };
-
-  const stats = [
-    {
-      label: "Abonnés actifs",
-      value: "12,500",
-      icon: Users,
-      color: "text-blue-600",
-    },
-    {
-      label: "Éditions publiées",
-      value: "48",
-      icon: FileText,
-      color: "text-green-600",
-    },
-    {
-      label: "Taux d'ouverture",
-      value: "68%",
-      icon: Eye,
-      color: "text-purple-600",
-    },
-    {
-      label: "Pays couverts",
-      value: "8",
-      icon: Globe,
-      color: "text-amber-600",
-    },
-  ];
-
-  const newsletters = [
-    {
-      id: 1,
-      title: "Amani Weekly #48 - Perspectives 2024",
-      date: "15 janvier 2024",
-      subject:
-        "Prévisions économiques pour le Sahel, nouveaux investissements miniers",
-      highlights: [
-        "Croissance du PIB malien projetée à 5.2%",
-        "Nouveau gisement d'or au Burkina Faso",
-        "BCEAO maintient son taux directeur",
-      ],
-      downloads: "2,340",
-      openRate: "72%",
-    },
-    {
-      id: 2,
-      title: "Amani Weekly #47 - Bilan annuel",
-      date: "8 janvier 2024",
-      subject:
-        "Rétrospective 2023 : marchés, investissements et perspectives régionales",
-      highlights: [
-        "BRVM : performance annuelle +8.5%",
-        "Investissements FDI en hausse de 12%",
-        "Inflation régionale stabilisée à 4.1%",
-      ],
-      downloads: "2,180",
-      openRate: "69%",
-    },
-    {
-      id: 3,
-      title: "Amani Weekly #46 - Tech & Innovation",
-      date: "25 décembre 2023",
-      subject:
-        "L'essor de la fintech au Sahel et les opportunités d'investissement",
-      highlights: [
-        "15 nouvelles startups fintech lancées",
-        "Levée de fonds record : 45M USD",
-        "Adoption mobile banking : +25%",
-      ],
-      downloads: "1,950",
-      openRate: "71%",
-    },
-    {
-      id: 4,
-      title: "Amani Weekly #45 - Agriculture & Climat",
-      date: "18 décembre 2023",
-      subject:
-        "Impact climatique sur l'agriculture sahélienne et stratégies d'adaptation",
-      highlights: [
-        "Récoltes céréalières : bilan mitigé",
-        "Nouveaux projets d'irrigation",
-        "Financement climat : 200M USD mobilisés",
-      ],
-      downloads: "2,100",
-      openRate: "66%",
-    },
-  ];
 
   const preferences = [
     {
@@ -241,25 +163,6 @@ export default function Newsletter() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-8 bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="flex items-center justify-center mb-3">
-                  <stat.icon className={`w-8 h-8 ${stat.color}`} />
-                </div>
-                <div className="text-3xl font-bold text-amani-primary mb-1">
-                  {stat.value}
-                </div>
-                <div className="text-sm text-gray-600">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Subscription Form */}
       <section className="py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -269,7 +172,7 @@ export default function Newsletter() {
                 Abonnez-vous gratuitement
               </h2>
               <p className="text-lg text-gray-600">
-                Rejoignez plus de 12 500 professionnels qui nous font confiance
+                Rejoignez les professionnels qui nous font confiance
               </p>
             </div>
 
@@ -371,92 +274,6 @@ export default function Newsletter() {
                 </h3>
                 <p className="text-gray-600">{benefit.description}</p>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Newsletter Archive */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold text-amani-primary">
-              Éditions récentes
-            </h2>
-            <p className="text-gray-600">
-              Découvrez nos dernières publications
-            </p>
-          </div>
-          <div className="space-y-6">
-            {newsletters.map((newsletter) => (
-              <article
-                key={newsletter.id}
-                className="bg-white rounded-2xl shadow-lg p-8 border border-white/50 hover:shadow-xl transition-shadow"
-              >
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-4 mb-3">
-                      <span className="bg-amani-secondary/20 text-amani-primary px-3 py-1 rounded-full text-sm font-medium">
-                        Newsletter
-                      </span>
-                      <span className="text-sm text-gray-500 flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {newsletter.date}
-                      </span>
-                    </div>
-                    <h3 className="text-2xl font-bold text-amani-primary mb-3">
-                      {newsletter.title}
-                    </h3>
-                    <p className="text-gray-600 mb-4">{newsletter.subject}</p>
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-gray-900">
-                        Points saillants :
-                      </h4>
-                      <ul className="space-y-1">
-                        {newsletter.highlights.map((highlight, index) => (
-                          <li
-                            key={index}
-                            className="text-sm text-gray-600 flex items-start gap-2"
-                          >
-                            <Star className="w-3 h-3 text-amani-primary mt-1 flex-shrink-0" />
-                            {highlight}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-4">
-                    <div className="grid grid-cols-2 gap-4 text-center">
-                      <div>
-                        <div className="text-lg font-bold text-amani-primary">
-                          {newsletter.downloads}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Téléchargements
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-lg font-bold text-green-600">
-                          {newsletter.openRate}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Taux d'ouverture
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button className="flex items-center gap-2 px-4 py-2 bg-amani-primary text-white rounded-lg hover:bg-amani-primary/90 transition-colors">
-                        <Eye className="w-4 h-4" />
-                        Lire
-                      </button>
-                      <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                        <Download className="w-4 h-4" />
-                        PDF
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </article>
             ))}
           </div>
         </div>

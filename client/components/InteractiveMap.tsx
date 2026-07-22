@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { MapPin, TrendingUp, Users, DollarSign, BarChart3, Info } from 'lucide-react';
+import { ComposableMap, Geographies, Geography, ZoomableGroup } from 'react-simple-maps';
+
+// URL for the topography map
+const geoUrl = '/geo/world-110m.json';
 
 const InteractiveMap = () => {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
 
   const countries = {
-    mali: {
+    Mali: {
       name: 'Mali',
       gdp: '17.5B $',
       population: '21.9M',
@@ -14,10 +18,9 @@ const InteractiveMap = () => {
       capital: 'Bamako',
       color: '#E5DDD5',
       hoverColor: '#D4C7BC',
-      position: { x: 35, y: 40 },
       industries: ['Or', 'Coton', 'Agriculture']
     },
-    burkina: {
+    "Burkina Faso": {
       name: 'Burkina Faso',
       gdp: '18.9B $',
       population: '22.7M',
@@ -25,10 +28,9 @@ const InteractiveMap = () => {
       capital: 'Ouagadougou',
       color: '#C5B8AB',
       hoverColor: '#B5A79A',
-      position: { x: 50, y: 45 },
       industries: ['Or', 'Coton', 'Élevage']
     },
-    niger: {
+    Niger: {
       name: 'Niger',
       gdp: '14.9B $',
       population: '25.3M',
@@ -36,10 +38,9 @@ const InteractiveMap = () => {
       capital: 'Niamey',
       color: '#A69B8E',
       hoverColor: '#968B7E',
-      position: { x: 65, y: 35 },
       industries: ['Uranium', 'Élevage', 'Agriculture']
     },
-    mauritanie: {
+    Mauritania: {
       name: 'Mauritanie',
       gdp: '8.1B $',
       population: '4.8M',
@@ -47,10 +48,9 @@ const InteractiveMap = () => {
       capital: 'Nouakchott',
       color: '#8B7F72',
       hoverColor: '#7B6F62',
-      position: { x: 20, y: 25 },
       industries: ['Fer', 'Pêche', 'Élevage']
     },
-    tchad: {
+    Chad: {
       name: 'Tchad',
       gdp: '12.9B $',
       population: '17.2M',
@@ -58,7 +58,6 @@ const InteractiveMap = () => {
       capital: 'N\'Djamena',
       color: '#6F6356',
       hoverColor: '#5F5346',
-      position: { x: 75, y: 50 },
       industries: ['Pétrole', 'Coton', 'Élevage']
     }
   };
@@ -66,110 +65,78 @@ const InteractiveMap = () => {
   const getCountryData = (countryKey: string) => countries[countryKey as keyof typeof countries];
 
   return (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-8 rounded-3xl">
+    <div className="bg-white border border-[#EBE6DD] p-8 md:p-12 rounded-3xl">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         {/* Interactive Map */}
         <div className="relative">
-          <h3 className="text-2xl font-bold text-[#373B3A] mb-6 text-center">
+          <h3 className="text-xl font-bold text-gray-900 mb-8 text-center uppercase tracking-widest">
             Économie du Sahel et du Tchad
           </h3>
           
-          {/* SVG Map Container */}
-          <div className="relative bg-white rounded-2xl p-8 shadow-lg">
-            <svg viewBox="0 0 100 100" className="w-full h-80">
-              {/* Background gradient */}
-              <defs>
-                <radialGradient id="oceanGradient" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#E0F2FE" />
-                  <stop offset="100%" stopColor="#BAE6FD" />
-                </radialGradient>
-              </defs>
-              <rect width="100" height="100" fill="url(#oceanGradient)" rx="8" />
-              
-              {/* Ocean waves effect */}
-              <path
-                d="M0,80 Q25,75 50,80 T100,80 L100,100 L0,100 Z"
-                fill="#7DD3FC"
-                opacity="0.3"
-              />
-              <path
-                d="M0,85 Q25,82 50,85 T100,85 L100,100 L0,100 Z"
-                fill="#38BDF8"
-                opacity="0.2"
-              />
+          {/* React Simple Maps Container */}
+          <div className="relative bg-[#FDFBF9] border border-gray-100 rounded-2xl overflow-hidden flex items-center justify-center" style={{ minHeight: '350px' }}>
+            <ComposableMap
+              projection="geoMercator"
+              projectionConfig={{
+                scale: 750,
+                center: [3, 16] // Center on West Africa/Sahel
+              }}
+              width={500}
+              height={400}
+              className="w-full h-full outline-none"
+            >
+              <ZoomableGroup center={[3, 16]} zoom={1} minZoom={1} maxZoom={3}>
+                <Geographies geography={geoUrl}>
+                  {({ geographies }) =>
+                    geographies.map((geo) => {
+                      const countryName = geo.properties.name;
+                      const isTargetCountry = Object.keys(countries).includes(countryName);
+                      
+                      const isActive = selectedCountry === countryName;
+                      const isHovered = hoveredCountry === countryName;
+                      
+                      let fill = "#F5F3F0"; // Default non-target country
+                      let stroke = "#EAE6DF";
+                      
+                      if (isTargetCountry) {
+                        const cData = getCountryData(countryName);
+                        fill = isHovered || isActive ? cData.hoverColor : cData.color;
+                        stroke = "#FFFFFF";
+                      }
 
-              {/* Countries */}
-              {Object.entries(countries).map(([key, country]) => (
-                <g key={key}>
-                  {/* Country circle */}
-                  <circle
-                    cx={country.position.x}
-                    cy={country.position.y}
-                    r={hoveredCountry === key ? "8" : "6"}
-                    fill={hoveredCountry === key ? country.hoverColor : country.color}
-                    stroke="#373B3A"
-                    strokeWidth="2"
-                    className="cursor-pointer transition-all duration-300 drop-shadow-lg"
-                    onMouseEnter={() => setHoveredCountry(key)}
-                    onMouseLeave={() => setHoveredCountry(null)}
-                    onClick={() => setSelectedCountry(key)}
-                  />
-                  
-                  {/* Country pulse animation */}
-                  {hoveredCountry === key && (
-                    <circle
-                      cx={country.position.x}
-                      cy={country.position.y}
-                      r="12"
-                      fill="none"
-                      stroke={country.color}
-                      strokeWidth="2"
-                      opacity="0.6"
-                      className="animate-ping"
-                    />
-                  )}
-                  
-                  {/* Country label */}
-                  <text
-                    x={country.position.x}
-                    y={country.position.y - 12}
-                    textAnchor="middle"
-                    className="text-xs font-semibold fill-[#373B3A]"
-                    style={{ fontSize: '3px' }}
-                  >
-                    {country.name}
-                  </text>
-                  
-                  {/* Capital city */}
-                  <text
-                    x={country.position.x}
-                    y={country.position.y + 20}
-                    textAnchor="middle"
-                    className="text-xs fill-gray-600"
-                    style={{ fontSize: '2.5px' }}
-                  >
-                    {country.capital}
-                  </text>
-                </g>
-              ))}
-
-              {/* Legend */}
-              <g transform="translate(5, 5)">
-                <rect x="0" y="0" width="25" height="15" fill="white" opacity="0.9" rx="2" />
-                <circle cx="3" cy="3" r="1.5" fill="#E5DDD5" />
-                <text x="6" y="4.5" className="text-xs fill-gray-700" style={{ fontSize: '2px' }}>
-                  Pays membre
-                </text>
-                <circle cx="3" cy="7" r="1" fill="#7DD3FC" />
-                <text x="6" y="8.5" className="text-xs fill-gray-700" style={{ fontSize: '2px' }}>
-                  Océan Atlantique
-                </text>
-              </g>
-            </svg>
+                      return (
+                        <Geography
+                          key={geo.rsmKey}
+                          geography={geo}
+                          fill={fill}
+                          stroke={stroke}
+                          strokeWidth={isTargetCountry ? 1 : 0.5}
+                          className={isTargetCountry ? "cursor-pointer transition-colors outline-none" : "outline-none"}
+                          onMouseEnter={() => {
+                            if (isTargetCountry) setHoveredCountry(countryName);
+                          }}
+                          onMouseLeave={() => {
+                            if (isTargetCountry) setHoveredCountry(null);
+                          }}
+                          onClick={() => {
+                            if (isTargetCountry) setSelectedCountry(countryName);
+                          }}
+                          style={{
+                            default: { outline: "none" },
+                            hover: { outline: "none" },
+                            pressed: { outline: "none" }
+                          }}
+                        />
+                      );
+                    })
+                  }
+                </Geographies>
+              </ZoomableGroup>
+            </ComposableMap>
           </div>
 
           {/* Interactive indicators */}
-          <div className="flex justify-center mt-4 space-x-2">
+          <div className="flex justify-center mt-6 space-x-2">
             {Object.keys(countries).map((key) => (
               <button
                 key={key}
@@ -177,8 +144,9 @@ const InteractiveMap = () => {
                 className={`w-3 h-3 rounded-full transition-all duration-300 ${
                   selectedCountry === key 
                     ? 'bg-[#373B3A] scale-125' 
-                    : 'bg-gray-300 hover:bg-gray-400'
+                    : 'bg-gray-200 hover:bg-gray-300'
                 }`}
+                aria-label={key}
               />
             ))}
           </div>
@@ -187,7 +155,7 @@ const InteractiveMap = () => {
         {/* Country Details */}
         <div className="space-y-6">
           {selectedCountry ? (
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+            <div className="bg-[#FDFBF9] rounded-2xl p-8 border border-gray-100">
               <div className="flex items-center gap-3 mb-6">
                 <div 
                   className="w-4 h-4 rounded-full"
@@ -242,7 +210,7 @@ const InteractiveMap = () => {
                   {getCountryData(selectedCountry).industries.map((industry, index) => (
                     <span 
                       key={index}
-                      className="px-3 py-1 bg-[#E5DDD5] text-[#373B3A] rounded-full text-sm font-medium"
+                      className="px-3 py-1 bg-[#EBE6DD] text-[#373B3A] rounded-full text-sm font-medium"
                     >
                       {industry}
                     </span>
@@ -251,8 +219,8 @@ const InteractiveMap = () => {
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 text-center">
-              <Info className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <div className="bg-[#FDFBF9] rounded-2xl p-8 border border-[#EBE6DD] text-center flex flex-col justify-center h-full min-h-[300px]">
+              <Info className="w-12 h-12 text-gray-300 mx-auto mb-4" />
               <h4 className="text-xl font-bold text-gray-600 mb-2">
                 Explorez les économies
               </h4>
@@ -262,14 +230,14 @@ const InteractiveMap = () => {
               
               <div className="grid grid-cols-2 gap-4 mt-6">
                 <div className="text-center">
-                  <BarChart3 className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                  <p className="text-sm font-semibold">PIB Total</p>
-                  <p className="text-lg font-bold text-[#373B3A]">72B $</p>
+                  <BarChart3 className="w-8 h-8 text-[#9C8464] mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-gray-500">PIB Total</p>
+                  <p className="text-lg font-bold text-gray-900">72B $</p>
                 </div>
                 <div className="text-center">
-                  <Users className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                  <p className="text-sm font-semibold">Population</p>
-                  <p className="text-lg font-bold text-[#373B3A]">92M</p>
+                  <Users className="w-8 h-8 text-[#9C8464] mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-gray-500">Population</p>
+                  <p className="text-lg font-bold text-gray-900">92M</p>
                 </div>
               </div>
             </div>

@@ -12,9 +12,6 @@ export default function BrvmIndicesManagement() {
   const [groups, setGroups] = useState<BrvmIndexGroup[]>([]);
   const [items, setItems] = useState<BrvmIndexWithLatest[]>([]);
   const [err, setErr] = useState<string | null>(null);
-  const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const [showCreateIndex, setShowCreateIndex] = useState(false);
-  const [showAddPointFor, setShowAddPointFor] = useState<BrvmIndexWithLatest | null>(null);
 
   const loadAll = async () => {
     setErr(null);
@@ -74,12 +71,6 @@ export default function BrvmIndicesManagement() {
         <div className="flex items-center gap-2">
           <button onClick={loadAll} disabled={loading} className="inline-flex items-center gap-2 px-3 py-2 rounded border text-sm hover:bg-gray-50">
             <RefreshCcw className="w-4 h-4" /> Rafraîchir
-          </button>
-          <button onClick={() => setShowCreateGroup(true)} className="inline-flex items-center gap-2 px-3 py-2 rounded border text-sm hover:bg-gray-50">
-            <Plus className="w-4 h-4" /> Nouveau groupe
-          </button>
-          <button onClick={() => setShowCreateIndex(true)} className="inline-flex items-center gap-2 px-3 py-2 rounded bg-amani-primary text-white text-sm hover:bg-amani-primary/90">
-            <Plus className="w-4 h-4" /> Nouvel indice
           </button>
           <Link to="/dashboard/indices-help" className="inline-flex items-center gap-2 px-3 py-2 rounded bg-amani-primary text-white text-sm hover:bg-amani-primary/90">
             <Plus className="w-4 h-4" /> Aide indices
@@ -149,8 +140,8 @@ export default function BrvmIndicesManagement() {
                     <div className="mt-2 text-xs text-gray-500 flex items-center justify-between">
                       <div>Dernière mise à jour: {it.latest?.created_at ?? "-"}</div>
                       <div className="flex items-center gap-2">
-                        <button onClick={() => setShowAddPointFor(it)} className="text-sm px-2 py-1 rounded border hover:bg-gray-50">Ajouter un point</button>
-                        {/* Future: Edit / Delete */}
+                        {/* Monitor-only view */}
+                        <span className="text-gray-400 text-xs italic">Mis à jour via Scraper</span>
                       </div>
                     </div>
                   </div>
@@ -169,215 +160,7 @@ export default function BrvmIndicesManagement() {
         </div>
       )}
 
-      {/* Modals */}
-      <CreateGroupModal
-        open={showCreateGroup}
-        onClose={() => setShowCreateGroup(false)}
-        onCreate={async (payload) => {
-          await createGroup(payload);
-          await loadAll();
-          setShowCreateGroup(false);
-        }}
-      />
-      <CreateIndexModal
-        open={showCreateIndex}
-        onClose={() => setShowCreateIndex(false)}
-        groups={groups}
-        onCreate={async (payload) => {
-          await createIndex(payload as any);
-          await loadAll();
-          setShowCreateIndex(false);
-        }}
-      />
-      <AddPointModal
-        open={!!showAddPointFor}
-        indice={showAddPointFor}
-        onClose={() => setShowAddPointFor(null)}
-        onAdd={async (payload) => {
-          if (!showAddPointFor) return;
-          await addPoint(showAddPointFor.id, payload as any);
-          await loadAll();
-          setShowAddPointFor(null);
-        }}
-      />
     </div>
-  );
-}
-
-// Simple Modal primitives
-function Modal({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">{title}</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-// Inline forms hooked to CRUD
-function CreateGroupModal({ open, onClose, onCreate }: { open: boolean; onClose: () => void; onCreate: (payload: { slug: string; name: string; description?: string }) => Promise<void> }) {
-  const [slug, setSlug] = useState("");
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [saving, setSaving] = useState(false);
-  const { success, error } = useToast();
-
-  const submit = async () => {
-    setSaving(true);
-    try {
-      await onCreate({ slug, name, description });
-      success("Groupe créé");
-      onClose();
-      setSlug(""); setName(""); setDescription("");
-    } catch (e: any) {
-      error("Erreur", e?.message || "Impossible de créer le groupe");
-    } finally { setSaving(false); }
-  };
-
-  return (
-    <Modal open={open} onClose={onClose} title="Nouveau groupe">
-      <div className="space-y-3">
-        <div>
-          <label className="block text-sm text-gray-600 mb-1">Slug</label>
-          <input value={slug} onChange={(e) => setSlug(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="ex: indices-generaux" />
-        </div>
-        <div>
-          <label className="block text-sm text-gray-600 mb-1">Nom</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="Nom du groupe" />
-        </div>
-        <div>
-          <label className="block text-sm text-gray-600 mb-1">Description (optionnel)</label>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="w-full border rounded px-3 py-2" rows={3} />
-        </div>
-        <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-2 rounded border">Annuler</button>
-          <button onClick={submit} disabled={saving || !slug || !name} className="px-3 py-2 rounded bg-amani-primary text-white disabled:opacity-50">{saving ? "Enregistrement…" : "Créer"}</button>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-function CreateIndexModal({ open, onClose, groups, onCreate }: { open: boolean; onClose: () => void; groups: BrvmIndexGroup[]; onCreate: (payload: { slug: string; name: string; code?: string; group_id?: string | null; unit?: string; source?: string; is_public?: boolean }) => Promise<void> }) {
-  const [slug, setSlug] = useState("");
-  const [name, setName] = useState("");
-  const [code, setCode] = useState("");
-  const [groupId, setGroupId] = useState<string | "">("");
-  const [unit, setUnit] = useState("");
-  const [source, setSource] = useState("");
-  const [isPublic, setIsPublic] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const { success, error } = useToast();
-
-  const submit = async () => {
-    setSaving(true);
-    try {
-      await onCreate({ slug, name, code: code || undefined, group_id: groupId || null, unit: unit || undefined, source: source || undefined, is_public: isPublic });
-      success("Indice créé");
-      onClose();
-      setSlug(""); setName(""); setCode(""); setGroupId(""); setUnit(""); setSource(""); setIsPublic(true);
-    } catch (e: any) {
-      error("Erreur", e?.message || "Impossible de créer l'indice");
-    } finally { setSaving(false); }
-  };
-
-  return (
-    <Modal open={open} onClose={onClose} title="Nouvel indice">
-      <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">Slug</label>
-            <input value={slug} onChange={(e) => setSlug(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="ex: brvm10" />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">Code</label>
-            <input value={code} onChange={(e) => setCode(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="BRVM10" />
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm text-gray-600 mb-1">Nom</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="Nom de l'indice" />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">Groupe</label>
-            <select value={groupId} onChange={(e) => setGroupId(e.target.value)} className="w-full border rounded px-3 py-2">
-              <option value="">(Aucun)</option>
-              {groups.map((g) => (
-                <option key={g.id} value={g.id}>{g.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">Unité</label>
-            <input value={unit} onChange={(e) => setUnit(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="points / percent" />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">Source</label>
-            <input value={source} onChange={(e) => setSource(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="BRVM" />
-          </div>
-          <div className="flex items-center gap-2 mt-6">
-            <input id="isPublic" type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
-            <label htmlFor="isPublic" className="text-sm text-gray-700">Public</label>
-          </div>
-        </div>
-        <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-2 rounded border">Annuler</button>
-          <button onClick={submit} disabled={saving || !slug || !name} className="px-3 py-2 rounded bg-amani-primary text-white disabled:opacity-50">{saving ? "Enregistrement…" : "Créer"}</button>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-function AddPointModal({ open, onClose, indice, onAdd }: { open: boolean; onClose: () => void; indice: BrvmIndexWithLatest | null; onAdd: (payload: { close: number; created_at?: string }) => Promise<void> }) {
-  const [closeVal, setCloseVal] = useState("");
-  const [createdAt, setCreatedAt] = useState("");
-  const [saving, setSaving] = useState(false);
-  const { success, error } = useToast();
-
-  const submit = async () => {
-    setSaving(true);
-    try {
-      if (!closeVal) throw new Error("Veuillez saisir la valeur de clôture");
-      await onAdd({
-        close: Number(closeVal),
-        created_at: createdAt ? new Date(createdAt).toISOString() : undefined,
-      });
-      success("Point ajouté");
-      onClose();
-      setCloseVal(""); setCreatedAt("");
-    } catch (e: any) {
-      error("Erreur", e?.message || "Impossible d'ajouter le point");
-    } finally { setSaving(false); }
-  };
-
-  return (
-    <Modal open={open} onClose={onClose} title={`Ajouter un point ${indice?.name ? `— ${indice.name}` : ""}`}>
-      <div className="space-y-3">
-        <div>
-          <label className="block text-sm text-gray-600 mb-1">Dernier (close)</label>
-          <input value={closeVal} onChange={(e) => setCloseVal(e.target.value)} type="number" step="0.01" className="w-full border rounded px-3 py-2" />
-        </div>
-        <div>
-          <label className="block text-sm text-gray-600 mb-1">Date (optionnel)</label>
-          <input value={createdAt} onChange={(e) => setCreatedAt(e.target.value)} type="datetime-local" className="w-full border rounded px-3 py-2" />
-        </div>
-        <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-2 rounded border">Annuler</button>
-          <button onClick={submit} disabled={saving} className="px-3 py-2 rounded bg-amani-primary text-white disabled:opacity-50">{saving ? "Enregistrement…" : "Ajouter"}</button>
-        </div>
-      </div>
-    </Modal>
   );
 }
 

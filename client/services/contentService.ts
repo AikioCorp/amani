@@ -114,8 +114,10 @@ export const updateContent = async (id: string, updates: Partial<Content>) => {
       },
       body: JSON.stringify(updates),
     });
-    if (!response.ok) throw new Error("Erreur de mise à jour de contenu via l'API");
     const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || "Erreur de mise à jour de contenu via l'API");
+    }
     return result.data as Content;
   } catch (error) {
     console.error('Error updating content:', error);

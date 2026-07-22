@@ -25,6 +25,53 @@ function formatNewsDate(dateStr: string): string {
   return dateStr;
 }
 
+function sanitizeSnippet(text: string): string {
+  if (!text) return "";
+
+  let cleaned = text
+    .replace(/[\u2026]/g, "")
+    .replace(/(\s*\.\.\.\s*)+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const cutoffWords = new Set([
+    "se", "aux", "du", "de", "le", "la", "les", "et", "à", "en", "pour", "par", "dans", "sur", "avec", 
+    "un", "une", "des", "ce", "cette", "ces", "mon", "son", "sa", "ses", "nos", "vos", "leurs", "qui", 
+    "que", "dont", "où", "destiné", "destinée", "destinés", "destinées", "visant", "conçu", "conçue", 
+    "ayant", "étant", "faisant", "doit", "doivent", "va", "vont", "a", "ont"
+  ]);
+
+  const sentenceMatches = cleaned.match(/[^.!?]+[.!?]/g);
+
+  if (sentenceMatches && sentenceMatches.length > 0) {
+    const validSentences: string[] = [];
+    for (const s of sentenceMatches) {
+      const trimmed = s.trim();
+      const words = trimmed.replace(/[.!?]+$/, "").trim().split(/\s+/);
+      const lastWord = words[words.length - 1]?.toLowerCase();
+
+      if (words.length >= 4 && !cutoffWords.has(lastWord)) {
+        validSentences.push(trimmed);
+      }
+    }
+
+    if (validSentences.length > 0) {
+      return validSentences.join(" ");
+    }
+  }
+
+  const words = cleaned.replace(/[.!?]+$/, "").trim().split(/\s+/);
+  while (words.length > 3 && cutoffWords.has(words[words.length - 1].toLowerCase().replace(/[^a-z]/gi, ""))) {
+    words.pop();
+  }
+
+  let result = words.join(" ").trim();
+  if (result && !/[.!?]$/.test(result)) {
+    result += ".";
+  }
+  return result;
+}
+
 
 
 export default function SerperIntegration() {
@@ -105,7 +152,7 @@ export default function SerperIntegration() {
             formattedDate = d.toISOString().substring(0, 10);
           }
         }
-        const cleanedSnippet = (item.snippet || "").replace(/(\s*\.\.\.\s*)+$/, "").replace(/\s+[a-z]{1,3}\.?$/i, "").trim();
+        const cleanedSnippet = sanitizeSnippet(item.snippet || "");
 
         initialSettings[item.link] = {
           categoryId: defaultCatId,
@@ -286,7 +333,7 @@ export default function SerperIntegration() {
                       {item.title}
                     </h4>
                     <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">
-                      {item.snippet}
+                      {sanitizeSnippet(item.snippet)}
                     </p>
 
                     {!importedArticles[item.link] && (

@@ -55,53 +55,6 @@ export default function Economie() {
     }));
   }, [dbArticles]);
 
-  const economicData = [
-    {
-      country: "Mali",
-      gdpGrowth: "+5.2%",
-      inflation: "2.1%",
-      unemployment: "8.4%",
-      currency: "FCFA",
-      population: "21.9M",
-      gdpPerCapita: "875 USD",
-      mainSectors: ["Agriculture", "Mines", "Services"],
-      flag: "🇲🇱",
-    },
-    {
-      country: "Burkina Faso",
-      gdpGrowth: "+4.8%",
-      inflation: "1.9%",
-      unemployment: "6.2%",
-      currency: "FCFA",
-      population: "22.1M",
-      gdpPerCapita: "790 USD",
-      mainSectors: ["Agriculture", "Mines", "Élevage"],
-      flag: "🇧🇫",
-    },
-    {
-      country: "Niger",
-      gdpGrowth: "+6.1%",
-      inflation: "2.8%",
-      unemployment: "7.3%",
-      currency: "FCFA",
-      population: "25.3M",
-      gdpPerCapita: "650 USD",
-      mainSectors: ["Uranium", "Agriculture", "Élevage"],
-      flag: "🇳🇪",
-    },
-    {
-      country: "Tchad",
-      gdpGrowth: "+3.9%",
-      inflation: "3.2%",
-      unemployment: "9.1%",
-      currency: "FCFA",
-      population: "17.2M",
-      gdpPerCapita: "720 USD",
-      mainSectors: ["Pétrole", "Agriculture", "Coton"],
-      flag: "🇹🇩",
-    },
-  ];
-
   const categories = ["all", "Macroéconomie", "Secteur minier", "Agriculture", "Commerce", "Finance"];
   const countries = ["all", "Mali", "Burkina Faso", "Niger", "Tchad", "UEMOA", "Sahel"];
 
@@ -145,61 +98,6 @@ export default function Economie() {
                 <span>86M habitants</span>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Economic Dashboard */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-amani-primary mb-8 flex items-center gap-3">
-            <BarChart3 className="w-8 h-8" />
-            Tableau de bord économique
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {economicData.map((country, index) => (
-              <div key={index} className="bg-white rounded-xl shadow-lg p-6 border border-white/50 hover:shadow-xl transition-shadow">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-amani-primary flex items-center gap-2">
-                    <span className="text-2xl">{country.flag}</span>
-                    {country.country}
-                  </h3>
-                  <div className="text-sm text-gray-500">{country.population}</div>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Croissance PIB</span>
-                    <span className="font-semibold text-green-600 flex items-center gap-1">
-                      <TrendingUp className="w-4 h-4" />
-                      {country.gdpGrowth}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Inflation</span>
-                    <span className="font-semibold text-blue-600">{country.inflation}</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">PIB/habitant</span>
-                    <span className="font-semibold text-amani-primary">{country.gdpPerCapita}</span>
-                  </div>
-                  
-                  <div className="pt-2 border-t border-gray-100">
-                    <div className="text-xs text-gray-500 mb-2">Secteurs clés:</div>
-                    <div className="flex flex-wrap gap-1">
-                      {country.mainSectors.map((sector, idx) => (
-                        <span key={idx} className="px-2 py-1 bg-amani-secondary/20 text-amani-primary rounded-full text-xs">
-                          {sector}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </section>
@@ -257,7 +155,7 @@ export default function Economie() {
                     </div>
                     
                     <Link
-                      to={`/article/${featuredArticle.id}`}
+                      to={`/article/${featuredArticle.slug || featuredArticle.id}`}
                       className="flex items-center gap-2 px-6 py-3 bg-amani-primary text-white rounded-lg hover:bg-amani-primary/90 transition-colors font-medium"
                     >
                       Lire l'article
@@ -404,7 +302,7 @@ export default function Economie() {
                     </div>
                     
                     <Link
-                      to={`/article/${article.id}`}
+                      to={`/article/${article.slug || article.id}`}
                       className="flex items-center gap-2 text-amani-primary hover:text-amani-primary/80 font-medium"
                     >
                       Lire l'analyse complète
@@ -464,7 +362,7 @@ export default function Economie() {
                         </div>
                         
                         <Link
-                          to={`/article/${article.id}`}
+                          to={`/article/${article.slug || article.id}`}
                           className="flex items-center gap-2 px-4 py-2 bg-amani-primary text-white rounded-lg hover:bg-amani-primary/90 transition-colors font-medium"
                         >
                           Lire

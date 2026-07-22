@@ -79,7 +79,7 @@ export default function EditArticle() {
     };
 
     loadArticle();
-  }, [id, error, fetchArticleByIdOrSlug]);
+  }, [id]);
 
   // Gestion de la sauvegarde
   const handleSave = async (formData: any) => {
@@ -101,20 +101,14 @@ export default function EditArticle() {
         tags: formData.tags,
         meta_title: formData.meta_title,
         meta_description: formData.meta_description,
+        featured_image: formData.featured_image,
         featured_image_alt: formData.featured_image_alt,
         published_at: formData.published_at,
         article_data: formData.article_data || {}
       };
 
       await updateArticle(article!.id, articleData);
-
       console.log("✅ Article mis à jour avec succès");
-
-      success(
-        "Article mis à jour",
-        `L'article "${formData.title}" a été mis à jour avec succès.`,
-      );
-
       navigate("/dashboard/articles");
     } catch (err) {
       console.error("Erreur lors de la mise à jour:", err);

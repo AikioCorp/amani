@@ -32,37 +32,6 @@ const Industrie = () => {
     }));
   }, [dbArticles]);
 
-  const industrialStats = [
-    {
-      title: "Production Industrielle",
-      value: "+12.5%",
-      description: "Croissance annuelle",
-      icon: Factory,
-      color: "text-green-600"
-    },
-    {
-      title: "Emplois Créés",
-      value: "45,000",
-      description: "Nouveaux postes",
-      icon: Users,
-      color: "text-blue-600"
-    },
-    {
-      title: "Investissements",
-      value: "€2.8M",
-      description: "Capital investi",
-      icon: DollarSign,
-      color: "text-purple-600"
-    },
-    {
-      title: "Efficacité Énergétique",
-      value: "+23%",
-      description: "Amélioration",
-      icon: Zap,
-      color: "text-yellow-600"
-    }
-  ];
-
   const sectors = [
     { id: 'all', name: 'Tous les secteurs' },
     { id: 'manufacturing', name: 'Manufacture' },
@@ -71,13 +40,6 @@ const Industrie = () => {
     { id: 'automotive', name: 'Automobile' },
     { id: 'pharma', name: 'Pharmaceutique' },
     { id: 'food', name: 'Agroalimentaire' }
-  ];
-
-  const featuredCompanies = [
-    { name: "TechCorp Industries", sector: "Technology", growth: "+18%", employees: "2,500" },
-    { name: "GreenEnergy Solutions", sector: "Énergie", growth: "+25%", employees: "1,200" },
-    { name: "AutoMotive Plus", sector: "Automobile", growth: "+15%", employees: "3,800" },
-    { name: "PharmaCare Africa", sector: "Pharmaceutique", growth: "+22%", employees: "1,800" }
   ];
 
   const filteredNews = useMemo(() => {
@@ -118,58 +80,6 @@ const Industrie = () => {
               Découvrez les dernières tendances industrielles, les innovations technologiques 
               et les opportunités de croissance qui façonnent l'avenir économique de l'Afrique
             </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Industrial Statistics */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12 text-[#373B3A]">
-            Indicateurs Industriels
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {industrialStats.map((stat, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow">
-                <CardContent className="pt-6">
-                  <div className="flex justify-center mb-4">
-                    <stat.icon className={`h-12 w-12 ${stat.color}`} />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{stat.value}</h3>
-                  <p className="text-lg font-semibold text-gray-700 mb-1">{stat.title}</p>
-                  <p className="text-sm text-gray-500">{stat.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Companies */}
-      <section className="py-16 bg-[#E5DDD5]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12 text-[#373B3A]">
-            Entreprises en Vedette
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredCompanies.map((company, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-lg mb-2">{company.name}</h3>
-                  <p className="text-gray-600 mb-3">{company.sector}</p>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-sm text-gray-500">Croissance</p>
-                      <p className="font-semibold text-green-600">{company.growth}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Employés</p>
-                      <p className="font-semibold">{company.employees}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
           </div>
         </div>
       </section>
@@ -240,7 +150,7 @@ const Industrie = () => {
               : "space-y-6"
             }>
               {filteredNews.map((article) => (
-                <Link key={article.id} to={`/article/${article.id}`} className="block">
+                <Link key={article.id} to={`/article/${article.slug || article.id}`} className="block">
                   <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full flex flex-col justify-between">
                     <div className={viewMode === 'list' ? "flex h-full" : ""}>
                       <div className={viewMode === 'list' ? "w-48 flex-shrink-0" : ""}>

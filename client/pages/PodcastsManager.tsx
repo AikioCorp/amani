@@ -308,9 +308,9 @@ export default function PodcastsManager() {
                         {/* Image de couverture */}
                         <div className="relative">
                           <img
-                            src={podcast.coverImage}
+                            src={podcast.coverImage?.includes('rrhcctylbczzahgiqoub.supabase.co') ? '/placeholder.svg' : (podcast.coverImage || '/placeholder.svg')}
                             alt={podcast.title}
-                            className="w-20 h-20 rounded-lg object-cover"
+                            className="w-12 h-12 rounded-lg object-cover"
                           />
                           <div className="absolute inset-0 flex items-center justify-center">
                             <button

@@ -291,17 +291,56 @@ export default function ImportsManagement() {
     }
   };
 
-  const handleForceGenerate = async (id: string) => {
-    setActionLoading(id);
+  // State for Logs Modal & Step Progress
+  const [logsModalItem, setLogsModalItem] = useState<ArticleImport | null>(null);
+  const [logsData, setLogsData] = useState<any[]>([]);
+  const [isLogsLoading, setIsLogsLoading] = useState(false);
+  const [generationStepText, setGenerationStepText] = useState<{ [id: string]: string }>({});
+
+  const openLogsModal = async (item: ArticleImport) => {
+    setLogsModalItem(item);
+    setIsLogsLoading(true);
     try {
       const token = getSessionToken();
-      const response = await fetch(`${API_BASE_URL}/imports/${id}/generate`, {
-        method: "POST",
+      const response = await fetch(`${API_BASE_URL}/imports/${item.id}/logs`, {
         headers: { "Authorization": token ? `Bearer ${token}` : "" }
       });
       const result = await response.json();
       if (response.ok && result.success) {
-        success("Nouveau brouillon généré !", "L'IA a régénéré le contenu.");
+        setLogsData(result.data || []);
+      }
+    } catch (err: any) {
+      console.error("Erreur chargement logs:", err);
+    } finally {
+      setIsLogsLoading(false);
+    }
+  };
+
+  const handleForceGenerate = async (id: string) => {
+    setActionLoading(id);
+    setGenerationStepText(prev => ({ ...prev, [id]: "1/3 Extraction HTML Readability..." }));
+    try {
+      const token = getSessionToken();
+
+      const timer1 = setTimeout(() => {
+        setGenerationStepText(prev => ({ ...prev, [id]: "2/3 Inspection Sharp & Images HD..." }));
+      }, 2500);
+
+      const timer2 = setTimeout(() => {
+        setGenerationStepText(prev => ({ ...prev, [id]: "3/3 Structuration IA Gemini Zod..." }));
+      }, 6500);
+
+      const response = await fetch(`${API_BASE_URL}/imports/${id}/generate`, {
+        method: "POST",
+        headers: { "Authorization": token ? `Bearer ${token}` : "" }
+      });
+
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+
+      const result = await response.json();
+      if (response.ok && result.success) {
+        success("Brouillon IA généré avec succès !", "L'article et le résumé ont été rédigés et validés par l'IA.");
         const newDraft = result.data;
         setImports(prev => prev.map(item => {
           if (item.id === id) {
@@ -313,12 +352,13 @@ export default function ImportsManagement() {
           return item;
         }));
       } else {
-        throw new Error(result.error || "Échec de génération");
+        throw new Error(result.error || "Échec de génération par l'IA.");
       }
     } catch (err: any) {
-      error("Erreur", err.message);
+      error("Erreur de génération", err.message || "Erreur de connexion");
     } finally {
       setActionLoading(null);
+      setGenerationStepText(prev => ({ ...prev, [id]: "" }));
     }
   };
 
@@ -680,6 +720,23 @@ export default function ImportsManagement() {
                           </div>
                         )}
 
+                        {(() => {
+                          const cardImage = (item as any).images?.[0]?.stored_url || (item as any).image_metadata?.[0]?.stored_url || (item.raw_data as any)?.imageUrl;
+                          if (!cardImage) return null;
+                          return (
+                            <div className="mb-4 overflow-hidden rounded-xl border border-gray-200 bg-gray-900 shadow-sm">
+                              <img
+                                src={cardImage}
+                                alt={draft.title}
+                                className="w-full h-64 md:h-72 object-cover object-top opacity-95 hover:opacity-100 transition-opacity"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLElement).style.display = "none";
+                                }}
+                              />
+                            </div>
+                          );
+                        })()}
+
                         <h4 className="text-lg font-bold text-gray-900 mb-2">
                           {draft.title}
                         </h4>
@@ -708,40 +765,66 @@ export default function ImportsManagement() {
                         <button
                           onClick={() => handleForceGenerate(item.id)}
                           disabled={actionLoading !== null}
-                          className="mt-3 text-xs bg-amani-primary text-white font-medium px-4 py-2 rounded-lg hover:bg-amani-primary/95 transition-all"
+                          className="mt-3 text-xs bg-amani-primary text-white font-medium px-4 py-2.5 rounded-lg hover:bg-amani-primary/95 transition-all flex items-center gap-2"
                         >
-                          Générer le brouillon maintenant
+                          {actionLoading === item.id ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin text-white" />
+                              <span>{generationStepText[item.id] || "Génération en cours..."}</span>
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-4 h-4" />
+                              <span>Générer le brouillon maintenant</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     )}
 
                     {/* Bottom Actions Bar */}
                     <div className="border-t border-gray-100 pt-4 mt-4 flex flex-wrap items-center justify-between gap-4">
-                      {draft && (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => openEditModal(item)}
-                            disabled={actionLoading !== null}
-                            className="text-xs font-semibold px-4 py-2 rounded-lg border border-gray-200 hover:border-amani-primary hover:bg-amani-primary/5 transition-all text-gray-700 hover:text-amani-primary flex items-center gap-1.5"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                            Modifier
-                          </button>
-                          <button
-                            onClick={() => handleForceGenerate(item.id)}
-                            disabled={actionLoading !== null}
-                            className="text-xs font-semibold px-4 py-2 rounded-lg border border-gray-200 hover:border-emerald-600 hover:bg-emerald-50 transition-all text-gray-700 hover:text-emerald-600 flex items-center gap-1.5"
-                            title="Régénérer le résumé et l'article avec l'IA Gemini"
-                          >
-                            {actionLoading === item.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
-                            ) : (
-                              <RefreshCw className="w-4 h-4" />
-                            )}
-                            Régénérer par IA
-                          </button>
-                        </div>
-                      )}
+                      <div className="flex gap-2 flex-wrap">
+                        {draft && (
+                          <>
+                            <button
+                              onClick={() => openEditModal(item)}
+                              disabled={actionLoading !== null}
+                              className="text-xs font-semibold px-4 py-2 rounded-lg border border-gray-200 hover:border-amani-primary hover:bg-amani-primary/5 transition-all text-gray-700 hover:text-amani-primary flex items-center gap-1.5"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                              Modifier
+                            </button>
+                            <button
+                              onClick={() => handleForceGenerate(item.id)}
+                              disabled={actionLoading !== null}
+                              className="text-xs font-semibold px-4 py-2 rounded-lg border border-gray-200 hover:border-emerald-600 hover:bg-emerald-50 transition-all text-gray-700 hover:text-emerald-600 flex items-center gap-1.5"
+                              title="Régénérer le résumé et l'article avec l'IA Gemini"
+                            >
+                              {actionLoading === item.id ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                                  <span>{generationStepText[item.id] || "Régénération..."}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <RefreshCw className="w-4 h-4" />
+                                  <span>Régénérer par IA</span>
+                                </>
+                              )}
+                            </button>
+                          </>
+                        )}
+
+                        <button
+                          onClick={() => openLogsModal(item)}
+                          className="text-xs font-semibold px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-600 flex items-center gap-1.5"
+                          title="Consulter le journal d'extraction et d'image"
+                        >
+                          <Eye className="w-4 h-4 text-gray-500" />
+                          Journal & Diagnostic
+                        </button>
+                      </div>
 
                       <div className="flex items-center gap-2 ml-auto">
                         <button
@@ -1056,6 +1139,67 @@ export default function ImportsManagement() {
                 className="bg-amani-primary hover:bg-amani-primary/95 text-white text-xs font-semibold px-5 py-2.5 rounded-lg flex items-center gap-1.5 shadow-sm"
               >
                 Sauvegarder les modifications
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Logs Diagnostic Modal */}
+      {logsModalItem && (
+        <div className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-gray-900 flex items-center gap-1.5">
+                  <Eye className="w-5 h-5 text-amani-primary" />
+                  Journal d'Importation & Diagnostic Technique
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">{logsModalItem.title}</p>
+              </div>
+              <button onClick={() => setLogsModalItem(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {isLogsLoading ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-amani-primary mb-2" />
+                <p className="text-xs text-gray-500">Chargement des logs d'étape...</p>
+              </div>
+            ) : logsData.length === 0 ? (
+              <div className="py-10 text-center text-xs text-gray-500 italic">
+                Aucun log d'étape enregistré pour cet article.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {logsData.map((log: any, idx: number) => (
+                  <div key={idx} className="p-3.5 bg-gray-50 rounded-xl border border-gray-100 text-xs">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-gray-800 uppercase text-[10px] tracking-wider bg-white px-2 py-0.5 rounded border border-gray-200">
+                        {log.step}
+                      </span>
+                      <span className="text-[10px] text-gray-400">
+                        {new Date(log.created_at).toLocaleTimeString("fr-FR")}
+                      </span>
+                    </div>
+                    <p className={`font-semibold mt-1 ${log.status === "error" ? "text-red-600" : log.status === "warning" ? "text-amber-600" : "text-gray-800"}`}>
+                      {log.message}
+                    </p>
+                    {log.duration_ms > 0 && (
+                      <p className="text-[10px] text-gray-400 mt-1">Durée : {log.duration_ms} ms</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end border-t border-gray-100 pt-4 mt-6">
+              <button
+                onClick={() => setLogsModalItem(null)}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold px-4 py-2 rounded-lg"
+              >
+                Fermer
               </button>
             </div>
           </div>

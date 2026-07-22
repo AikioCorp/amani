@@ -141,25 +141,15 @@ export default function EditPodcast() {
 
   return (
     <>
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div className="flex items-start justify-between">
+    <div className="max-w-4xl mx-auto space-y-12">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-6">
         <div>
-          <h1 className="text-2xl font-bold text-amani-primary">Modifier le podcast</h1>
-          <p className="text-gray-600">Modification de "{podcast.title}"</p>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Modifier le podcast</h1>
+          <p className="text-sm text-gray-500 mt-2 font-medium">Modification de "{podcast.title}"</p>
         </div>
-      </div>
-        
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate("/dashboard/podcasts")}
-            className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Retour aux podcasts
-          </button>
-
           {/* Indicateur de statut */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full border border-gray-200">
             <div
               className={`w-2 h-2 rounded-full ${
                 podcast.status === "published"
@@ -169,7 +159,7 @@ export default function EditPodcast() {
                     : "bg-gray-500"
               }`}
             ></div>
-            <span className="text-sm text-gray-600 capitalize">
+            <span className="text-xs text-gray-600 font-bold uppercase tracking-wider">
               {podcast.status === "published"
                 ? "Publié"
                 : podcast.status === "draft"
@@ -178,58 +168,64 @@ export default function EditPodcast() {
             </span>
           </div>
         </div>
+      </div>
+        
+      <button
+        onClick={() => navigate("/dashboard/podcasts")}
+        className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors uppercase tracking-widest"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Retour aux podcasts
+      </button>
 
-        {/* Informations du podcast existant */}
-        <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-purple-600 text-white rounded-xl">
-              <Mic className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Modification en cours
-              </h3>
-              <p className="text-gray-600">
-                Podcast créé le{" "}
-                {new Date(podcast.created_at || "").toLocaleDateString("fr-FR")}
-                {podcast.views && (
-                  <span className="ml-4 text-sm">
-                    👁️ {podcast.views.toLocaleString()} vues
-                  </span>
-                )}
-              </p>
-            </div>
+      {/* Informations du podcast existant */}
+      <div className="bg-white border border-gray-200 p-8">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-gray-900 text-white">
+            <Mic className="w-6 h-6" />
           </div>
-
-          {podcast.podcast_data?.audio_url && (
-              <div className="mt-4">
-                <p className="text-sm text-gray-700 mb-2">Disponible sur :</p>
-                <div className="flex flex-wrap gap-2">
-                  <a
-                    href={podcast.podcast_data.audio_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 px-3 py-1 bg-white text-purple-700 text-xs rounded-full border border-purple-200 hover:bg-purple-50 transition-colors"
-                  >
-                    <span>Écouter le podcast</span>
-                  </a>
-                </div>
-              </div>
-            )}
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">
+              Aperçu en direct
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">
+              Créé le{" "}
+              {new Date(podcast.created_at || "").toLocaleDateString("fr-FR")}
+              {podcast.views && (
+                <span className="ml-4 font-medium text-gray-900">
+                  {podcast.views.toLocaleString()} écoutes
+                </span>
+              )}
+            </p>
+          </div>
         </div>
 
-        {/* Formulaire unifié */}
-        <UnifiedContentForm
-          type="podcast"
-          initialData={{
-            ...podcast,
-            category: podcast?.categories?.slug || podcast?.category_id, // Utiliser le slug de la catégorie
-            published_at: podcast?.published_at ? podcast.published_at.split('T')[0] : undefined, // Format yyyy-MM-dd pour input date
-          } as any}
-          onSave={handleSave}
-          onCancel={handleCancel}
-        />
+        {podcast.podcast_data?.audio_url && (
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              <a
+                href={podcast.podcast_data.audio_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white text-sm font-bold hover:bg-gray-800 transition-colors"
+              >
+                Écouter le fichier source ↗
+              </a>
+            </div>
+          )}
       </div>
+
+      {/* Formulaire unifié */}
+      <UnifiedContentForm
+        type="podcast"
+        initialData={{
+          ...podcast,
+          category: podcast?.categories?.slug || podcast?.category_id,
+          published_at: podcast?.published_at ? podcast.published_at.split('T')[0] : undefined,
+        } as any}
+        onSave={handleSave}
+        onCancel={handleCancel}
+      />
+    </div>
     </>
   );
 }

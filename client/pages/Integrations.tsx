@@ -41,12 +41,9 @@ export default function Integrations() {
   // Check permissions after all hooks
   if (!user || !hasPermission("manage_integrations")) {
     return (
-      <DashboardLayout
-        title="Accès refusé"
-        subtitle="Vous n'avez pas les permissions nécessaires"
-      >
+      <div className="p-4 sm:p-6">
         <div className="flex items-center justify-center py-12">
-          <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md">
+          <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md text-center border border-white/50">
             <h2 className="text-2xl font-bold text-amani-primary mb-4">
               Accès refusé
             </h2>
@@ -62,7 +59,7 @@ export default function Integrations() {
             </Link>
           </div>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
@@ -310,11 +307,14 @@ export default function Integrations() {
   };
 
   return (
-    <DashboardLayout
-      title="Gestion des intégrations"
-      subtitle="Configurez et gérez les intégrations avec les services externes"
-      actions={
-        <>
+    <div className="p-4 sm:p-6 space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Gestion des intégrations</h1>
+          <p className="text-slate-500 mt-1">Configurez et gérez les intégrations avec les services externes</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2">
             <Search className="w-4 h-4 text-gray-500" />
             <input
@@ -358,9 +358,9 @@ export default function Integrations() {
             <Plus className="w-4 h-4" />
             Nouvelle intégration
           </button>
-        </>
-      }
-    >
+        </div>
+      </div>
+
       <div className="space-y-8">
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -570,6 +570,6 @@ export default function Integrations() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }

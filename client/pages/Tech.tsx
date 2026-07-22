@@ -22,41 +22,6 @@ const Tech = () => {
     { id: 'cybersecurity', name: 'Cybersécurité' }
   ];
 
-  const techStats = [
-    {
-      title: "Startups Tech",
-      value: "2,450",
-      change: "+35%",
-      description: "Nouvelles startups créées",
-      icon: Zap,
-      color: "text-blue-600"
-    },
-    {
-      title: "Investissements",
-      value: "$3.2B",
-      change: "+48%",
-      description: "Capital investi en 2024",
-      icon: TrendingUp,
-      color: "text-green-600"
-    },
-    {
-      title: "Développeurs",
-      value: "180K",
-      change: "+22%",
-      description: "Développeurs actifs",
-      icon: Code,
-      color: "text-purple-600"
-    },
-    {
-      title: "Utilisateurs Mobile",
-      value: "450M",
-      change: "+15%",
-      description: "Utilisateurs connectés",
-      icon: Smartphone,
-      color: "text-orange-600"
-    }
-  ];
-
   // Fetch real published tech articles
   const { articles: dbArticles, loading } = useArticles({
     status: 'published',
@@ -78,64 +43,6 @@ const Tech = () => {
       difficulty: art.tags?.includes('Expert') ? 'Expert' : art.tags?.includes('Débutant') ? 'Débutant' : 'Intermédiaire'
     }));
   }, [dbArticles]);
-
-  const emergingTechs = [
-    {
-      name: "Intelligence Artificielle",
-      growth: "+65%",
-      description: "Adoption croissante dans l'agriculture et la santé",
-      icon: Brain,
-      projects: 245
-    },
-    {
-      name: "Blockchain",
-      growth: "+42%",
-      description: "Applications en gouvernance et finance",
-      icon: Shield,
-      projects: 128
-    },
-    {
-      name: "IoT & Smart Cities",
-      growth: "+38%",
-      description: "Développement des villes intelligentes",
-      icon: Globe,
-      projects: 167
-    },
-    {
-      name: "Cloud Computing",
-      growth: "+55%",
-      description: "Infrastructure numérique en expansion",
-      icon: Cloud,
-      projects: 312
-    }
-  ];
-
-  const techLeaders = [
-    {
-      name: "TechAfrica Labs",
-      sector: "Incubateur Tech",
-      location: "Lagos, Nigeria",
-      founded: "2018",
-      startups: "45+",
-      description: "Premier incubateur de startups technologiques en Afrique de l'Ouest"
-    },
-    {
-      name: "Digital Innovation Hub",
-      sector: "Centre d'Innovation",
-      location: "Nairobi, Kenya",
-      founded: "2019",
-      startups: "32+",
-      description: "Hub spécialisé dans les solutions FinTech et AgriTech"
-    },
-    {
-      name: "AI Research Center",
-      sector: "Recherche & Développement",
-      location: "Le Cap, Afrique du Sud",
-      founded: "2020",
-      startups: "28+",
-      description: "Centre de recherche en intelligence artificielle et machine learning"
-    }
-  ];
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -187,91 +94,6 @@ const Tech = () => {
               Explorez l'écosystème technologique africain en pleine expansion, 
               des innovations disruptives aux tendances qui façonnent l'avenir numérique du continent
             </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Tech Statistics */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12 text-[#373B3A]">
-            L'Écosystème Tech en Chiffres
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {techStats.map((stat, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow">
-                <CardContent className="pt-6">
-                  <div className="flex justify-center mb-4">
-                    <stat.icon className={`h-12 w-12 ${stat.color}`} />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{stat.value}</h3>
-                  <p className="text-lg font-semibold text-gray-700 mb-1">{stat.title}</p>
-                  <p className="text-sm text-gray-500 mb-2">{stat.description}</p>
-                  <span className="text-sm font-medium text-green-600">{stat.change}</span>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Emerging Technologies */}
-      <section className="py-16 bg-[#E5DDD5]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12 text-[#373B3A]">
-            Technologies Émergentes
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {emergingTechs.map((tech, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
-                <CardContent className="pt-6">
-                  <div className="flex justify-center mb-4">
-                    <tech.icon className="h-12 w-12 text-[#373B3A]" />
-                  </div>
-                  <h3 className="text-lg font-bold text-center mb-2">{tech.name}</h3>
-                  <div className="text-center mb-3">
-                    <span className="text-2xl font-bold text-green-600">{tech.growth}</span>
-                    <p className="text-sm text-gray-600">Croissance annuelle</p>
-                  </div>
-                  <p className="text-sm text-gray-600 text-center mb-3">{tech.description}</p>
-                  <div className="text-center">
-                    <span className="text-sm font-medium text-[#373B3A]">
-                      {tech.projects} projets actifs
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Tech Leaders */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12 text-[#373B3A]">
-            Leaders de l'Innovation
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {techLeaders.map((leader, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex justify-between items-start mb-2">
-                    <Badge variant="secondary">{leader.sector}</Badge>
-                    <span className="text-sm text-gray-500">Fondé en {leader.founded}</span>
-                  </div>
-                  <CardTitle className="text-xl">{leader.name}</CardTitle>
-                  <p className="text-gray-600">{leader.location}</p>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-700 mb-4">{leader.description}</p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">Startups accompagnées</span>
-                    <span className="font-semibold text-[#373B3A]">{leader.startups}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
           </div>
         </div>
       </section>
@@ -358,7 +180,7 @@ const Tech = () => {
                       <span className="text-sm text-gray-500">
                         {new Date(article.date).toLocaleDateString('fr-FR')}
                       </span>
-                      <Link to={`/article/${article.id}`}>
+                      <Link to={`/article/${article.slug || article.id}`}>
                         <Button size="sm">
                           Lire l'Article
                         </Button>

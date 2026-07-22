@@ -74,7 +74,7 @@ export default function ImageUpload({
       {preview ? (
         <div className="relative">
           <img
-            src={preview}
+            src={preview?.includes('rrhcctylbczzahgiqoub.supabase.co') ? '/placeholder.svg' : preview}
             alt="Aperçu"
             className="w-full h-48 object-cover rounded-lg border border-gray-300"
           />

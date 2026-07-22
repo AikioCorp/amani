@@ -44,77 +44,6 @@ const Insights = () => {
     { id: 'social', name: 'Impact Social' }
   ];
 
-  const quickInsights = [
-    {
-      title: "Croissance du E-commerce",
-      value: "+67%",
-      description: "Augmentation des ventes en ligne",
-      trend: "up"
-    },
-    {
-      title: "Adoption Mobile Banking",
-      value: "78%",
-      description: "Population utilisant les services mobiles",
-      trend: "up"
-    },
-    {
-      title: "Investissements Tech",
-      value: "$2.4B",
-      description: "Capital investi dans la tech africaine",
-      trend: "up"
-    },
-    {
-      title: "Création d'Entreprises",
-      value: "+45%",
-      description: "Nouvelles startups créées",
-      trend: "up"
-    }
-  ];
-
-  const analyticalReports = [
-    {
-      id: 1,
-      title: "Rapport Trimestriel : État de l'Économie Africaine Q1 2024",
-      type: "Rapport Économique",
-      pages: 45,
-      downloadCount: "1.2K",
-      date: "2024-03-01",
-      description: "Analyse complète des performances économiques du continent au premier trimestre 2024.",
-      preview: "Ce rapport examine les principales tendances économiques observées au premier trimestre 2024..."
-    },
-    {
-      id: 2,
-      title: "Étude Sectorielle : Transformation Digitale des PME Africaines",
-      type: "Étude Sectorielle",
-      pages: 62,
-      downloadCount: "856",
-      date: "2024-02-28",
-      description: "Recherche approfondie sur l'adoption du numérique par les petites et moyennes entreprises.",
-      preview: "La transformation digitale représente un enjeu majeur pour les PME africaines..."
-    },
-    {
-      id: 3,
-      title: "Livre Blanc : Fintech et Inclusion Financière en Afrique",
-      type: "Livre Blanc",
-      pages: 38,
-      downloadCount: "2.1K",
-      date: "2024-02-25",
-      description: "Guide complet sur le rôle des fintechs dans l'amélioration de l'inclusion financière.",
-      preview: "Les technologies financières révolutionnent l'accès aux services bancaires..."
-    }
-  ];
-
-  const expertAuthors = [
-    {
-      name: "Dr Mohamed Keita",
-      title: "Expert Économiste",
-      speciality: "Économie Africaine",
-      articles: 45,
-      followers: "25.8K",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
-    }
-  ];
-
   const getComplexityColor = (complexity: string) => {
     switch (complexity) {
       case 'Débutant': return 'text-green-600 bg-green-100';
@@ -164,69 +93,6 @@ const Insights = () => {
               Accédez aux analyses approfondies, études prospectives et insights stratégiques 
               pour comprendre les enjeux économiques et sociaux de l'Afrique moderne
             </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Quick Insights Dashboard */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12 text-[#373B3A]">
-            Aperçus Rapides
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {quickInsights.map((insight, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow">
-                <CardContent className="pt-6">
-                  <div className="flex justify-center mb-4">
-                    <BarChart3 className="h-12 w-12 text-[#373B3A]" />
-                  </div>
-                  <h3 className="text-3xl font-bold text-gray-900 mb-2">{insight.value}</h3>
-                  <p className="text-lg font-semibold text-gray-700 mb-1">{insight.title}</p>
-                  <p className="text-sm text-gray-500">{insight.description}</p>
-                  <div className="mt-3 flex justify-center">
-                    <TrendingUp className="h-5 w-5 text-green-500" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Expert Authors */}
-      <section className="py-16 bg-[#E5DDD5]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12 text-[#373B3A]">
-            Nos Experts
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {expertAuthors.map((author, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow">
-                <CardContent className="pt-6">
-                  <div className="w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden">
-                    <img
-                      src={author.image}
-                      alt={author.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-1">{author.name}</h3>
-                  <p className="text-gray-600 mb-2">{author.title}</p>
-                  <Badge variant="secondary" className="mb-3">{author.speciality}</Badge>
-                  <div className="flex justify-center gap-6 text-sm text-gray-600">
-                    <div>
-                      <p className="font-semibold">{author.articles}</p>
-                      <p>Articles</p>
-                    </div>
-                    <div>
-                      <p className="font-semibold">{author.followers}</p>
-                      <p>Followers</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
           </div>
         </div>
       </section>
@@ -331,7 +197,7 @@ const Insights = () => {
                       <span className="text-sm text-gray-500">
                         {new Date(insight.date).toLocaleDateString('fr-FR')}
                       </span>
-                      <Link to={`/article/${insight.id}`}>
+                      <Link to={`/article/${insight.slug || insight.id}`}>
                         <Button size="sm">
                           Lire l'Analyse
                         </Button>
@@ -342,44 +208,6 @@ const Insights = () => {
               ))}
             </div>
           )}
-        </div>
-      </section>
-
-      {/* Analytical Reports */}
-      <section className="py-16 bg-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12 text-[#373B3A]">
-            Rapports et Études
-          </h2>
-          <div className="space-y-6">
-            {analyticalReports.map((report) => (
-              <Card key={report.id} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <Lightbulb className="h-6 w-6 text-[#373B3A]" />
-                        <Badge variant="secondary">{report.type}</Badge>
-                      </div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">{report.title}</h3>
-                      <p className="text-gray-600 mb-3">{report.description}</p>
-                      <p className="text-sm text-gray-500 italic mb-4">"{report.preview}"</p>
-                      <div className="flex items-center gap-6 text-sm text-gray-600">
-                        <span>{report.pages} pages</span>
-                        <span>{report.downloadCount} téléchargements</span>
-                        <span>{new Date(report.date).toLocaleDateString('fr-FR')}</span>
-                      </div>
-                    </div>
-                    <div className="ml-6">
-                      <Button>
-                        Télécharger
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
         </div>
       </section>
     </div>

@@ -19,6 +19,16 @@ import LoadingSpinner from "./components/LoadingSpinner";
 import ScrollToTop from "./components/ScrollToTop";
 import { Navigation } from "./components/Navigation";
 import DashboardShell from "./components/DashboardShell";
+import Footer from "./components/Footer";
+import { useLocation } from "react-router-dom";
+
+// Global Footer component that hides on Dashboard routes
+const GlobalFooter = () => {
+  const { pathname } = useLocation();
+  const isDashboard = pathname.startsWith('/dashboard');
+  if (isDashboard) return null;
+  return <Footer />;
+};
 
 // Public Pages
 import Index from "./pages/Index";
@@ -59,6 +69,7 @@ import EditPodcast from "./pages/EditPodcast";
 import LegacyIndicesDisabled from "./pages/LegacyIndicesDisabled";
 import BrvmIndicesManagement from "./pages/BrvmIndicesManagement";
 import CommoditiesManagement from "./pages/CommoditiesManagement";
+import InvestmentOpportunitiesManagement from "./pages/InvestmentOpportunitiesManagement";
 import IndicesHelp from "./pages/IndicesHelp";
 import Analytics from "./pages/Analytics";
 import Moderation from "./pages/Moderation";
@@ -169,6 +180,7 @@ const AppContent = () => {
           <Route path="indices/edit/:id" element={<LegacyIndicesDisabled />} />
           <Route path="indices-management" element={<BrvmIndicesManagement />} />
           <Route path="commodities-management" element={<CommoditiesManagement />} />
+          <Route path="investment-opportunities" element={<InvestmentOpportunitiesManagement />} />
           <Route path="indices-help" element={<IndicesHelp />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="moderation" element={<Moderation />} />
@@ -197,6 +209,7 @@ const AppContent = () => {
           element={<NotFound />}
         />
       </Routes>
+      <GlobalFooter />
     </BrowserRouter>
   );
 };

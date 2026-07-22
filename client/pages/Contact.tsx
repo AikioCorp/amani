@@ -1,9 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Clock, Send, MessageSquare, Users, Building } from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import Footer from '../components/Footer';
+import { Mail, Phone, MapPin, Send, ArrowRight, Clock, Building } from 'lucide-react';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -19,52 +15,10 @@ const Contact = () => {
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   const contactTypes = [
-    { id: 'general', name: 'Question Générale', icon: MessageSquare },
-    { id: 'partnership', name: 'Partenariat', icon: Users },
-    { id: 'press', name: 'Presse & Média', icon: Building },
-    { id: 'technical', name: 'Support Technique', icon: Phone }
-  ];
-
-  const contactInfo = [
-    {
-      icon: Mail,
-      title: 'Email',
-      details: 'info@amani-finance.com',
-      description: 'Nous répondons sous 24h'
-    },
-    {
-      icon: Phone,
-      title: 'Téléphone',
-      details: '+223 20 22 45 67',
-      description: 'Lun-Ven, 9h-18h GMT'
-    },
-    {
-      icon: MapPin,
-      title: 'Adresse',
-      details: 'Faladie, Bamako, Mali',
-      description: 'Siège social'
-    },
-    {
-      icon: Clock,
-      title: 'Horaires',
-      details: 'Lun-Ven: 9h-18h',
-      description: 'Fuseau horaire GMT'
-    }
-  ];
-
-  const teamMembers = [
-    {
-      name: 'Dr Keita Mohamed',
-      role: 'Expert Économiste',
-      email: 'k.mohamed@amani-finance.com',
-      speciality: 'Analyse économique et stratégie financière'
-    },
-    {
-      name: 'Kani Sissoko',
-      role: 'Directrice des Opérations',
-      email: 'k.sissoko@amani-finance.com',
-      speciality: 'Gestion opérationnelle et développement'
-    }
+    { id: 'general', name: 'Question Générale' },
+    { id: 'partnership', name: 'Partenariat' },
+    { id: 'press', name: 'Presse & Média' },
+    { id: 'technical', name: 'Support Technique' }
   ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -80,7 +34,6 @@ const Contact = () => {
     setIsSubmitting(true);
     
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
       setSubmitStatus('success');
       setFormData({
@@ -99,307 +52,208 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-[#373B3A] to-gray-700 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-5xl font-bold mb-6">
-              Contactez-Nous
-            </h1>
-            <p className="text-xl max-w-3xl mx-auto leading-relaxed">
-              Notre équipe est à votre disposition pour répondre à vos questions, 
-              discuter de partenariats ou vous accompagner dans vos projets économiques
-            </p>
-          </div>
-        </div>
-      </section>
+    <div className="min-h-screen flex flex-col lg:flex-row bg-[#FDFBF9]">
+      {/* Left Column: Dark Info Section */}
+      <div className="lg:w-2/5 bg-[#1C1E1D] text-white p-8 md:p-16 lg:p-20 flex flex-col justify-between relative overflow-hidden">
+        {/* Decorative circle */}
+        <div className="absolute top-0 right-0 -translate-y-1/3 translate-x-1/3 w-96 h-96 bg-[#9C8464] rounded-full blur-[120px] opacity-20 pointer-events-none"></div>
 
-      {/* Contact Info Cards */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12 text-[#373B3A]">
-            Nos Coordonnées
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {contactInfo.map((info, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow">
-                <CardContent className="pt-6">
-                  <div className="flex justify-center mb-4">
-                    <info.icon className="h-12 w-12 text-[#373B3A]" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{info.title}</h3>
-                  <p className="text-gray-700 font-medium mb-1">{info.details}</p>
-                  <p className="text-sm text-gray-500">{info.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+        <div className="relative z-10">
+          <h1 className="text-5xl lg:text-6xl font-black mb-6 tracking-tight text-white leading-tight">
+            Contactez-<br/>Nous.
+          </h1>
+          <p className="text-xl text-gray-400 font-light mb-16 max-w-md">
+            Une idée, un projet économique ou une question ? Notre équipe d'experts est prête à vous accompagner.
+          </p>
 
-      {/* Contact Form and Team */}
-      <section className="py-16 bg-[#E5DDD5]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Contact Form */}
-            <Card className="h-fit">
-              <CardHeader>
-                <CardTitle className="text-2xl text-[#373B3A]">Envoyez-nous un message</CardTitle>
-                <CardDescription>
-                  Remplissez le formulaire ci-dessous et nous vous répondrons dans les plus brefs délais.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {submitStatus === 'success' && (
-                  <div className="mb-6 p-4 bg-green-100 border border-green-300 rounded-md">
-                    <p className="text-green-700">
-                      ✅ Votre message a été envoyé avec succès ! Nous vous répondrons bientôt.
-                    </p>
-                  </div>
-                )}
-                {submitStatus === 'error' && (
-                  <div className="mb-6 p-4 bg-red-100 border border-red-300 rounded-md">
-                    <p className="text-red-700">
-                      ❌ Une erreur s'est produite. Veuillez réessayer ou nous contacter directement.
-                    </p>
-                  </div>
-                )}
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                        Nom complet *
-                      </label>
-                      <Input
-                        id="name"
-                        name="name"
-                        type="text"
-                        required
-                        value={formData.name}
-                        onChange={handleInputChange}
-                        placeholder="Votre nom complet"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                        Email *
-                      </label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        required
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        placeholder="votre.email@exemple.com"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
-                      Entreprise / Organisation
-                    </label>
-                    <Input
-                      id="company"
-                      name="company"
-                      type="text"
-                      value={formData.company}
-                      onChange={handleInputChange}
-                      placeholder="Nom de votre entreprise"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-2">
-                      Type de demande *
-                    </label>
-                    <select
-                      id="type"
-                      name="type"
-                      required
-                      value={formData.type}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#373B3A] focus:border-transparent"
-                    >
-                      {contactTypes.map(type => (
-                        <option key={type.id} value={type.id}>
-                          {type.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
-                      Sujet *
-                    </label>
-                    <Input
-                      id="subject"
-                      name="subject"
-                      type="text"
-                      required
-                      value={formData.subject}
-                      onChange={handleInputChange}
-                      placeholder="Résumé de votre demande"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-                      Message *
-                    </label>
-                    <textarea
-                      id="message"
-                      name="message"
-                      rows={6}
-                      required
-                      value={formData.message}
-                      onChange={handleInputChange}
-                      placeholder="Décrivez votre demande en détail..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#373B3A] focus:border-transparent resize-none"
-                    />
-                  </div>
-
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full bg-[#373B3A] hover:bg-gray-700"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Envoi en cours...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-4 w-4 mr-2" />
-                        Envoyer le message
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-
-            {/* Team Members */}
-            <div>
-              <h3 className="text-2xl font-bold text-[#373B3A] mb-8">Notre Équipe</h3>
-              <div className="space-y-6">
-                {teamMembers.map((member, index) => (
-                  <Card key={index} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-start space-x-4">
-                        <div className="w-16 h-16 bg-[#373B3A] rounded-full flex items-center justify-center flex-shrink-0">
-                          <Users className="h-8 w-8 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="text-lg font-semibold text-gray-900 mb-1">
-                            {member.name}
-                          </h4>
-                          <p className="text-[#373B3A] font-medium mb-2">{member.role}</p>
-                          <p className="text-sm text-gray-600 mb-3">{member.speciality}</p>
-                          <a
-                            href={`mailto:${member.email}`}
-                            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                          >
-                            {member.email}
-                          </a>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+          <div className="space-y-12">
+            <div className="group flex items-start space-x-5">
+              <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-[#9C8464] transition-colors duration-500">
+                <Mail className="h-5 w-5 text-[#9C8464] group-hover:text-white transition-colors duration-500" />
               </div>
+              <div>
+                <p className="text-sm text-gray-500 uppercase tracking-widest font-bold mb-1">Email</p>
+                <a href="mailto:info@amani-finance.com" className="text-lg text-white hover:text-[#9C8464] transition-colors">info@amani-finance.com</a>
+                <p className="text-sm text-gray-400 mt-1">Nous répondons sous 24h</p>
+              </div>
+            </div>
 
-              {/* Quick Contact Actions */}
-              <div className="mt-8">
-                <h4 className="text-lg font-semibold text-[#373B3A] mb-4">Contact Rapide</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Button variant="outline" className="justify-start" asChild>
-                    <a href="mailto:info@amani-finance.com">
-                      <Mail className="h-4 w-4 mr-2" />
-                      Envoyer un email
-                    </a>
-                  </Button>
-                  <Button variant="outline" className="justify-start" asChild>
-                    <a href="tel:+22320224567">
-                      <Phone className="h-4 w-4 mr-2" />
-                      Appeler maintenant
-                    </a>
-                  </Button>
-                </div>
+            <div className="group flex items-start space-x-5">
+              <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-[#9C8464] transition-colors duration-500">
+                <Phone className="h-5 w-5 text-[#9C8464] group-hover:text-white transition-colors duration-500" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 uppercase tracking-widest font-bold mb-1">Téléphone</p>
+                <a href="tel:+22320224567" className="text-lg text-white hover:text-[#9C8464] transition-colors">+223 20 22 45 67</a>
+                <p className="text-sm text-gray-400 mt-1">Lun-Ven, 9h-18h GMT</p>
+              </div>
+            </div>
+
+            <div className="group flex items-start space-x-5">
+              <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-[#9C8464] transition-colors duration-500">
+                <MapPin className="h-5 w-5 text-[#9C8464] group-hover:text-white transition-colors duration-500" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 uppercase tracking-widest font-bold mb-1">Siège Social</p>
+                <p className="text-lg text-white">Faladie, Bamako, Mali</p>
               </div>
             </div>
           </div>
         </div>
-      </section>
 
-      {/* Map Section (Placeholder) */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12 text-[#373B3A]">
-            Notre Localisation
-          </h2>
-          <Card className="overflow-hidden">
-            <div className="h-96 bg-gray-200 flex items-center justify-center">
-              <div className="text-center">
-                <MapPin className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 text-lg">Carte interactive</p>
-                <p className="text-gray-500">Faladie, Bamako, Mali</p>
+        <div className="relative z-10 mt-20 pt-10 border-t border-white/10">
+          <p className="text-sm text-gray-500 uppercase tracking-widest font-bold mb-4">Notre Philosophie</p>
+          <p className="text-gray-400 font-light italic">
+            "Le développement économique durable commence par des partenariats solides et une communication transparente."
+          </p>
+        </div>
+      </div>
+
+      {/* Right Column: Modern Form */}
+      <div className="lg:w-3/5 p-8 md:p-16 lg:p-24 flex items-center justify-center bg-white relative">
+        <div className="w-full max-w-2xl">
+          <h2 className="text-3xl font-black text-gray-900 mb-2">Envoyez votre message</h2>
+          <p className="text-gray-500 mb-12">Remplissez le formulaire ci-dessous. Tous les champs marqués d'un * sont obligatoires.</p>
+
+          {submitStatus === 'success' && (
+            <div className="mb-10 p-5 bg-green-50 border-l-4 border-green-500 rounded-r-lg">
+              <p className="text-green-800 font-medium">
+                ✅ Votre message a été envoyé avec succès ! Notre équipe vous répondra très prochainement.
+              </p>
+            </div>
+          )}
+          {submitStatus === 'error' && (
+            <div className="mb-10 p-5 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
+              <p className="text-red-800 font-medium">
+                ❌ Une erreur s'est produite lors de l'envoi. Veuillez réessayer.
+              </p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <div className="relative group">
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  required
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  className="w-full bg-transparent border-b-2 border-gray-200 py-3 text-gray-900 focus:outline-none focus:border-[#9C8464] transition-colors peer placeholder-transparent"
+                  placeholder="Nom complet"
+                />
+                <label htmlFor="name" className="absolute left-0 -top-4 text-xs font-bold text-gray-500 uppercase tracking-widest peer-placeholder-shown:text-base peer-placeholder-shown:top-3 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#9C8464] transition-all">
+                  Nom complet *
+                </label>
+              </div>
+
+              <div className="relative group">
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  required
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="w-full bg-transparent border-b-2 border-gray-200 py-3 text-gray-900 focus:outline-none focus:border-[#9C8464] transition-colors peer placeholder-transparent"
+                  placeholder="Email"
+                />
+                <label htmlFor="email" className="absolute left-0 -top-4 text-xs font-bold text-gray-500 uppercase tracking-widest peer-placeholder-shown:text-base peer-placeholder-shown:top-3 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#9C8464] transition-all">
+                  Adresse Email *
+                </label>
               </div>
             </div>
-          </Card>
-        </div>
-      </section>
 
-      {/* FAQ Section */}
-      <section className="py-16 bg-gray-100">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12 text-[#373B3A]">
-            Questions Fréquentes
-          </h2>
-          <div className="space-y-6">
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                  Combien de temps faut-il pour obtenir une réponse ?
-                </h3>
-                <p className="text-gray-600">
-                  Nous nous engageons à répondre à tous les messages dans un délai de 24 heures ouvrables. 
-                  Pour les demandes urgentes, n'hésitez pas à nous appeler directement.
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                  Comment puis-je devenir partenaire d'Amani ?
-                </h3>
-                <p className="text-gray-600">
-                  Sélectionnez "Partenariat" dans le formulaire de contact et décrivez votre projet. 
-                  Notre équipe évaluera votre proposition et vous contactera pour discuter des opportunités de collaboration.
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                  Puis-je planifier une réunion en personne ?
-                </h3>
-                <p className="text-gray-600">
-                  Absolument ! Contactez-nous via le formulaire ou par téléphone pour planifier un rendez-vous 
-                  dans nos bureaux à Abidjan ou organiser une visioconférence.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <div className="relative group">
+                <input
+                  type="text"
+                  id="company"
+                  name="company"
+                  value={formData.company}
+                  onChange={handleInputChange}
+                  className="w-full bg-transparent border-b-2 border-gray-200 py-3 text-gray-900 focus:outline-none focus:border-[#9C8464] transition-colors peer placeholder-transparent"
+                  placeholder="Entreprise"
+                />
+                <label htmlFor="company" className="absolute left-0 -top-4 text-xs font-bold text-gray-500 uppercase tracking-widest peer-placeholder-shown:text-base peer-placeholder-shown:top-3 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#9C8464] transition-all">
+                  Entreprise (Optionnel)
+                </label>
+              </div>
 
-      <Footer />
+              <div className="relative group">
+                <select
+                  id="type"
+                  name="type"
+                  required
+                  value={formData.type}
+                  onChange={handleInputChange}
+                  className="w-full bg-transparent border-b-2 border-gray-200 py-3 text-gray-900 focus:outline-none focus:border-[#9C8464] transition-colors appearance-none cursor-pointer"
+                >
+                  {contactTypes.map(type => (
+                    <option key={type.id} value={type.id}>{type.name}</option>
+                  ))}
+                </select>
+                <label htmlFor="type" className="absolute left-0 -top-4 text-xs font-bold text-[#9C8464] uppercase tracking-widest">
+                  Type de demande *
+                </label>
+              </div>
+            </div>
+
+            <div className="relative group">
+              <input
+                type="text"
+                id="subject"
+                name="subject"
+                required
+                value={formData.subject}
+                onChange={handleInputChange}
+                className="w-full bg-transparent border-b-2 border-gray-200 py-3 text-gray-900 focus:outline-none focus:border-[#9C8464] transition-colors peer placeholder-transparent"
+                placeholder="Sujet"
+              />
+              <label htmlFor="subject" className="absolute left-0 -top-4 text-xs font-bold text-gray-500 uppercase tracking-widest peer-placeholder-shown:text-base peer-placeholder-shown:top-3 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#9C8464] transition-all">
+                Sujet de votre message *
+              </label>
+            </div>
+
+            <div className="relative group">
+              <textarea
+                id="message"
+                name="message"
+                rows={4}
+                required
+                value={formData.message}
+                onChange={handleInputChange}
+                className="w-full bg-transparent border-b-2 border-gray-200 py-3 text-gray-900 focus:outline-none focus:border-[#9C8464] transition-colors peer placeholder-transparent resize-none"
+                placeholder="Message"
+              />
+              <label htmlFor="message" className="absolute left-0 -top-4 text-xs font-bold text-gray-500 uppercase tracking-widest peer-placeholder-shown:text-base peer-placeholder-shown:top-3 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#9C8464] transition-all">
+                Votre Message *
+              </label>
+            </div>
+
+            <div className="pt-4">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="group relative inline-flex items-center justify-center px-8 py-4 font-bold text-white bg-[#1C1E1D] overflow-hidden rounded-full hover:bg-[#9C8464] transition-all duration-300 w-full sm:w-auto min-w-[200px]"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                    Envoi...
+                  </>
+                ) : (
+                  <>
+                    <span className="mr-2 uppercase tracking-wider text-sm">Envoyer le message</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   );
 };

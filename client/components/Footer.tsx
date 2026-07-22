@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, Heart, ArrowUpRight } from 'lucide-react';
+import { FaLinkedin, FaTwitter, FaFacebook, FaWhatsapp } from 'react-icons/fa';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -38,10 +39,10 @@ const Footer = () => {
   ];
 
   const socialLinks = [
-    { name: 'LinkedIn', url: '#', icon: '💼' },
-    { name: 'Twitter', url: '#', icon: '🐦' },
-    { name: 'Facebook', url: '#', icon: '📘' },
-    { name: 'WhatsApp', url: '#', icon: '📱' }
+    { name: 'LinkedIn', url: '#', icon: FaLinkedin },
+    { name: 'Twitter', url: '#', icon: FaTwitter },
+    { name: 'Facebook', url: '#', icon: FaFacebook },
+    { name: 'WhatsApp', url: '#', icon: FaWhatsapp }
   ];
 
   return (
@@ -69,16 +70,18 @@ const Footer = () => {
             {/* Social Links */}
             <div className="flex items-center gap-3">
               <span className="text-sm text-gray-400">Suivez-nous:</span>
-              {socialLinks.map((social) => (
+              {socialLinks.map((social) => {
+                const Icon = social.icon;
+                return (
                 <a
                   key={social.name}
                   href={social.url}
-                  className="w-10 h-10 bg-gray-700 hover:bg-gray-600 rounded-lg flex items-center justify-center transition-colors"
+                  className="w-10 h-10 flex items-center justify-center text-[#857053] hover:text-white transition-colors"
                   aria-label={social.name}
                 >
-                  <span className="text-lg">{social.icon}</span>
+                  <Icon className="w-5 h-5" />
                 </a>
-              ))}
+              )})}
             </div>
           </div>
 

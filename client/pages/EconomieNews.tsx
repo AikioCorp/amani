@@ -190,7 +190,7 @@ export default function EconomieNews() {
                   </div>
 
                   <h2 className="text-2xl font-bold text-amani-primary mb-3 hover:text-amani-primary/80 cursor-pointer">
-                    <Link to={`/article/${news.id}`}>{news.title}</Link>
+                    <Link to={`/article/${news.slug || news.id}`}>{news.title}</Link>
                   </h2>
 
                   <p className="text-gray-600 mb-4 leading-relaxed">
@@ -210,7 +210,7 @@ export default function EconomieNews() {
                       <span>{news.readTime} de lecture</span>
                     </div>
                     <Link
-                      to={`/article/${news.id}`}
+                      to={`/article/${news.slug || news.id}`}
                       className="text-amani-primary font-semibold hover:text-amani-primary/80 flex items-center gap-1"
                     >
                       Lire l'article
