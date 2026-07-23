@@ -175,6 +175,25 @@ export default function InvestmentOpportunitiesManagement() {
     }
   };
 
+  const handleUpdateRequestStatus = async (requestId: string, newStatus: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/investments/requests/${requestId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        success("Statut de la demande mis à jour.");
+        load();
+      } else {
+        error(json.error || "Erreur de mise à jour du statut.");
+      }
+    } catch (e) {
+      error("Erreur réseau lors de la mise à jour du statut.");
+    }
+  };
+
   const openEmailModal = (req: InvestmentRequest) => {
     setEmailTarget(req);
     setEmailForm({

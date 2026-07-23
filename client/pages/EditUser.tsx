@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { API_BASE_URL } from "../services/apiConfig";
 import { getSessionToken } from "../services/authService";
+import { adminCache } from "../services/adminCache";
 import {
   ArrowLeft,
   Save,

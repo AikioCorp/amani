@@ -1,0 +1,196 @@
+  const addTag = () => {
+    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
+      setFormData((prev) => ({
+        ...prev,
+        tags: [...prev.tags, newTag.trim()],
+      }));
+      setNewTag("");
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags: prev.tags.filter((tag) => tag !== tagToRemove),
+    }));
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    // VALIDATION COMMUNE
+    if (!formData.title.trim()) {
+      newErrors.title = "Le titre est requis";
+    }
+    if (!formData.summary.trim()) {
+      newErrors.summary = "Le résumé est requis";
+    }
+    if (!formData.category) {
+      newErrors.category = "La catégorie est requise";
+    }
+
+    // VALIDATIONS SPÉCIFIQUES
+    if (type === "article") {
+      // Pas de validation spéciale pour l'article (contenu optionnel)
+    } else if (type === "podcast") {
+      const podcastData = formData.podcast_data as PodcastData;
+      if (!podcastData.audio_url && !podcastData.video_url) {
+        newErrors.podcast_url = "Au moins un lien audio ou vidéo est requis";
+      }
+    } else if (type === "indice") {
+      const indiceData = formData.indice_data as IndiceData;
+      if (!indiceData.symbol) {
+        newErrors.indice_symbol = "Le symbole est requis";
+      }
+      if (!indiceData.current_value) {
+        newErrors.indice_value = "La valeur actuelle est requise";
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      error(
+        "Erreur de validation",
+        "Veuillez corriger les erreurs dans le formulaire.",
+      );
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      // Upload de l'image si un fichier local a été sélectionné
+      let imageUrl = formData.featured_image;
+      if (featuredImage) {
+        try {
+          const base64Data = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(featuredImage);
+          });
+
+          const token = getSessionToken();
+          const uploadRes = await fetch(getApiUrl("/upload"), {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": token ? `Bearer ${token}` : "",
+            },
+            body: JSON.stringify({
+              imageBase64: base64Data,
+              filename: featuredImage.name,
+            }),
+          });
+
+          const uploadData = await uploadRes.json();
+          if (uploadRes.ok && uploadData.success && uploadData.data?.url) {
+            imageUrl = uploadData.data.url;
+          } else {
+            throw new Error(uploadData.error || "Impossible d'uploader l'image.");
+          }
+        } catch (imgError: any) {
+          console.error("Erreur upload image:", imgError);
+          error("Erreur d'image", imgError.message || "Impossible d'uploader l'image. Veuillez réessayer.");
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      // Préparer les données finales
+      // Fallback: si category_id manquant mais slug présent, résoudre via la liste en mémoire
+      const resolvedCategoryId = (formData as any).category_id
+        || categories.find(c => c.slug === (formData as any).category)?.id
+        || (formData as any).category_id; // garde la valeur si déjà présente
+
+      const finalData = {
+        ...formData,
+        category_id: resolvedCategoryId,
+        type,
+        author_id: user?.id,
+        featured_image: imageUrl,
+      };
+
+      await onSave(finalData);
+
+      success(
+        `${getTypeLabel()} ${formData.status === "published" ? "publié" : "sauvegardé"}`,
+        `${getTypeLabel()} "${formData.title}" ${formData.status === "published" ? "publié" : "sauvegardé en brouillon"} avec succès.`,
+      );
+    } catch (err) {
+      error("Erreur", "Une erreur est survenue lors de la sauvegarde.");
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const getTypeLabel = () => {
+    switch (type) {
+      case "article":
+        return "Article";
+      case "podcast":
+        return "Podcast";
+      case "indice":
+        return "Indice";
+    }
+  };
+
+  const getTypeIcon = () => {
+    switch (type) {
+      case "article":
+        return <FileText className="w-6 h-6" />;
+      case "podcast":
+        return <Mic className="w-6 h-6" />;
+      case "indice":
+        return <BarChart3 className="w-6 h-6" />;
+    }
+  };
+
+  // Charger les catégories dynamiquement depuis la base de données
+  // Garder l'id (UUID) et le slug pour bien renseigner category_id
+  const [categories, setCategories] = useState<{ id: string; slug: string; label: string }[]>([]);
+
+  // Charger les catégories depuis la base de données
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        console.log('🔍 Chargement des catégories...');
+        const apiUrl = getApiUrl("/categories");
+        
+        const resp = await fetch(apiUrl);
+        if (!resp.ok) throw new Error("Erreur de récupération des catégories via l'API");
+        
+        const result = await resp.json();
+        const data = result.data;
+        
+        console.log('📊 Catégories récupérées:', data);
+        
+        if (data && data.length > 0) {
+          type CategoryRow = { id: string; name: string; slug: string };
+          const rows = data as unknown as CategoryRow[];
+          const mappedCategories = rows.map((cat) => ({
+            id: cat.id,
+            slug: cat.slug,
+            label: cat.name,
+          }));
+          console.log('🏷️ Catégories mappées:', mappedCategories);
+          setCategories(mappedCategories);
+        } else {
+          console.log('⚠️ Aucune catégorie trouvée, utilisation des catégories par défaut');
+        }
+      } catch (error) {
+        console.error('Erreur chargement catégories:', error);
+      }
+    };
+    
+    console.log('🚀 Démarrage du chargement des catégories...');
+    loadCategories();
+  }, []);
+

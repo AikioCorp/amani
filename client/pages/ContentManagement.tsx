@@ -86,6 +86,7 @@ const ContentManagement = () => {
     date: a.created_at,
     views: `${a.views ?? 0}`,
     featured: Boolean(a.article_data && (a.article_data as any).featured),
+    is_premium: Boolean((a as any).is_premium),
     editPath: `/dashboard/articles/edit/${a.id}`,
     viewPath: `/article/${a.slug || a.id}`,
   }));
@@ -100,6 +101,7 @@ const ContentManagement = () => {
     date: p.created_at,
     views: `${p.views ?? 0}`,
     featured: Boolean(p.podcast_data && p.podcast_data.rating && p.podcast_data.rating >= 4.5),
+    is_premium: Boolean((p as any).is_premium),
     editPath: `/dashboard/podcasts/edit/${p.id}`,
     viewPath: `/podcast`,
   }));
@@ -425,8 +427,8 @@ const ContentManagement = () => {
                               body: JSON.stringify({ is_premium: !item.is_premium }),
                             });
                             const json = await res.json();
-                            if (json.success) {
-                              toastSuccess("Contenu mis à jour", json.message);
+                              if (json.success) {
+                                success("Contenu mis à jour", json.message);
                               item.is_premium = !item.is_premium;
                               // re-render
                               setStatusFilter(statusFilter);

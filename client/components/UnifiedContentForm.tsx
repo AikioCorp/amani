@@ -32,6 +32,7 @@ import {
   Image as ImageIcon,
   Sparkles,
   Video,
+  ShieldCheck,
 } from "lucide-react";
 
 interface UnifiedContentFormProps {
@@ -74,6 +75,19 @@ function formatDatetimeLocal(val: any): string {
   } catch {
     return "";
   }
+}
+
+function parsePodcastData(data: any): PodcastData {
+  if (!data) return {} as PodcastData;
+  const pd = data.podcast_data || data || {};
+  return {
+    audio_url: pd.audio_url || pd.audio_file || pd.audioUrl || data.audio_url || data.audio_file || "",
+    video_url: pd.video_url || pd.videoUrl || data.video_url || "",
+    spotify_url: pd.spotify_url || pd.spotifyUrl || "",
+    apple_url: pd.apple_url || pd.appleUrl || "",
+    duration: pd.duration || "",
+    host: pd.host || "",
+  };
 }
 
 export default function UnifiedContentForm({
@@ -124,6 +138,7 @@ export default function UnifiedContentForm({
       });
       mergedData.category = parseCategorySlug(initialData);
       mergedData.category_id = parseCategoryId(initialData) || mergedData.category_id;
+      mergedData.podcast_data = parsePodcastData(initialData);
       if (initialData.published_at) {
         mergedData.published_at = formatDatetimeLocal(initialData.published_at);
       }
@@ -138,6 +153,7 @@ export default function UnifiedContentForm({
       const derivedCategory = parseCategorySlug(initialData);
       const derivedCategoryId = parseCategoryId(initialData);
       const formattedPublishedAt = formatDatetimeLocal(initialData.published_at || (initialData as any).created_at);
+      const parsedPodcastData = parsePodcastData(initialData);
 
       setFormData(prev => ({
         ...prev,
@@ -147,6 +163,7 @@ export default function UnifiedContentForm({
             value === null ? "" : value
           ])
         ),
+        podcast_data: parsedPodcastData,
         category: derivedCategory || prev.category,
         category_id: derivedCategoryId || prev.category_id,
         published_at: formattedPublishedAt || prev.published_at,
@@ -162,8 +179,17 @@ export default function UnifiedContentForm({
   const [newTag, setNewTag] = useState("");
   const [isEnriching, setIsEnriching] = useState(false);
   const [isSearchingImage, setIsSearchingImage] = useState(false);
-  const [customImagePrompt, setCustomImagePrompt] = useState("");
+  const [aiPrompt, setAiPrompt] = useState("");
   const [uploadingMedia, setUploadingMedia] = useState<"audio_url" | "video_url" | null>(null);
+  const [localAudioUrl, setLocalAudioUrl] = useState("");
+  const [podcastMode, setPodcastMode] = useState<"mp3" | "url">("mp3");
+
+  // Synchronise localAudioUrl initialement
+  useEffect(() => {
+    if (type === "podcast" && formData.podcast_data?.audio_url && !localAudioUrl) {
+      setLocalAudioUrl(formData.podcast_data.audio_url);
+    }
+  }, [formData?.podcast_data?.audio_url, type]);
 
   // Upload direct d'un fichier audio ou vidéo (podcast) — aucun traitement IA,
   // le fichier est stocké tel quel et son URL remplit le champ de lien correspondant.
@@ -182,10 +208,22 @@ export default function UnifiedContentForm({
         body,
       });
       const result = await res.json();
-      if (!res.ok || !result.success) {
+      if (!res.ok || (!result.success && !result.url)) {
         throw new Error(result.error || "Échec de l'upload du fichier.");
       }
-      handleSpecificDataChange(field, result.data.url);
+      
+      const finalUrl = result.data?.url || result.url || (Array.isArray(result.data) ? result.data[0]?.url : "") || (Array.isArray(result) ? result[0]?.url : "");
+      console.log("Upload result:", result, "Final URL:", finalUrl);
+      
+      if (!finalUrl) {
+        throw new Error("L'URL du fichier n'a pas pu être récupérée.");
+      }
+      
+      handleSpecificDataChange(field, finalUrl);
+      if (field === "audio_url") {
+        setLocalAudioUrl(finalUrl);
+      }
+      
       success(
         "Fichier envoyé",
         `${field === "audio_url" ? "Audio" : "Vidéo"} téléversé avec succès.`,
@@ -198,7 +236,7 @@ export default function UnifiedContentForm({
   };
 
   const handleSearchNewImageAI = async (overridePrompt?: string) => {
-    const searchTerm = overridePrompt || customImagePrompt || formData.title;
+    const searchTerm = overridePrompt || aiPrompt || formData.title;
     if (!searchTerm) {
       error("Titre ou recherche requis", "Veuillez saisir un sujet ou titre d'article avant de rechercher une image.");
       return;
@@ -249,7 +287,7 @@ export default function UnifiedContentForm({
         },
         body: JSON.stringify({
           title: formData.title,
-          summary: formData.summary,
+          summary: aiPrompt || formData.summary,
           content: formData.content,
           link: (formData as any).article_data?.original_link || ""
         })
@@ -342,15 +380,28 @@ export default function UnifiedContentForm({
     });
   };
 
-  const addTag = () => {
-    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      setFormData((prev) => ({
-        ...prev,
-        tags: [...prev.tags, newTag.trim()],
-      }));
-      setNewTag("");
+  const addTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
+        setFormData((prev: any) => ({
+          ...prev,
+          tags: [...prev.tags, newTag.trim()],
+        }));
+        setNewTag("");
+      }
     }
   };
+
+  const countries = [
+    { value: "mali", label: "Mali" },
+    { value: "burkina", label: "Burkina Faso" },
+    { value: "niger", label: "Niger" },
+    { value: "senegal", label: "Sénégal" },
+    { value: "cote-ivoire", label: "Côte d'Ivoire" },
+    { value: "uemoa", label: "UEMOA" },
+    { value: "afrique", label: "Afrique" },
+  ];
 
   const removeTag = (tagToRemove: string) => {
     setFormData((prev) => ({
@@ -538,788 +589,520 @@ export default function UnifiedContentForm({
     loadCategories();
   }, []);
 
-  const countries = [
-    { value: "mali", label: "Mali" },
-    { value: "burkina", label: "Burkina Faso" },
-    { value: "niger", label: "Niger" },
-    { value: "senegal", label: "Sénégal" },
-    { value: "cote-ivoire", label: "Côte d'Ivoire" },
-    { value: "uemoa", label: "UEMOA" },
-    { value: "afrique", label: "Afrique" },
-  ];
+  
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      {/* EN-TÊTE UNIFIÉ */}
-      <div className="border-b border-gray-200 pb-4 mb-8">
-        <div className="flex items-center gap-3">
-          <div className="text-gray-900">
+    <form onSubmit={handleSubmit} className="max-w-[1400px] mx-auto pb-24 relative flex flex-col space-y-8">
+      {/* HEADER STICKY (Top Action Bar) */}
+      <div className="sticky top-[80px] lg:top-[90px] z-50 bg-white/90 backdrop-blur-xl border border-slate-200/60 rounded-2xl p-3 lg:p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold shadow-md">
             {getTypeIcon()}
           </div>
-          <h2 className="text-xl font-bold text-gray-900 uppercase tracking-widest">
-            {initialData
-              ? `Formulaire d'édition`
-              : `Nouveau formulaire`}
-          </h2>
+          <div className="hidden md:block">
+            <h2 className="text-base font-black text-slate-900 uppercase tracking-widest line-clamp-1">
+              {initialData ? "Édition en cours" : `Nouveau ${getTypeLabel()}`}
+            </h2>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className={`w-2 h-2 rounded-full ${formData.status === "published" ? "bg-emerald-500" : "bg-amber-400 animate-pulse"}`}></span>
+              <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+                {formData.status === "published" ? "Publié" : "Brouillon non sauvegardé"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-5 py-2.5 border-none text-slate-500 hover:text-slate-900 font-bold text-xs uppercase tracking-wider transition-colors"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="px-8 py-3 bg-slate-900 hover:bg-black text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2 disabled:opacity-50 disabled:hover:translate-y-0"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-white" />
+                Sauvegarde...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                {formData.status === "published" ? "Mettre à jour" : "Enregistrer"}
+              </>
+            )}
+          </button>
         </div>
       </div>
 
-      {/* INFORMATIONS PRINCIPALES */}
-      <div className="bg-white border border-gray-200 p-8">
-        <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-100">
-          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">
-            Informations principales
-          </h3>
-        </div>
-
-        <div className="space-y-8">
-          {/* Titre */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-              Titre *
-            </label>
-            <input
-              type="text"
-              name="title"
-              value={formData.title || ""}
-              onChange={handleInputChange}
-              className={`w-full px-0 py-3 border-0 border-b-2 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 text-lg font-medium transition-colors ${
-                errors.title ? "border-red-500" : "border-gray-200 hover:border-gray-300"
-              }`}
-              placeholder={`Saisissez le titre ici...`}
-            />
-            {errors.title && (
-              <p className="mt-2 text-xs font-bold text-red-500 flex items-center gap-1 uppercase tracking-widest">
-                <AlertCircle className="w-3.5 h-3.5" />
-                {errors.title}
-              </p>
-            )}
+      {/* TWO COLUMN STUDIO LAYOUT */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        {/* MAIN EDITOR COLUMN (Left, 8/12) */}
+        <div className="lg:col-span-8 space-y-8">
+          
+          {/* TITLE & SLUG SECTION */}
+          <div className="pt-4 pb-2 transition-all">
+            <div className="space-y-4">
+              <div>
+                <textarea
+                  name="title"
+                  value={formData.title || ""}
+                  onChange={handleInputChange}
+                  className="w-full bg-transparent text-4xl md:text-5xl lg:text-[56px] font-black text-[#1d1d1f] placeholder:text-slate-300 border-none p-0 focus:ring-0 resize-none overflow-hidden leading-[1.1] tracking-tighter"
+                  placeholder="Titre de votre contenu..."
+                  rows={1}
+                  style={{ minHeight: '70px' }}
+                />
+                {errors.title && (
+                  <p className="text-sm font-bold text-red-500 flex items-center gap-1.5 mt-2">
+                    <AlertCircle className="w-4 h-4" />
+                    {errors.title}
+                  </p>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-3 max-w-2xl group opacity-60 hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                <span className="text-[#86868b] text-[11px] font-bold uppercase tracking-widest shrink-0">
+                  Slug / Lien :
+                </span>
+                <input
+                  type="text"
+                  name="slug"
+                  value={formData.slug || ""}
+                  onChange={handleInputChange}
+                  className="w-full bg-transparent text-slate-500 border-b border-transparent hover:border-slate-300 focus:border-blue-500 px-0 py-2 text-sm font-medium focus:ring-0 transition-all outline-none"
+                  placeholder="titre-optimise-seo"
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Slug */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-              URL (Slug)
-            </label>
-            <div className="flex items-center">
-              <span className="text-gray-400 text-sm font-medium">amani-finance.com/</span>
-              <input
-                type="text"
-                name="slug"
-                value={formData.slug || ""}
-                onChange={handleInputChange}
-                className="flex-1 ml-1 px-0 py-2 border-0 border-b-2 border-gray-200 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors"
-                placeholder="url-de-votre-contenu"
+          {/* IA ASSISTANT */}
+          <div className="bg-white border border-slate-100/50 rounded-3xl p-6 lg:p-8 shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-blue-500" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Génération par IA</h3>
+                <p className="text-xs text-slate-500">Décrivez brièvement le contenu, l'IA s'occupe de la rédaction.</p>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <textarea
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                className="w-full bg-slate-50/50 text-slate-700 placeholder-slate-400 border border-slate-100 rounded-2xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 focus:bg-white resize-none transition-all"
+                rows={3}
+                placeholder="Ex: Écris un article sur l'impact de l'inflation sur les ménages en zone rurale..."
               />
+              
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleEnrichWithAI}
+                  disabled={isEnriching || !aiPrompt.trim()}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:hover:bg-blue-600"
+                >
+                  {isEnriching ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Génération en cours...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      Rédiger pour moi
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Assistant Rédaction IA */}
-          <div className="bg-gray-50 border border-gray-200 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 my-8">
-            <div>
-              <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2 uppercase tracking-widest">
-                <Sparkles className="w-4 h-4 text-gray-900" />
-                Assistant Rédaction IA
-              </h4>
-              <p className="text-xs text-gray-500 mt-1 font-medium">
-                Générez un résumé professionnel complet et un article long structuré en un clic.
-              </p>
-            </div>
-            <Button
-              type="button"
-              onClick={handleEnrichWithAI}
-              disabled={isEnriching}
-              className="bg-gray-900 hover:bg-black text-white font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-none flex items-center gap-2 shrink-0 transition-colors"
-            >
-              {isEnriching ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Génération par l'IA...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Générer Résumé & Contenu Long IA
-                </>
-              )}
-            </Button>
-          </div>
-
-          {/* Résumé OBLIGATOIRE */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-              Résumé *
-            </label>
+          {/* SUMMARY SECTION */}
+          <div className="bg-white rounded-3xl p-8 lg:p-10 shadow-sm border border-slate-100/50 space-y-4">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Résumé Synthétique
+            </h3>
             <textarea
               name="summary"
               value={formData.summary || ""}
               onChange={handleInputChange}
-              rows={3}
-              className={`w-full px-4 py-3 bg-gray-50 border-0 rounded-none focus:ring-0 focus:bg-gray-100 transition-colors resize-none ${
-                errors.summary ? "border-b-2 border-red-500" : ""
+              rows={4}
+              className={`w-full px-5 py-4 bg-slate-50 border rounded-2xl focus:ring-2 focus:ring-slate-900 focus:bg-white text-base md:text-lg font-medium text-slate-700 transition-all resize-none ${
+                errors.summary ? "border-red-500 bg-red-50/50" : "border-slate-100"
               }`}
-              placeholder="Un résumé percutant pour accrocher l'auditeur..."
+              placeholder="En quoi ce contenu est-il important ? (Sera visible sur les cartes)"
             />
             {errors.summary && (
-              <p className="mt-2 text-xs font-bold text-red-500 flex items-center gap-1 uppercase tracking-widest">
+              <p className="text-xs font-bold text-red-500 flex items-center gap-1">
                 <AlertCircle className="w-3.5 h-3.5" />
                 {errors.summary}
               </p>
             )}
-            <p className="mt-2 text-[10px] uppercase tracking-widest text-gray-400">
-              Utilisé pour l'extrait et le référencement (SEO).
-            </p>
           </div>
 
-          {/* Contenu complet (optionnel) */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-              Notes / Description détaillée (Optionnel)
-            </label>
+          {/* CONTENT SECTION */}
+          <div className="bg-white rounded-3xl p-8 lg:p-10 shadow-sm border border-slate-100/50 space-y-4">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Contenu Détaillé
+            </h3>
             <textarea
               name="content"
               value={formData.content || ""}
               onChange={handleInputChange}
-              rows={8}
-              className="w-full px-4 py-3 bg-gray-50 border-0 rounded-none focus:ring-0 focus:bg-gray-100 transition-colors"
-              placeholder="Notes de l'épisode, transcription ou article long..."
+              rows={12}
+              className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-slate-900 focus:bg-white text-base text-slate-700 transition-all leading-relaxed"
+              placeholder="Commencez à écrire votre article ou les notes du podcast..."
             />
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Catégorie */}
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-                Catégorie *
-              </label>
-              <select
-                name="category"
-                value={formData.category || ""}
-                onChange={(e) => {
-                  const slug = e.target.value;
-                  const found = categories.find(c => c.slug === slug);
-                  console.log('🏷️ Catégorie sélectionnée:', slug, '→', found?.id);
-                  setFormData((prev) => ({
-                    ...prev,
-                    category: slug,
-                    // Renseigner l'UUID côté DB
-                    category_id: found?.id || prev.category_id,
-                  }));
-                  // Clear error éventuel
-                  if (errors.category) {
-                    setErrors((prev) => ({ ...prev, category: "" }));
-                  }
-                }}
-                className={`w-full px-0 py-3 border-0 border-b-2 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors ${
-                  errors.category ? "border-red-500" : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <option value="">Sélectionner une catégorie</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.slug}>
-                    {cat.label}
-                  </option>
-                ))}
-              </select>
-              {errors.category && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.category}
+          {/* PODCAST MEDIA SECTION */}
+          {type === "podcast" && (
+            <div className="bg-[#f5f5f7]/60 border border-slate-200/50 rounded-[32px] p-8 lg:p-10">
+              <div className="flex flex-col mb-8">
+                <h3 className="text-xl font-bold text-[#1d1d1f] tracking-tight">
+                  Média du Podcast
+                </h3>
+                <p className="text-[#86868b] text-sm font-medium mt-1">
+                  Fournissez le fichier audio MP3 ou un lien d'hébergement externe.
                 </p>
-              )}
-            </div>
+              </div>
 
-            {/* Pays */}
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-                Pays/Région
-              </label>
-              <select
-                name="country"
-                value={formData.country || "mali"}
-                onChange={handleInputChange}
-                className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 hover:border-gray-300 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors"
-              >
-                {countries.map((country) => (
-                  <option key={country.value} value={country.value}>
-                    {country.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Étiquettes */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-              Étiquettes
-            </label>
-            <div className="flex gap-2 mb-4">
-              <input
-                type="text"
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                placeholder="Ajouter une étiquette"
-                className="flex-1 px-0 py-2 border-0 border-b-2 border-gray-200 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors"
-                onKeyPress={(e) =>
-                  e.key === "Enter" && (e.preventDefault(), addTag())
-                }
-              />
-              <button
-                type="button"
-                onClick={addTag}
-                className="px-6 py-2 bg-gray-900 text-white font-bold text-xs uppercase tracking-widest rounded-none hover:bg-black transition-colors"
-              >
-                Ajouter
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {formData.tags.map((tag, index) => (
-                <span
-                  key={index}
-                  className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-                >
-                  {tag}
+              <div className="space-y-6">
+                <div className="inline-flex p-1 bg-black/5 rounded-2xl">
                   <button
                     type="button"
-                    onClick={() => removeTag(tag)}
-                    className="text-blue-600 hover:text-blue-800"
+                    onClick={() => setPodcastMode("mp3")}
+                    className={`py-2 px-6 rounded-xl text-xs font-semibold transition-all uppercase tracking-widest flex items-center gap-2 ${
+                      podcastMode === "mp3"
+                        ? "bg-white text-black shadow-sm"
+                        : "text-[#86868b] hover:text-black"
+                    }`}
                   >
-                    ×
+                    <Mic className="w-4 h-4" />
+                    Fichier Audio
                   </button>
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* IMAGE MISE EN AVANT */}
-      <div className="bg-white border border-gray-200 p-8">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-8 pb-4 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">
-              Image mise en avant
-            </h3>
-          </div>
-          {/* Recherche d'image par IA : non disponible pour les podcasts —
-              la couverture est uploadée manuellement uniquement. */}
-          {type !== "podcast" && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => handleSearchNewImageAI()}
-              disabled={isSearchingImage || !formData.title}
-              className="border-gray-900 text-gray-900 rounded-none hover:bg-gray-50 flex items-center gap-2 font-bold text-xs uppercase tracking-widest"
-            >
-              {isSearchingImage ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Recherche HD en cours…
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 text-blue-600" />
-                  Rechercher par IA
-                </>
-              )}
-            </Button>
-          )}
-        </div>
-        {type !== "podcast" && (
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4 flex flex-wrap gap-2 items-center">
-            <input
-              type="text"
-              value={customImagePrompt}
-              onChange={(e) => setCustomImagePrompt(e.target.value)}
-              placeholder="Rechercher par sujet (ex: Seydou Keïta, Dangote, Banque Mali...)"
-              className="flex-1 min-w-[200px] px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleSearchNewImageAI();
-                }
-              }}
-            />
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => handleSearchNewImageAI()}
-              disabled={isSearchingImage}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs flex items-center gap-1.5"
-            >
-              {isSearchingImage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-              Rechercher cette image HD
-            </Button>
-          </div>
-        )}
-
-        <ImageUpload
-          onImageSelect={(file) => {
-            setFeaturedImage(file);
-            if (file) {
-              // Créer une URL temporaire pour l'aperçu
-              const tempUrl = URL.createObjectURL(file);
-              setCurrentImageUrl(tempUrl);
-            }
-          }}
-          currentImage={currentImageUrl}
-        />
-
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Texte alternatif (SEO)
-          </label>
-          <input
-            type="text"
-            name="featured_image_alt"
-            value={formData.featured_image_alt || ""}
-            onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Description de l'image pour l'accessibilité"
-          />
-        </div>
-      </div>
-
-      {/* DONNÉES SPÉCIFIQUES AU TYPE */}
-      {type === "podcast" && (
-        <div className="bg-white border border-gray-200 p-8">
-          <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-100">
-            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">
-              Podcast Audio & Vidéo
-            </h3>
-            <span className="bg-gray-100 text-gray-900 text-[10px] font-bold px-2 py-0.5 uppercase tracking-widest">
-              Liens externes
-            </span>
-          </div>
-
-          <div className="space-y-8">
-            {/* Type de contenu */}
-            <div className="bg-gray-50 p-6 border border-gray-200 mb-8">
-              <h4 className="text-sm font-bold text-gray-900 mb-2 uppercase tracking-widest">
-                Format
-              </h4>
-              <p className="text-sm text-gray-500 mb-4">
-                Vous pouvez lier un podcast audio, vidéo, ou les deux.
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="text-xs text-gray-500 font-medium">
-                  <span className="font-bold text-gray-900 uppercase tracking-widest">Audio :</span> Anchor, Spotify, Apple
+                  <button
+                    type="button"
+                    onClick={() => setPodcastMode("url")}
+                    className={`py-2 px-6 rounded-xl text-xs font-semibold transition-all uppercase tracking-widest flex items-center gap-2 ${
+                      podcastMode === "url"
+                        ? "bg-white text-black shadow-sm"
+                        : "text-[#86868b] hover:text-black"
+                    }`}
+                  >
+                    <Link2 className="w-4 h-4" />
+                    Lien Web
+                  </button>
                 </div>
-                <div className="text-xs text-gray-500 font-medium">
-                  <span className="font-bold text-gray-900 uppercase tracking-widest">Vidéo :</span> YouTube, Vimeo
-                </div>
-              </div>
-            </div>
 
-            {/* Liens principaux OU upload direct de fichier */}
-            <div className="grid md:grid-cols-2 gap-8">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-                  Audio Principal — lien ou fichier
-                </label>
-                <input
-                  type="url"
-                  value={formData.podcast_data.audio_url || ""}
-                  onChange={(e) =>
-                    handleSpecificDataChange("audio_url", e.target.value)
-                  }
-                  className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 hover:border-gray-300 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors"
-                  placeholder="https://anchor.fm/votre-podcast"
-                />
-                <div className="mt-3 flex items-center gap-3">
-                  <label className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-xs font-bold uppercase tracking-widest cursor-pointer hover:bg-gray-50 transition-colors">
-                    {uploadingMedia === "audio_url" ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                {podcastMode === "mp3" && (
+                  <div className="pt-2">
+                    {localAudioUrl ? (
+                      <div className="p-6 bg-white rounded-3xl shadow-sm border border-slate-200/50 space-y-5 transition-all">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                              <Mic className="w-6 h-6" />
+                            </div>
+                            <div className="overflow-hidden">
+                              <p className="text-[13px] font-bold text-[#1d1d1f] mb-0.5 tracking-tight">Audio Prêt</p>
+                              <p className="text-xs text-[#86868b] truncate max-w-[200px] md:max-w-md font-mono">
+                                {localAudioUrl.split('/').pop()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleSpecificDataChange("audio_url", "");
+                                setLocalAudioUrl("");
+                              }}
+                              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors shrink-0"
+                            >
+                              Retirer
+                            </button>
+                          </div>
+                        </div>
+                        <div className="pt-2">
+                          <audio
+                            controls
+                            src={localAudioUrl}
+                            className="w-full h-10 rounded-full"
+                          />
+                        </div>
+                      </div>
                     ) : (
-                      <Mic className="w-3.5 h-3.5" />
+                      <div className="border-2 border-dashed border-slate-300 hover:border-slate-400 rounded-[32px] p-10 text-center bg-white hover:bg-slate-50 transition-all group">
+                        <div className="w-16 h-16 rounded-3xl bg-blue-50 text-blue-500 flex items-center justify-center mx-auto mb-4 shadow-sm group-hover:scale-110 transition-transform">
+                          {uploadingMedia === "audio_url" ? (
+                            <Loader2 className="w-8 h-8 animate-spin" />
+                          ) : (
+                            <Mic className="w-8 h-8" />
+                          )}
+                        </div>
+                        <p className="text-lg font-bold text-[#1d1d1f] mb-1">
+                          {uploadingMedia === "audio_url" ? "Téléversement en cours..." : "Fichier Audio"}
+                        </p>
+                        <p className="text-sm font-medium text-[#86868b] mb-6">
+                          Glissez votre fichier MP3, WAV ou M4A.
+                        </p>
+                        <label className="inline-flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-2xl cursor-pointer transition-all shadow-sm">
+                          {uploadingMedia === "audio_url" ? "Patientez..." : "Sélectionner un fichier"}
+                          <input
+                            type="file"
+                            accept="audio/*"
+                            className="hidden"
+                            disabled={uploadingMedia !== null}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleMediaFileUpload(file, "audio_url");
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
+                      </div>
                     )}
-                    {uploadingMedia === "audio_url" ? "Envoi..." : "Téléverser un fichier audio"}
-                    <input
-                      type="file"
-                      accept="audio/*"
-                      className="hidden"
-                      disabled={uploadingMedia !== null}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleMediaFileUpload(file, "audio_url");
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
-                </div>
-              </div>
+                  </div>
+                )}
 
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-                  Vidéo Principale — lien ou fichier
-                </label>
-                <input
-                  type="url"
-                  value={formData.podcast_data.video_url || ""}
-                  onChange={(e) =>
-                    handleSpecificDataChange("video_url", e.target.value)
-                  }
-                  className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 hover:border-gray-300 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors"
-                  placeholder="https://youtube.com/watch?v=..."
-                />
-                <div className="mt-3 flex items-center gap-3">
-                  <label className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-xs font-bold uppercase tracking-widest cursor-pointer hover:bg-gray-50 transition-colors">
-                    {uploadingMedia === "video_url" ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Video className="w-3.5 h-3.5" />
-                    )}
-                    {uploadingMedia === "video_url" ? "Envoi..." : "Téléverser un fichier vidéo"}
-                    <input
-                      type="file"
-                      accept="video/*"
-                      className="hidden"
-                      disabled={uploadingMedia !== null}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleMediaFileUpload(file, "video_url");
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Plateformes supplémentaires */}
-            <div>
-              <h4 className="text-xs font-bold text-gray-900 mb-4 uppercase tracking-widest">
-                Plateformes supplémentaires (optionnel)
-              </h4>
-              <div className="grid md:grid-cols-2 gap-8">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-                    Spotify
-                  </label>
-                  <input
-                    type="url"
-                    value={formData.podcast_data.spotify_url || ""}
-                    onChange={(e) =>
-                      handleSpecificDataChange("spotify_url", e.target.value)
-                    }
-                    className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 hover:border-gray-300 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors"
-                    placeholder="https://open.spotify.com/..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-                    Apple Podcasts
-                  </label>
-                  <input
-                    type="url"
-                    value={formData.podcast_data.apple_url || ""}
-                    onChange={(e) =>
-                      handleSpecificDataChange("apple_url", e.target.value)
-                    }
-                    className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 hover:border-gray-300 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors"
-                    placeholder="https://podcasts.apple.com/..."
-                  />
-                </div>
-              </div>
-            </div>
-
-            {errors.podcast_url && (
-              <p className="text-xs font-bold text-red-500 flex items-center gap-1 uppercase tracking-widest">
-                <AlertCircle className="w-3.5 h-3.5" />
-                {errors.podcast_url}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {type === "indice" && (
-        <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
-          <div className="flex items-center gap-3 mb-6">
-            <BarChart3 className="w-6 h-6 text-blue-600" />
-            <h3 className="text-xl font-semibold text-gray-900">
-              Données de l'Indice
-            </h3>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Symbole *
-              </label>
-              <input
-                type="text"
-                value={formData.indice_data.symbol || ""}
-                onChange={(e) =>
-                  handleSpecificDataChange("symbol", e.target.value)
-                }
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.indice_symbol ? "border-red-300" : "border-gray-300"
-                }`}
-                placeholder="BRVM, XAU/USD"
-              />
-              {errors.indice_symbol && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.indice_symbol}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Valeur Actuelle *
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.indice_data.current_value || ""}
-                onChange={(e) =>
-                  handleSpecificDataChange(
-                    "current_value",
-                    parseFloat(e.target.value),
-                  )
-                }
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.indice_value ? "border-red-300" : "border-gray-300"
-                }`}
-                placeholder="185.42"
-              />
-              {errors.indice_value && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.indice_value}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Source
-              </label>
-              <input
-                type="text"
-                value={formData.indice_data.source || ""}
-                onChange={(e) =>
-                  handleSpecificDataChange("source", e.target.value)
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="BRVM, BCEAO"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Devise
-              </label>
-              <select
-                value={formData.indice_data.currency || "XOF"}
-                onChange={(e) =>
-                  handleSpecificDataChange("currency", e.target.value)
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="XOF">Franc CFA (XOF)</option>
-                <option value="USD">Dollar US (USD)</option>
-                <option value="EUR">Euro (EUR)</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* SEO & MÉTADONNÉES */}
-      <div className="bg-white border border-gray-200 p-8">
-        <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-100">
-          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">
-            SEO & Métadonnées
-          </h3>
-          <span className="text-[10px] uppercase tracking-widest font-bold bg-gray-100 text-gray-900 px-2 py-1">
-            Auto-généré
-          </span>
-        </div>
-
-        <div className="space-y-8">
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-              Titre SEO (Meta Title)
-            </label>
-            <input
-              type="text"
-              name="meta_title"
-              value={formData.meta_title || ""}
-              onChange={handleInputChange}
-              className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 hover:border-gray-300 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors"
-              placeholder="Auto-généré depuis le titre"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-              Description SEO (Meta Description)
-            </label>
-            <textarea
-              name="meta_description"
-              value={formData.meta_description || ""}
-              onChange={handleInputChange}
-              rows={3}
-              className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 hover:border-gray-300 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors resize-none"
-              placeholder="Auto-généré depuis le résumé"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* STATUT & PUBLICATION */}
-      <div className="bg-white border border-gray-200 p-8">
-        <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-100">
-          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">
-            Publication
-          </h3>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-8">
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">
-              Statut
-            </label>
-            <div className="space-y-4">
-              <div
-                className={`border-b-2 py-3 cursor-pointer transition-colors ${
-                  formData.status === "draft"
-                    ? "border-gray-900"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-                onClick={() =>
-                  setFormData((prev) => ({ ...prev, status: "draft" }))
-                }
-              >
-                <div className="flex items-center gap-3">
-                  <input
-                    type="radio"
-                    name="status"
-                    value="draft"
-                    checked={formData.status === "draft"}
-                    onChange={handleInputChange}
-                    className="h-4 w-4 text-gray-900 focus:ring-0"
-                  />
-                  <div>
-                    <div className="font-bold text-gray-900 uppercase tracking-widest text-xs">Brouillon</div>
-                    <div className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">
-                      Sauvegarder sans publier
+                {podcastMode === "url" && (
+                  <div className="space-y-6 pt-2">
+                    <div>
+                      <label className="block text-xs font-bold text-[#86868b] uppercase tracking-widest mb-3">
+                        Lien Audio Direct (.mp3)
+                      </label>
+                      <input
+                        type="url"
+                        value={localAudioUrl}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setLocalAudioUrl(val);
+                          handleSpecificDataChange("audio_url", val);
+                        }}
+                        className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-medium transition-all shadow-sm outline-none"
+                        placeholder="https://serveur.com/podcast.mp3"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#86868b] uppercase tracking-widest mb-3">
+                        Lien Vidéo (YouTube / Vimeo)
+                      </label>
+                      <input
+                        type="url"
+                        value={formData.podcast_data?.video_url || ""}
+                        onChange={(e) => handleSpecificDataChange("video_url", e.target.value)}
+                        className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-medium transition-all shadow-sm outline-none"
+                        placeholder="https://youtube.com/watch?v=..."
+                      />
                     </div>
                   </div>
+                )}
+              </div>
+            </div>
+          )}
+
+        </div>
+
+        {/* SETTINGS SIDEBAR COLUMN (Right, 4/12, Sticky) */}
+        <div className="lg:col-span-4">
+          <div className="space-y-8 lg:sticky lg:top-[180px]">
+            
+            {/* PUBLICATION CARD */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100/50 space-y-6">
+            <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest border-b border-slate-50 pb-3">
+              Publication
+            </h3>
+
+            <div className="space-y-5">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+                  Visibilité
+                </label>
+                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-50 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setFormData((prev: any) => ({ ...prev, status: "draft" }))}
+                    className={`py-2 px-2 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest ${
+                      formData.status === "draft"
+                        ? "bg-white text-slate-900 shadow-sm border border-slate-200"
+                        : "text-slate-400 hover:text-slate-900"
+                    }`}
+                  >
+                    Brouillon
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData((prev: any) => ({ ...prev, status: "published" }))}
+                    className={`py-2 px-2 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest ${
+                      formData.status === "published"
+                        ? "bg-emerald-500 text-white shadow-sm"
+                        : "text-slate-400 hover:text-slate-900"
+                    }`}
+                  >
+                    Publique
+                  </button>
                 </div>
               </div>
 
-              <div
-                className={`border-b-2 py-3 cursor-pointer transition-colors ${
-                  formData.status === "published"
-                    ? "border-green-600"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-                onClick={() =>
-                  setFormData((prev) => ({ ...prev, status: "published" }))
-                }
-              >
-                <div className="flex items-center gap-3">
-                  <input
-                    type="radio"
-                    name="status"
-                    value="published"
-                    checked={formData.status === "published"}
-                    onChange={handleInputChange}
-                    className="h-4 w-4 text-green-600 focus:ring-0"
-                  />
-                  <div>
-                    <div className="font-bold text-gray-900 uppercase tracking-widest text-xs">Publier</div>
-                    <div className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">
-                      Visible par tous
-                    </div>
-                  </div>
-                </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+                  Date de Sortie
+                </label>
+                <input
+                  type="date"
+                  name="published_at"
+                  value={formData.published_at || ""}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-slate-900 text-sm font-bold text-slate-700 transition-all"
+                />
               </div>
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-              Date de publication
-            </label>
-            <input
-              type="date"
-              name="published_at"
-              value={formData.published_at || ""}
-              onChange={handleInputChange}
-              className="w-full px-0 py-3 border-0 border-b-2 border-gray-200 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* ACTIONS */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-end pt-8">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-8 py-4 border border-gray-200 text-gray-900 font-bold text-xs uppercase tracking-widest hover:bg-gray-50 transition-colors"
-        >
-          Annuler
-        </button>
-
-        <button
-          type="submit"
-          disabled={isSaving}
-          className="flex items-center justify-center gap-3 px-10 py-4 bg-gray-900 text-white font-bold text-xs uppercase tracking-widest hover:bg-black transition-colors disabled:opacity-50"
-        >
-          {isSaving ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              {formData.status === "published"
-                ? "Publication en cours..."
-                : "Sauvegarde..."}
-            </>
-          ) : (
-            <>
-              {formData.status === "published" ? "Publier le contenu" : "Sauvegarder le brouillon"}
-            </>
-          )}
-        </button>
-      </div>
-
-      {/* PRÉVISUALISATION */}
-      {isPreview && (
-        <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
-          <div className="flex items-center gap-3 mb-6">
-            <Eye className="w-6 h-6 text-blue-600" />
-            <h3 className="text-xl font-semibold text-gray-900">
-              Prévisualisation
+          {/* META & ORGANIZATION CARD */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100/50 space-y-6">
+            <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest border-b border-slate-50 pb-3">
+              Classification
             </h3>
-          </div>
 
-          <div className="border-l-4 border-blue-500 pl-6">
-            <h4 className="text-2xl font-bold text-gray-900 mb-2">
-              {formData.title}
-            </h4>
-            <p className="text-gray-600 mb-4">{formData.summary}</p>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {formData.tags.map((tag, index) => (
-                <span
-                  key={index}
-                  className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
+            <div className="space-y-6">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+                  Accès (Paywall)
+                </label>
+                <div className="flex gap-2 p-1 bg-slate-50 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setFormData((prev: any) => ({ ...prev, is_premium: false }))}
+                    className={`flex-1 py-2 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest ${
+                      !formData.is_premium
+                        ? "bg-white text-slate-900 shadow-sm border border-slate-200"
+                        : "text-slate-400 hover:text-slate-900"
+                    }`}
+                  >
+                    Gratuit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData((prev: any) => ({ ...prev, is_premium: true }))}
+                    className={`flex-1 py-2 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest flex items-center justify-center gap-1 ${
+                      formData.is_premium
+                        ? "bg-slate-900 text-amber-400 shadow-sm"
+                        : "text-slate-400 hover:text-slate-900"
+                    }`}
+                  >
+                    <ShieldCheck className="w-3 h-3" />
+                    Premium
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+                  Catégorie Parente *
+                </label>
+                <select
+                  name="category"
+                  value={formData.category || ""}
+                  onChange={(e) => {
+                    const slug = e.target.value;
+                    const found = categories.find(c => c.slug === slug);
+                    setFormData((prev: any) => ({
+                      ...prev,
+                      category: slug,
+                      category_id: found?.id || prev.category_id,
+                    }));
+                    if (errors.category) {
+                      setErrors((prev) => ({ ...prev, category: "" }));
+                    }
+                  }}
+                  className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-slate-900 text-sm font-bold text-slate-700 transition-all ${
+                    errors.category ? "border-red-500 bg-red-50" : "border-slate-100"
+                  }`}
                 >
-                  {tag}
-                </span>
-              ))}
-            </div>
-            {formData.content && (
-              <div className="prose max-w-none text-gray-700">
-                {formData.content.substring(0, 200)}...
+                  <option value="">Choisir...</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.slug}>{cat.label}</option>
+                  ))}
+                </select>
+                {errors.category && (
+                  <p className="mt-1 text-[10px] font-bold text-red-500">{errors.category}</p>
+                )}
               </div>
-            )}
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+                  Mots-clés (Tags)
+                </label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    placeholder="Ex: Cacao"
+                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg focus:ring-2 focus:ring-slate-900 text-xs font-medium transition-all"
+                    onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
+                  />
+                  <button
+                    type="button"
+                    onClick={addTag}
+                    className="px-3 py-2 bg-slate-900 hover:bg-black text-white font-bold text-[10px] uppercase tracking-wider rounded-lg transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {formData.tags.map((tag: string, index: number) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1 pl-2 pr-1 py-1 bg-slate-100 text-slate-700 rounded-md text-[10px] font-bold uppercase tracking-wider"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="w-4 h-4 hover:bg-slate-200 rounded text-slate-400 hover:text-red-500 flex items-center justify-center transition-colors"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* FEATURED IMAGE CARD */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100/50">
+            <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest border-b border-slate-50 pb-3 mb-4">
+              Couverture
+            </h3>
+            <ImageUpload
+              onImageSelect={(file) => {
+                setFeaturedImage(file);
+                if (file) setCurrentImageUrl(URL.createObjectURL(file));
+              }}
+              currentImage={currentImageUrl}
+            />
+          </div>
+
           </div>
         </div>
-      )}
+      </div>
     </form>
   );
 }
+

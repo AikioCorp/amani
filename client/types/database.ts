@@ -162,17 +162,18 @@ export interface ArticleData {
 }
 
 export interface PodcastData {
-  audio_url?: string; // Lien externe
-  video_url?: string; // Lien externe
+  audio_url?: string;
+  video_url?: string;
   spotify_url?: string;
   apple_url?: string;
-  duration: number; // en secondes
+  duration?: number | string;
+  host?: string;
   episode_number?: number;
   season?: number;
   transcript?: string;
-  guests: string[];
-  topics: string[];
-  platforms: PodcastPlatform[];
+  guests?: string[];
+  topics?: string[];
+  platforms?: PodcastPlatform[];
 }
 
 export interface PodcastPlatform {

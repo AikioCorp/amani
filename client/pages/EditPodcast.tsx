@@ -70,7 +70,7 @@ export default function EditPodcast() {
     };
 
     loadPodcast();
-  }, [id, fetchPodcastByIdOrSlug, error]);
+  }, [id]);
 
   // Gestion de la sauvegarde
   const handleSave = async (formData: any) => {
@@ -140,81 +140,7 @@ export default function EditPodcast() {
   }
 
   return (
-    <>
-    <div className="max-w-4xl mx-auto space-y-12">
-      <div className="flex items-center justify-between border-b border-gray-200 pb-6">
-        <div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Modifier le podcast</h1>
-          <p className="text-sm text-gray-500 mt-2 font-medium">Modification de "{podcast.title}"</p>
-        </div>
-        <div className="flex items-center gap-4">
-          {/* Indicateur de statut */}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full border border-gray-200">
-            <div
-              className={`w-2 h-2 rounded-full ${
-                podcast.status === "published"
-                  ? "bg-green-500"
-                  : podcast.status === "draft"
-                    ? "bg-yellow-500"
-                    : "bg-gray-500"
-              }`}
-            ></div>
-            <span className="text-xs text-gray-600 font-bold uppercase tracking-wider">
-              {podcast.status === "published"
-                ? "Publié"
-                : podcast.status === "draft"
-                  ? "Brouillon"
-                  : "Archivé"}
-            </span>
-          </div>
-        </div>
-      </div>
-        
-      <button
-        onClick={() => navigate("/dashboard/podcasts")}
-        className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors uppercase tracking-widest"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Retour aux podcasts
-      </button>
-
-      {/* Informations du podcast existant */}
-      <div className="bg-white border border-gray-200 p-8">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-gray-900 text-white">
-            <Mic className="w-6 h-6" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">
-              Aperçu en direct
-            </h3>
-            <p className="text-sm text-gray-500 mt-1">
-              Créé le{" "}
-              {new Date(podcast.created_at || "").toLocaleDateString("fr-FR")}
-              {podcast.views && (
-                <span className="ml-4 font-medium text-gray-900">
-                  {podcast.views.toLocaleString()} écoutes
-                </span>
-              )}
-            </p>
-          </div>
-        </div>
-
-        {podcast.podcast_data?.audio_url && (
-            <div className="mt-6 pt-6 border-t border-gray-100">
-              <a
-                href={podcast.podcast_data.audio_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white text-sm font-bold hover:bg-gray-800 transition-colors"
-              >
-                Écouter le fichier source ↗
-              </a>
-            </div>
-          )}
-      </div>
-
-      {/* Formulaire unifié */}
+    <div className="w-full">
       <UnifiedContentForm
         type="podcast"
         initialData={{
@@ -226,6 +152,5 @@ export default function EditPodcast() {
         onCancel={handleCancel}
       />
     </div>
-    </>
   );
 }
