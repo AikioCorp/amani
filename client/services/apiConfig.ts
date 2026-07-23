@@ -6,14 +6,14 @@ const isLocal =
   /^172\.\d+\.\d+\.\d+$/.test(host) ||
   /^10\.\d+\.\d+\.\d+$/.test(host);
 
-// URL de base dynamique pour le réseau local et la production.
-// Utilise l'adresse IP courante (ex: 192.168.1.5:5000) si accédé depuis le réseau local.
+// URL de base dynamique pour le réseau local, Railway et la production.
 export const API_BASE_URL = (
-  import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes("localhost")
-    ? import.meta.env.VITE_API_URL
-    : isLocal
+  import.meta.env.VITE_API_URL ||
+  (isLocal
     ? `http://${host}:5000/api`
-    : "/api"
+    : typeof window !== "undefined"
+    ? `${window.location.origin}/api`
+    : "/api")
 ).replace(/\/+$/, "");
 
 export const getApiUrl = (path: string): string => {
