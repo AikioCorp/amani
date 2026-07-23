@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getContents, getContentBySlug, getContentById, createContent, updateContent, deleteContent as deleteContentApi } from '../services/contentService';
 import { getSessionToken } from '../services/authService';
+import { apiCache } from '../lib/apiCache';
 
 export type ArticleStatus = 'draft' | 'published' | 'archived' | 'review';
 
@@ -66,15 +67,19 @@ export const useArticles = ({
   category,
   authorId
 }: UseArticlesOptions = {}) => {
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = `articles_${status}_${limit}_${offset}_${category || 'all'}_${authorId || 'all'}`;
+  const initialCache = apiCache.get<{ articles: Article[]; count: number }>(cacheKey);
+
+  const [articles, setArticles] = useState<Article[]>(initialCache?.articles || []);
+  const [loading, setLoading] = useState(!initialCache);
   const [error, setError] = useState<Error | null>(null);
-  const [count, setCount] = useState<number>(0);
+  const [count, setCount] = useState<number>(initialCache?.count || 0);
   const didInitialFetch = useRef(false);
 
   const fetchArticles = useCallback(async () => {
     try {
-      setLoading(true);
+      const cached = apiCache.get<{ articles: Article[]; count: number }>(cacheKey);
+      if (!cached) setLoading(true);
       setError(null);
       
       const result = await getContents({
@@ -94,21 +99,43 @@ export const useArticles = ({
         comment_count: c.comment_count?.[0]?.count || 0,
       }));
 
+      apiCache.set(cacheKey, { articles: formatted, count: result.count });
       setArticles(formatted);
       setCount(result.count);
       return formatted;
     } catch (err: any) {
       console.error('Error in fetchArticles hook:', err);
       setError(err as Error);
-      setArticles([]);
-      setCount(0);
       return [];
     } finally {
       setLoading(false);
     }
-  }, [status, limit, offset, category, authorId]);
+  }, [status, limit, offset, category, authorId, cacheKey]);
+
+  useEffect(() => {
+    fetchArticles();
+  }, [fetchArticles]);
 
   const fetchArticleBySlug = useCallback(async (slug: string): Promise<Article> => {
+    const slugKey = `article_slug_${slug}`;
+    const cached = apiCache.get<Article>(slugKey);
+    if (cached) {
+      setLoading(false);
+      // Background revalidate
+      getContentBySlug(slug).then((data) => {
+        if (data) {
+          const formatted: Article = {
+            ...(data as any),
+            type: 'article',
+            category_info: (data as any).category || undefined,
+            comment_count: (data as any).comments?.length || 0,
+          };
+          apiCache.set(slugKey, formatted);
+        }
+      }).catch(() => {});
+      return cached;
+    }
+
     try {
       setLoading(true);
       const data = await getContentBySlug(slug);
@@ -120,6 +147,7 @@ export const useArticles = ({
         comment_count: (data as any).comments?.length || 0,
       };
 
+      apiCache.set(slugKey, formatted);
       return formatted;
     } catch (err: any) {
       console.error('Error fetching article by slug:', err);
@@ -131,18 +159,40 @@ export const useArticles = ({
   }, []);
 
   const fetchArticleById = useCallback(async (id: string): Promise<Article> => {
+    const idKey = `article_id_${id}`;
+    const cached = apiCache.get<Article>(idKey);
+    if (cached) {
+      setLoading(false);
+      getContentById(id).then((data) => {
+        if (data) {
+          const formatted: Article = {
+            ...(data as any),
+            type: 'article',
+            category_info: (data as any).category || undefined,
+            comment_count: (data as any).comments?.length || 0,
+          };
+          apiCache.set(idKey, formatted);
+        }
+      }).catch(() => {});
+      return cached;
+    }
+
     try {
       setLoading(true);
       const data = await getContentById(id);
       if (!data) throw new Error("Article introuvable par ID");
-      
-      return {
+
+      const formatted: Article = {
         ...(data as any),
         type: 'article',
         category_info: (data as any).category || undefined,
-        comment_count: (data as any).comments?.length || 0
+        comment_count: (data as any).comments?.length || 0,
       };
+
+      apiCache.set(idKey, formatted);
+      return formatted;
     } catch (err: any) {
+      console.error('Error fetching article by ID:', err);
       setError(err as Error);
       throw err;
     } finally {
@@ -210,15 +260,6 @@ export const useArticles = ({
       throw err;
     }
   }, []);
-
-  useEffect(() => {
-    if (didInitialFetch.current) {
-      fetchArticles();
-      return;
-    }
-    didInitialFetch.current = true;
-    fetchArticles();
-  }, [status, limit, offset, category, authorId, fetchArticles]);
 
   return {
     articles,

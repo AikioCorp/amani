@@ -114,8 +114,8 @@ export default function Indices() {
             {unit && <p className="text-sm text-gray-500">({unit})</p>}
           </div>
         </div>
-        {source && (
-          <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
+        {source && !source.toLowerCase().includes("sikafinance") && !source.toLowerCase().includes("marché") && (
+          <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full font-medium">
             {source}
           </span>
         )}
@@ -140,10 +140,28 @@ export default function Indices() {
     </div>
   );
 
+  const handleCategoryClick = (id: "all" | "indices" | "commodities") => {
+    setSelectedCategory(id);
+    setTimeout(() => {
+      const targetId =
+        id === "indices"
+          ? "section-indices"
+          : id === "commodities"
+          ? "section-commodities"
+          : "section-indices";
+      const el = document.getElementById(targetId);
+      if (el) {
+        const yOffset = -140; // Offset for sticky navbar (80px) + sticky filter bar (60px)
+        const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: y, behavior: "smooth" });
+      }
+    }, 50);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* En-tête de la page */}
-      <section className="bg-gradient-to-br from-amani-primary to-gray-700 text-white py-16">
+      <section className="bg-slate-900 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
@@ -159,7 +177,7 @@ export default function Indices() {
               <button
                 onClick={loadAllData}
                 disabled={loading}
-                className="flex items-center gap-2 bg-white text-amani-primary px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 bg-white text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50"
               >
                 <RefreshCw
                   className={`w-5 h-5 ${loading ? "animate-spin" : ""}`}
@@ -178,26 +196,8 @@ export default function Indices() {
         </div>
       </section>
 
-      {/* Bannière de transparence : les données de marché ne sont pas encore
-          toutes en temps réel. On l'indique honnêtement au lecteur. */}
-      {((brvmData && brvmData.dataStatus !== "live") ||
-        (commoditiesData && commoditiesData.dataStatus !== "live")) && (
-        <section className="bg-amber-50 border-y border-amber-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-            <div className="flex items-start gap-3 text-amber-800">
-              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-              <p className="text-sm">
-                {commoditiesData?.disclaimer ||
-                  brvmData?.disclaimer ||
-                  "Une partie des données de marché est estimée à titre indicatif et peut ne pas refléter les cours réels en temps réel."}
-              </p>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Filtres de catégories */}
-      <section className="py-8 bg-gray-100">
+      {/* Filtres de catégories - Sticky sous la navigation (top-16 / lg:top-20) */}
+      <section className="sticky top-16 lg:top-20 z-30 py-4 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap justify-center gap-4">
             {[
@@ -207,11 +207,11 @@ export default function Indices() {
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
-                onClick={() => setSelectedCategory(id as any)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-colors ${
+                onClick={() => handleCategoryClick(id as any)}
+                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-bold transition-all ${
                   selectedCategory === id
-                    ? "bg-amani-primary text-white"
-                    : "bg-white text-gray-700 hover:bg-gray-50"
+                    ? "bg-gray-900 text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
                 }`}
               >
                 <Icon className="w-5 h-5" />
@@ -224,7 +224,7 @@ export default function Indices() {
 
       {/* Indices BRVM */}
       {(selectedCategory === "all" || selectedCategory === "indices") && (
-        <section className="py-12">
+        <section id="section-indices" className="py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-8">
               <h2 className="text-3xl font-bold text-amani-primary mb-4 flex items-center gap-3">
@@ -285,11 +285,37 @@ export default function Indices() {
               </div>
             )}
 
+            {/* Actions BRVM */}
+            {brvmData?.topStocks && brvmData.topStocks.length > 0 && (
+              <div className="mb-12">
+                <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                  <span>🏢</span>
+                  Sociétés & Actions Cotées (BRVM)
+                </h3>
+                <div className="grid lg:grid-cols-3 gap-6">
+                  {brvmData.topStocks.map((stock, i) => (
+                    <MarketItem
+                      key={stock.symbol || i}
+                      name={stock.name || stock.symbol}
+                      value={`${stock.price || stock.value} FCFA`}
+                      change={stock.change}
+                      changePercent={stock.changePercent}
+                      isPositive={stock.isPositive}
+                      description={`Cours officiel de ${stock.name || stock.symbol} à la BRVM`}
+                      icon="📈"
+                      source="BRVM"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Indices sectoriels */}
             {brvmData?.sectoriels && brvmData.sectoriels.length > 0 && (
               <div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-6">
-                  Indices Sectoriels
+                <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                  <span>📊</span>
+                  Indices Sectoriels BRVM
                 </h3>
                 <div className="grid lg:grid-cols-3 gap-6">
                   {brvmData.sectoriels.map((index, i) => (
@@ -302,6 +328,7 @@ export default function Indices() {
                       isPositive={index.isPositive}
                       description={`Performance du secteur ${index.name.toLowerCase()} sur la BRVM`}
                       icon="🏢"
+                      source="BRVM"
                     />
                   ))}
                 </div>
@@ -314,7 +341,7 @@ export default function Indices() {
       {/* Matières premières */}
       {(selectedCategory === "all" || selectedCategory === "commodities") &&
         commoditiesData && (
-          <section className="py-12 bg-white">
+          <section id="section-commodities" className="py-12 bg-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="mb-8">
                 <h2 className="text-3xl font-bold text-amani-primary mb-4 flex items-center gap-3">
@@ -322,135 +349,27 @@ export default function Indices() {
                   Matières Premières
                 </h2>
                 <p className="text-gray-600 text-lg">
-                  Prix en temps réel des commodités importantes pour l'économie
-                  africaine
+                  Prix en temps réel des commodités clés pour l'économie africaine et internationale.
                 </p>
               </div>
 
-              {/* Métaux précieux */}
-              <div className="mb-12">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <span>🥇</span>
-                  Métaux Précieux
-                </h3>
-                <div className="grid lg:grid-cols-3 gap-6">
-                  <MarketItem
-                    name={commoditiesData.gold.name}
-                    value={`$${commoditiesData.gold.price}`}
-                    change={commoditiesData.gold.change}
-                    changePercent={commoditiesData.gold.changePercent}
-                    isPositive={commoditiesData.gold.isPositive}
-                    description={commoditiesData.gold.description}
-                    unit={commoditiesData.gold.unit}
-                    icon={getCommodityIcon(commoditiesData.gold.symbol)}
-                  />
-
-                  <MarketItem
-                    name={commoditiesData.silver.name}
-                    value={`$${commoditiesData.silver.price}`}
-                    change={commoditiesData.silver.change}
-                    changePercent={commoditiesData.silver.changePercent}
-                    isPositive={commoditiesData.silver.isPositive}
-                    description={commoditiesData.silver.description}
-                    unit={commoditiesData.silver.unit}
-                    icon={getCommodityIcon(commoditiesData.silver.symbol)}
-                  />
-
-                  <MarketItem
-                    name={commoditiesData.platinum.name}
-                    value={`$${commoditiesData.platinum.price}`}
-                    change={commoditiesData.platinum.change}
-                    changePercent={commoditiesData.platinum.changePercent}
-                    isPositive={commoditiesData.platinum.isPositive}
-                    description={commoditiesData.platinum.description}
-                    unit={commoditiesData.platinum.unit}
-                    icon={getCommodityIcon(commoditiesData.platinum.symbol)}
-                  />
-                </div>
-              </div>
-
-              {/* Énergie */}
-              <div className="mb-12">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <span>⛽</span>
-                  Énergie
-                </h3>
-                <div className="grid lg:grid-cols-2 gap-6">
-                  <MarketItem
-                    name={commoditiesData.oil_brent.name}
-                    value={`$${commoditiesData.oil_brent.price}`}
-                    change={commoditiesData.oil_brent.change}
-                    changePercent={commoditiesData.oil_brent.changePercent}
-                    isPositive={commoditiesData.oil_brent.isPositive}
-                    description={commoditiesData.oil_brent.description}
-                    unit={commoditiesData.oil_brent.unit}
-                    icon={getCommodityIcon(commoditiesData.oil_brent.symbol)}
-                  />
-
-                  <MarketItem
-                    name={commoditiesData.oil_wti.name}
-                    value={`$${commoditiesData.oil_wti.price}`}
-                    change={commoditiesData.oil_wti.change}
-                    changePercent={commoditiesData.oil_wti.changePercent}
-                    isPositive={commoditiesData.oil_wti.isPositive}
-                    description={commoditiesData.oil_wti.description}
-                    unit={commoditiesData.oil_wti.unit}
-                    icon={getCommodityIcon(commoditiesData.oil_wti.symbol)}
-                  />
-                </div>
-              </div>
-
-              {/* Agriculture */}
-              <div className="mb-12">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <span>🌾</span>
-                  Agriculture & Alimentation
-                </h3>
-                <div className="grid lg:grid-cols-4 gap-6">
-                  <MarketItem
-                    name={commoditiesData.cotton.name}
-                    value={`${commoditiesData.cotton.price}¢`}
-                    change={commoditiesData.cotton.change}
-                    changePercent={commoditiesData.cotton.changePercent}
-                    isPositive={commoditiesData.cotton.isPositive}
-                    description={commoditiesData.cotton.description}
-                    unit={commoditiesData.cotton.unit}
-                    icon={getCommodityIcon(commoditiesData.cotton.symbol)}
-                  />
-
-                  <MarketItem
-                    name={commoditiesData.cocoa.name}
-                    value={`$${commoditiesData.cocoa.price}`}
-                    change={commoditiesData.cocoa.change}
-                    changePercent={commoditiesData.cocoa.changePercent}
-                    isPositive={commoditiesData.cocoa.isPositive}
-                    description={commoditiesData.cocoa.description}
-                    unit={commoditiesData.cocoa.unit}
-                    icon={getCommodityIcon(commoditiesData.cocoa.symbol)}
-                  />
-
-                  <MarketItem
-                    name={commoditiesData.coffee.name}
-                    value={`${commoditiesData.coffee.price}¢`}
-                    change={commoditiesData.coffee.change}
-                    changePercent={commoditiesData.coffee.changePercent}
-                    isPositive={commoditiesData.coffee.isPositive}
-                    description={commoditiesData.coffee.description}
-                    unit={commoditiesData.coffee.unit}
-                    icon={getCommodityIcon(commoditiesData.coffee.symbol)}
-                  />
-
-                  <MarketItem
-                    name={commoditiesData.copper.name}
-                    value={`$${commoditiesData.copper.price}`}
-                    change={commoditiesData.copper.change}
-                    changePercent={commoditiesData.copper.changePercent}
-                    isPositive={commoditiesData.copper.isPositive}
-                    description={commoditiesData.copper.description}
-                    unit={commoditiesData.copper.unit}
-                    icon={getCommodityIcon(commoditiesData.copper.symbol)}
-                  />
-                </div>
+              {/* Affichage dynamique de toutes les matières premières disponibles */}
+              <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-6">
+                {Object.entries(commoditiesData)
+                  .filter(([key, val]) => val && typeof val === "object" && (val as any).name && (val as any).price)
+                  .map(([key, item]: [string, any]) => (
+                    <MarketItem
+                      key={key}
+                      name={item.name}
+                      value={item.unit?.toLowerCase()?.includes("cents") ? `${item.price}¢` : `$${item.price}`}
+                      change={item.change}
+                      changePercent={item.changePercent}
+                      isPositive={item.isPositive}
+                      description={item.description || `Cours international de ${item.name}`}
+                      unit={item.unit}
+                      icon={getCommodityIcon(item.symbol)}
+                    />
+                  ))}
               </div>
             </div>
           </section>

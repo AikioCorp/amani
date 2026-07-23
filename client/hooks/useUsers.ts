@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getSessionToken } from '../services/authService';
+import { API_BASE_URL as API_BASE } from '../services/apiConfig';
+import { adminCache } from '../services/adminCache';
 
 export interface User {
   id: string;
@@ -14,6 +16,7 @@ export interface User {
   phone?: string;
   bio?: string;
   is_active: boolean;
+  is_premium?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -26,23 +29,34 @@ export interface UserStats {
   newThisMonth: number;
 }
 
-import { API_BASE_URL as API_BASE } from "../services/apiConfig";
+const CACHE_KEY = 'users_list';
 
 export function useUsers() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<UserStats>({
-    total: 0,
-    admins: 0,
-    editors: 0,
-    users: 0,
-    newThisMonth: 0,
-  });
+  const cachedUsers = adminCache.get<User[]>(CACHE_KEY);
 
-  const fetchUsers = async () => {
+  const [users, setUsers] = useState<User[]>(cachedUsers || []);
+  const [isLoading, setIsLoading] = useState<boolean>(!cachedUsers);
+  const [error, setError] = useState<string | null>(null);
+
+  const computeStats = (data: User[]): UserStats => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    return {
+      total: data.length,
+      admins: data.filter((u) => u.role === 'admin').length,
+      editors: data.filter((u) => u.role === 'editor').length,
+      users: data.filter((u) => u.role === 'subscriber').length,
+      newThisMonth: data.filter((u) => new Date(u.created_at) >= startOfMonth).length,
+    };
+  };
+
+  const [stats, setStats] = useState<UserStats>(computeStats(cachedUsers || []));
+
+  const fetchUsers = async (silent = false) => {
     try {
-      setIsLoading(true);
+      if (!silent && !users.length) {
+        setIsLoading(true);
+      }
       setError(null);
 
       const token = getSessionToken();
@@ -56,34 +70,31 @@ export function useUsers() {
         ...u,
         roles: [u.role],
       }));
+
       setUsers(usersData);
-
-      // Calculer les statistiques
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-      const calculatedStats: UserStats = {
-        total: usersData.length,
-        admins: usersData.filter(u => u.role === 'admin').length,
-        editors: usersData.filter(u => u.role === 'editor').length,
-        users: usersData.filter(u => u.role === 'subscriber').length,
-        newThisMonth: usersData.filter(u => new Date(u.created_at) >= startOfMonth).length,
-      };
-
-      setStats(calculatedStats);
+      setStats(computeStats(usersData));
+      adminCache.set(CACHE_KEY, usersData);
     } catch (err: any) {
       console.error('Erreur lors de la récupération des utilisateurs:', err);
-      setError(err.message || 'Erreur lors de la récupération des utilisateurs');
+      if (!users.length) {
+        setError(err.message || 'Erreur lors de la récupération des utilisateurs');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchUsers(Boolean(cachedUsers));
   }, []);
 
   const deleteUser = async (userId: string) => {
+    const previous = [...users];
+    const updated = users.filter((u) => u.id !== userId);
+    setUsers(updated);
+    setStats(computeStats(updated));
+    adminCache.set(CACHE_KEY, updated);
+
     try {
       const token = getSessionToken();
       const resp = await fetch(`${API_BASE}/users/${userId}`, {
@@ -91,15 +102,22 @@ export function useUsers() {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!resp.ok) throw new Error('Erreur lors de la suppression');
-      await fetchUsers();
       return true;
     } catch (err: any) {
-      console.error('Erreur lors de la suppression:', err);
+      // Rollback
+      setUsers(previous);
+      setStats(computeStats(previous));
+      adminCache.set(CACHE_KEY, previous);
       throw err;
     }
   };
 
   const updateUserRoles = async (userId: string, role: string) => {
+    const updated = users.map((u) => (u.id === userId ? { ...u, role, roles: [role] } : u));
+    setUsers(updated);
+    setStats(computeStats(updated));
+    adminCache.set(CACHE_KEY, updated);
+
     try {
       const token = getSessionToken();
       const resp = await fetch(`${API_BASE}/users/${userId}`, {
@@ -111,15 +129,19 @@ export function useUsers() {
         body: JSON.stringify({ role }),
       });
       if (!resp.ok) throw new Error('Erreur lors de la mise à jour des rôles');
-      await fetchUsers();
       return true;
     } catch (err: any) {
-      console.error('Erreur lors de la mise à jour des rôles:', err);
+      fetchUsers(true);
       throw err;
     }
   };
 
   const updateUser = async (userId: string, updates: Partial<User>) => {
+    const updated = users.map((u) => (u.id === userId ? { ...u, ...updates } : u));
+    setUsers(updated);
+    setStats(computeStats(updated));
+    adminCache.set(CACHE_KEY, updated);
+
     try {
       const token = getSessionToken();
       const resp = await fetch(`${API_BASE}/users/${userId}`, {
@@ -131,16 +153,16 @@ export function useUsers() {
         body: JSON.stringify(updates),
       });
       if (!resp.ok) throw new Error('Erreur lors de la mise à jour');
-      await fetchUsers();
       return true;
     } catch (err: any) {
-      console.error('Erreur lors de la mise à jour:', err);
+      fetchUsers(true);
       throw err;
     }
   };
 
   return {
     users,
+    setUsers,
     isLoading,
     error,
     stats,

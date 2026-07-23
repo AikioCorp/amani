@@ -23,6 +23,7 @@ import {
   ChevronDown,
   ChevronRight,
   Plus,
+  Crown,
 } from "lucide-react";
 
 export interface SidebarProps {
@@ -93,6 +94,12 @@ const SECTIONS: Section[] = [
     ],
   },
   {
+    title: "👑 Abonnements",
+    items: [
+      { label: "Abonnés & Premium", to: "/dashboard/subscriptions", icon: Crown, permission: "manage_users" },
+    ],
+  },
+  {
     title: "👥 Communauté",
     items: [
       { label: "Utilisateurs", to: "/dashboard/users", icon: Users, permission: "manage_users" },
@@ -141,7 +148,7 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
     } catch {}
     // Default: expand first two sections
     const def: Record<string, boolean> = {};
-    visibleSections.forEach((s, idx) => { def[`s:${s.title}`] = idx < 2; });
+    visibleSections.forEach((s) => { def[`s:${s.title}`] = true; });
     return def;
   })();
 

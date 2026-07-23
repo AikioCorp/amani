@@ -4,6 +4,8 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useArticles } from "../hooks/useArticles";
 import { usePodcasts } from "../hooks/usePodcasts";
+import { API_BASE_URL } from "../services/apiConfig";
+import { getSessionToken } from "../services/authService";
 import {
   Plus,
   Edit,
@@ -23,6 +25,7 @@ import {
   Settings,
   ExternalLink,
   Star,
+  Crown,
   Clock,
   CheckCircle,
 } from "lucide-react";
@@ -409,6 +412,38 @@ const ContentManagement = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
+                      <button
+                        onClick={async () => {
+                          try {
+                            const token = getSessionToken();
+                            const res = await fetch(`${API_BASE_URL}/admin/contents/${item.id}/premium`, {
+                              method: "PUT",
+                              headers: {
+                                "Content-Type": "application/json",
+                                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                              },
+                              body: JSON.stringify({ is_premium: !item.is_premium }),
+                            });
+                            const json = await res.json();
+                            if (json.success) {
+                              toastSuccess("Contenu mis à jour", json.message);
+                              item.is_premium = !item.is_premium;
+                              // re-render
+                              setStatusFilter(statusFilter);
+                            }
+                          } catch (e) {}
+                        }}
+                        className={`px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 border transition-all ${
+                          item.is_premium
+                            ? "bg-amber-100 text-amber-900 border-amber-300"
+                            : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-amber-50 hover:text-amber-700"
+                        }`}
+                        title={item.is_premium ? "Rendre Gratuit" : "Marquer comme Premium Exclusif"}
+                      >
+                        <Crown className={`w-3.5 h-3.5 ${item.is_premium ? "text-amber-600" : "text-gray-400"}`} />
+                        {item.is_premium ? "Accès Premium" : "Gratuit"}
+                      </button>
+
                       <Badge className={getStatusColor(item.status)}>
                         {item.status}
                       </Badge>

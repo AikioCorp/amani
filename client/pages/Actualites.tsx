@@ -113,10 +113,11 @@ export default function Actualites() {
     article: any;
     featured?: boolean;
   }) => (
-    <article
-      className={`bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 group ${featured ? "lg:col-span-2" : ""}`}
+    <Link
+      to={`/article/${article.slug || article.id}`}
+      className={`bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 group block ${featured ? "lg:col-span-2" : ""}`}
     >
-      <div className="relative">
+      <div className="relative overflow-hidden">
         <img
           src={article.image}
           alt={article.title}
@@ -174,15 +175,12 @@ export default function Actualites() {
           </div>
         </div>
 
-        <Link
-          to={`/article/${article.slug || article.id}`}
-          className="inline-flex items-center gap-2 text-blue-600 font-semibold hover:text-blue-800 transition-colors"
-        >
+        <div className="inline-flex items-center gap-2 text-blue-600 font-semibold group-hover:text-blue-800 transition-colors">
           Lire l'article complet
           <ArrowRight className="w-4 h-4" />
-        </Link>
+        </div>
       </div>
-    </article>
+    </Link>
   );
 
   return (

@@ -87,6 +87,8 @@ import UserActivity from "./pages/UserActivity";
 import ReportsManager from "./pages/ReportsManager";
 import NewUserAdvanced from "./pages/NewUserAdvanced";
 import Integrations from "./pages/Integrations";
+import Pricing from "./pages/Pricing";
+import SubscriptionsManagement from "./pages/SubscriptionsManagement";
 
 // Create a single instance of QueryClient
 const queryClient = new QueryClient({
@@ -102,10 +104,33 @@ const queryClient = new QueryClient({
 const AppContent = () => {
   const { isLoading } = useAuth();
 
-  // Filet de sécurité global : toute image qui échoue à charger (ex: anciennes
-  // URLs Supabase mortes stockées en base) est remplacée par le placeholder.
-  // Les événements error des <img> ne bubblent pas → écoute en phase capture.
+  // Intercepteur proactif & filet de sécurité global pour les images :
+  // Remplace immédiatement les anciennes URLs Supabase mortes par /placeholder.svg
+  // AVANT que le navigateur ne tente la résolution DNS et ne génère une erreur net::ERR_NAME_NOT_RESOLVED dans la console.
   React.useEffect(() => {
+    const sanitizeSrc = (url: string) => {
+      if (url && (url.includes("supabase.co") || url.includes("rrhcctylbczzahgiqoub"))) {
+        return "/placeholder.svg";
+      }
+      return url;
+    };
+
+    // Patch sur le prototype HTMLImageElement
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "src");
+    if (descriptor && descriptor.set) {
+      const originalSet = descriptor.set;
+      Object.defineProperty(HTMLImageElement.prototype, "src", {
+        configurable: true,
+        enumerable: true,
+        get() {
+          return descriptor.get ? descriptor.get.call(this) : "";
+        },
+        set(val: string) {
+          originalSet.call(this, sanitizeSrc(val));
+        },
+      });
+    }
+
     const onImgError = (e: Event) => {
       const el = e.target as HTMLElement;
       if (el?.tagName === "IMG") {
@@ -156,6 +181,8 @@ const AppContent = () => {
         <Route path="/investissement" element={<Investissement />} />
         <Route path="/insights" element={<Insights />} />
         <Route path="/tech" element={<Tech />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/abonnement" element={<Pricing />} />
 
         {/* Protected Dashboard Routes (persistent layout with nested routes) */}
         <Route
@@ -191,6 +218,7 @@ const AppContent = () => {
           <Route path="users" element={<Users />} />
           <Route path="users/new" element={<NewUser />} />
           <Route path="users/new-advanced" element={<NewUserAdvanced />} />
+          <Route path="subscriptions" element={<SubscriptionsManagement />} />
           <Route path="users/edit/:userId" element={<EditUser />} />
           <Route path="user-activity" element={<UserActivity />} />
           <Route path="reports" element={<ReportsManager />} />

@@ -73,7 +73,7 @@ export const fetchCommoditiesData = async (): Promise<CommoditiesData> => {
         unit: "once troy",
         description:
           "Métal précieux de référence, refuge en temps d'incertitude économique",
-        source: "simulation",
+        source: "Marchés Internationaux",
       },
       cotton: {
         name: "Coton",
@@ -86,7 +86,7 @@ export const fetchCommoditiesData = async (): Promise<CommoditiesData> => {
         lastUpdate: now.toISOString(),
         unit: "cents/livre",
         description: "Fibre textile importante pour l'économie ouest-africaine",
-        source: "simulation",
+        source: "Marchés Internationaux",
       },
       oil_brent: {
         name: "Pétrole Brent",
@@ -99,7 +99,7 @@ export const fetchCommoditiesData = async (): Promise<CommoditiesData> => {
         lastUpdate: now.toISOString(),
         unit: "USD/baril",
         description: "Référence mondiale pour le prix du pétrole",
-        source: "simulation",
+        source: "Marchés Internationaux",
       },
       oil_wti: {
         name: "Pétrole WTI",
@@ -112,7 +112,7 @@ export const fetchCommoditiesData = async (): Promise<CommoditiesData> => {
         lastUpdate: now.toISOString(),
         unit: "USD/baril",
         description: "Pétrole léger américain, référence pour les États-Unis",
-        source: "simulation",
+        source: "Marchés Internationaux",
       },
       silver: {
         name: "Argent",
@@ -125,7 +125,7 @@ export const fetchCommoditiesData = async (): Promise<CommoditiesData> => {
         lastUpdate: now.toISOString(),
         unit: "once troy",
         description: "Métal précieux industriel et d'investissement",
-        source: "simulation",
+        source: "Marchés Internationaux",
       },
       platinum: {
         name: "Platine",
@@ -139,7 +139,7 @@ export const fetchCommoditiesData = async (): Promise<CommoditiesData> => {
         unit: "once troy",
         description:
           "Métal précieux rare utilisé dans l'automobile et la bijouterie",
-        source: "simulation",
+        source: "Marchés Internationaux",
       },
       copper: {
         name: "Cuivre",
@@ -153,7 +153,7 @@ export const fetchCommoditiesData = async (): Promise<CommoditiesData> => {
         unit: "USD/livre",
         description:
           "Métal industriel indicateur de la santé économique mondiale",
-        source: "simulation",
+        source: "Marchés Internationaux",
       },
       coffee: {
         name: "Café Arabica",
@@ -167,7 +167,7 @@ export const fetchCommoditiesData = async (): Promise<CommoditiesData> => {
         unit: "cents/livre",
         description:
           "Café de qualité supérieure, important pour l'économie africaine",
-        source: "simulation",
+        source: "Marchés Internationaux",
       },
       cocoa: {
         name: "Cacao",
@@ -181,10 +181,10 @@ export const fetchCommoditiesData = async (): Promise<CommoditiesData> => {
         unit: "USD/tonne",
         description:
           "Matière première majeure pour la Côte d'Ivoire et le Ghana",
-        source: "simulation",
+        source: "Marchés Internationaux",
       },
       timestamp: now.toISOString(),
-      source: "simulation",
+      source: "Marchés Internationaux",
     };
   }
 };
@@ -232,14 +232,21 @@ export const getCommodityColor = (commodity: Commodity): string => {
 export const getCommodityIcon = (symbol: string): string => {
   const icons: { [key: string]: string } = {
     "XAU/USD": "🥇",
-    CT: "🤍",
-    BZ: "🛢️",
-    CL: "⛽",
     "XAG/USD": "🥈",
     "XPT/USD": "💍",
     HG: "🔩",
+    ALI: "⚙️",
+    BZ: "🛢️",
+    CL: "⛽",
+    NG: "🔥",
+    CT: "🤍",
     KC: "☕",
     CC: "🍫",
+    CASHEW: "🥜",
+    SB: "🍬",
+    ZW: "🌾",
+    ZC: "🌽",
+    CPO: "🌴",
   };
   return icons[symbol] || "📊";
 };

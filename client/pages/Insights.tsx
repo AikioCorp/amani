@@ -142,69 +142,69 @@ const Insights = () => {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {filteredInsights.map((insight) => (
-                <Card key={insight.id} className={`hover:shadow-lg transition-shadow flex flex-col justify-between ${insight.featured ? 'ring-2 ring-[#373B3A]' : ''}`}>
-                  <div>
-                    <div className="relative">
-                      <img
-                        src={insight.image}
-                        alt={insight.title}
-                        className="w-full h-48 object-cover rounded-t-lg"
-                      />
-                      {insight.featured && (
-                        <Badge className="absolute top-3 left-3 bg-[#373B3A] text-white">
-                          En Vedette
-                        </Badge>
-                      )}
-                    </div>
-                    <CardHeader>
-                      <div className="flex justify-between items-start mb-3">
-                        <Badge variant="secondary">{insight.category}</Badge>
-                        <Badge className={getComplexityColor(insight.complexity)}>
-                          {insight.complexity}
-                        </Badge>
-                      </div>
-                      <CardTitle className="text-xl mb-2">{insight.title}</CardTitle>
-                      <CardDescription className="text-gray-600 mb-4 line-clamp-3">
-                        {insight.summary}
-                      </CardDescription>
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {insight.tags.map((tag, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {tag}
+                <Link key={insight.id} to={`/article/${insight.slug || insight.id}`} className="block group">
+                  <Card className={`hover:shadow-lg transition-all duration-300 flex flex-col justify-between h-full ${insight.featured ? 'ring-2 ring-[#373B3A]' : ''}`}>
+                    <div>
+                      <div className="relative overflow-hidden rounded-t-lg">
+                        <img
+                          src={insight.image}
+                          alt={insight.title}
+                          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        {insight.featured && (
+                          <Badge className="absolute top-3 left-3 bg-[#373B3A] text-white">
+                            En Vedette
                           </Badge>
-                        ))}
+                        )}
                       </div>
-                    </CardHeader>
-                  </div>
-                  <CardContent>
-                    <div className="flex justify-between items-center text-sm text-gray-600 mb-4">
-                      <div className="flex items-center gap-4">
-                        <span className="flex items-center gap-1">
-                          <User className="h-4 w-4" />
-                          {insight.author}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          {insight.readTime}
-                        </span>
-                      </div>
-                      <span className="flex items-center gap-1">
-                        <Eye className="h-4 w-4" />
-                        {insight.views}
-                      </span>
+                      <CardHeader>
+                        <div className="flex justify-between items-start mb-3">
+                          <Badge variant="secondary">{insight.category}</Badge>
+                          <Badge className={getComplexityColor(insight.complexity)}>
+                            {insight.complexity}
+                          </Badge>
+                        </div>
+                        <CardTitle className="text-xl mb-2 group-hover:text-blue-600 transition-colors">{insight.title}</CardTitle>
+                        <CardDescription className="text-gray-600 mb-4 line-clamp-3">
+                          {insight.summary}
+                        </CardDescription>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {insight.tags.map((tag, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </CardHeader>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-500">
-                        {new Date(insight.date).toLocaleDateString('fr-FR')}
-                      </span>
-                      <Link to={`/article/${insight.slug || insight.id}`}>
-                        <Button size="sm">
+                    <CardContent>
+                      <div className="flex justify-between items-center text-sm text-gray-600 mb-4">
+                        <div className="flex items-center gap-4">
+                          <span className="flex items-center gap-1">
+                            <User className="h-4 w-4" />
+                            {insight.author}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            {insight.readTime}
+                          </span>
+                        </div>
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-4 w-4" />
+                          {insight.views}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-500">
+                          {new Date(insight.date).toLocaleDateString('fr-FR')}
+                        </span>
+                        <Button size="sm" className="group-hover:bg-blue-600 transition-colors">
                           Lire l'Analyse
                         </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           )}

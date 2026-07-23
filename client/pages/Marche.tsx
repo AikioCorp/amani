@@ -23,33 +23,42 @@ import {
 } from "lucide-react";
 import { useArticles } from "../hooks/useArticles";
 import { useToast } from "../context/ToastContext";
+import { apiCache } from "../lib/apiCache";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { ResponsiveContainer, LineChart as RechartsLineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 export default function Marche() {
+  const [brvmData, setBrvmData] = useState<BRVMData | null>(null);
   const [selectedMarket, setSelectedMarket] = useState("all");
   const [selectedTimeframe, setSelectedTimeframe] = useState("1d");
   const [selectedInstrument, setSelectedInstrument] = useState<any | null>(null);
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [historyData, setHistoryData] = useState<BRVMHistoryData[]>([]);
-  const { info } = useToast();
-
-  useEffect(() => {
-    if (selectedInstrument && isChartModalOpen) {
-      fetchBRVMSymbolHistory(selectedInstrument.name, selectedTimeframe)
-        .then(data => setHistoryData(data))
-        .catch(console.error);
-    }
-  }, [selectedInstrument, isChartModalOpen, selectedTimeframe]);
+  const [refreshing, setRefreshing] = useState(false);
+  const { info, success, error } = useToast();
 
   // Fetch real published market articles
   const { articles: marketFinArticles, loading: loadingMarketFin } = useArticles({ status: 'published', limit: 10, category: 'marches-financiers' });
   const { articles: marketBoursArticles, loading: loadingMarketBours } = useArticles({ status: 'published', limit: 10, category: 'marches-boursiers' });
   const loadingNews = loadingMarketFin || loadingMarketBours;
 
-  // Données de marché réelles (API /api/brvm — scrapées depuis brvm.org)
-  const [brvmData, setBrvmData] = useState<BRVMData | null>(null);
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      apiCache.clear();
+      const data = await fetchBRVMData();
+      if (data) {
+        setBrvmData(data);
+        success("Données actualisées", "Les cours des marchés financiers ont été mis à jour avec succès.");
+      }
+    } catch (e: any) {
+      console.error("Erreur lors de l'actualisation:", e);
+      error("Erreur d'actualisation", "Impossible d'actualiser les données pour le moment.");
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -293,7 +302,6 @@ export default function Marche() {
                     key={timeframe.value}
                     onClick={() => {
                       setSelectedTimeframe(timeframe.value);
-                      info("Données historiques", `Les données pour la période ${timeframe.label} seront bientôt disponibles.`);
                     }}
                     className={`px-3 py-1 text-sm rounded transition-colors ${
                       selectedTimeframe === timeframe.value
@@ -305,9 +313,13 @@ export default function Marche() {
                   </button>
                 ))}
               </div>
-              <button className="flex items-center gap-2 px-4 py-2 bg-amani-primary text-white rounded-lg hover:bg-amani-primary/90 transition-colors">
-                <RefreshCw className="w-4 h-4" />
-                Actualiser
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="flex items-center gap-2 px-4 py-2 bg-amani-primary text-white rounded-lg hover:bg-amani-primary/90 transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+                {refreshing ? "Actualisation..." : "Actualiser"}
               </button>
             </div>
           </div>
@@ -489,13 +501,17 @@ export default function Marche() {
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {recentNews.map((news) => (
-                <article key={news.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow flex flex-col justify-between">
+                <Link
+                  key={news.id}
+                  to={`/article/${news.slug || news.id}`}
+                  className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col justify-between group block"
+                >
                   <div>
-                    <div className="relative">
+                    <div className="relative overflow-hidden">
                       <img
                         src={news.image}
                         alt={news.title}
-                        className="w-full h-48 object-cover"
+                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       <div className="absolute top-4 left-4">
                         <span className="bg-amani-primary text-white px-3 py-1 rounded-full text-sm font-medium">
@@ -505,7 +521,7 @@ export default function Marche() {
                     </div>
                     
                     <div className="p-6">
-                      <h3 className="text-lg font-bold text-amani-primary mb-3 leading-tight">
+                      <h3 className="text-lg font-bold text-amani-primary mb-3 leading-tight group-hover:text-black transition-colors">
                         {news.title}
                       </h3>
                       
@@ -528,15 +544,12 @@ export default function Marche() {
                         </span>
                       </div>
                       
-                      <Link
-                        to={`/article/${news.slug || news.id}`}
-                        className="flex items-center gap-1 text-amani-primary hover:text-amani-primary/80 font-medium"
-                      >
+                      <span className="flex items-center gap-1 text-amani-primary group-hover:text-black font-medium transition-colors">
                         Lire <ArrowRight className="w-4 h-4" />
-                      </Link>
+                      </span>
                     </div>
                   </div>
-                </article>
+                </Link>
               ))}
             </div>
           )}

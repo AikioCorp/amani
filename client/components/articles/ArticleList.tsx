@@ -52,13 +52,13 @@ export const ArticleList: React.FC<{ status?: 'published' | 'draft' | 'archived'
     <div className="space-y-6">
       {articles.map((article) => (
         <article key={article.id} className="border-b pb-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-6">
+          <Link to={`/article/${article.slug || article.id}`} className="group flex flex-col md:flex-row gap-6 block">
             {article.featured_image && (
-              <div className="md:w-1/3">
+              <div className="md:w-1/3 overflow-hidden rounded-lg">
                 <img
                   src={article.featured_image}
                   alt={article.featured_image_alt || article.title}
-                  className="w-full h-48 object-cover rounded-lg"
+                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"
                   decoding="async"
                   onError={(e) => {
@@ -80,16 +80,11 @@ export const ArticleList: React.FC<{ status?: 'published' | 'draft' | 'archived'
                 <span>{article.read_time || '5'} min de lecture</span>
               </div>
               
-              <h2 className="text-2xl font-bold mb-2">
-                <Link 
-                  to={`/articles/${article.slug}`} 
-                  className="hover:text-blue-600 transition-colors"
-                >
-                  {article.title}
-                </Link>
+              <h2 className="text-2xl font-bold mb-2 text-gray-900 group-hover:text-blue-600 transition-colors">
+                {article.title}
               </h2>
               
-              <p className="text-gray-600 mb-4">{article.summary}</p>
+              <p className="text-gray-600 mb-4 line-clamp-2">{article.summary}</p>
               
               <div className="flex items-center gap-2">
                 {article.author.avatar_url && (
@@ -111,7 +106,7 @@ export const ArticleList: React.FC<{ status?: 'published' | 'draft' | 'archived'
                 </span>
               </div>
             </div>
-          </div>
+          </Link>
         </article>
       ))}
     </div>

@@ -65,38 +65,57 @@ export function useBrvmIndices() {
       if (!resp.ok) throw new Error("Erreur lors de la récupération des indices BRVM");
       const result = await resp.json();
 
-      // Mapper les données scrapées vers le type BrvmIndexWithLatest
-      const rawData = result.data || [];
+      const resData = result.data;
+      let rawData: any[] = [];
+      if (Array.isArray(resData)) {
+        rawData = resData;
+      } else if (resData && typeof resData === "object") {
+        rawData = [
+          ...(resData.indices || []),
+          ...(resData.sectoriels || []),
+          ...(resData.topStocks || []),
+          ...(resData.items || []),
+        ];
+      }
+
       if (!Array.isArray(rawData) || rawData.length === 0) return [];
 
-      return rawData.map((item: any, idx: number): BrvmIndexWithLatest => ({
-        id: item.id || `brvm-${idx}`,
-        slug: item.slug || item.code?.toLowerCase() || `index-${idx}`,
-        name: item.name || item.title || `Indice ${idx + 1}`,
-        code: item.code || null,
-        description: item.description || null,
-        group_id: item.group_id || null,
-        country: item.country || "ci",
-        currency: item.currency || "XOF",
-        unit: item.unit || "points",
-        frequency: item.frequency || "daily",
-        source: "BRVM",
-        methodology: null,
-        is_public: true,
-        created_at: item.created_at,
-        updated_at: item.updated_at,
-        group: null,
-        latest: item.latest || {
-          id: `point-${idx}`,
-          indice_id: item.id || `brvm-${idx}`,
-          close: item.value || item.close || null,
-          change_percent: item.change_percent || null,
-          ytd_percent: item.ytd_percent || null,
-          direction: item.direction || "neutral",
-          as_of: item.as_of || new Date().toISOString().slice(0, 10),
-          created_at: item.created_at,
-        },
-      }));
+      return rawData.map((item: any, idx: number): BrvmIndexWithLatest => {
+        const closeVal = item.price || item.value || item.close || item.latest?.close || null;
+        const changePctVal = item.changePercent || item.change_percent || item.latest?.change_percent || null;
+        const isUp = item.isPositive === true || (typeof changePctVal === "string" && changePctVal.startsWith("+")) || (typeof changePctVal === "number" && changePctVal > 0);
+        const isDown = item.isPositive === false || (typeof changePctVal === "string" && changePctVal.startsWith("-")) || (typeof changePctVal === "number" && changePctVal < 0);
+        const direction = isUp ? "up" : isDown ? "down" : item.direction || "neutral";
+
+        return {
+          id: item.id || item.symbol || `brvm-${idx}`,
+          slug: item.slug || item.symbol?.toLowerCase()?.replace(/[^a-z0-9]/g, "-") || `index-${idx}`,
+          name: item.name || item.title || `Indice ${idx + 1}`,
+          code: item.symbol || item.code || null,
+          description: item.description || null,
+          group_id: item.group_id || null,
+          country: item.country || "ci",
+          currency: item.currency || "XOF",
+          unit: item.unit || "FCFA",
+          frequency: item.frequency || "daily",
+          source: item.source || "BRVM",
+          methodology: null,
+          is_public: true,
+          created_at: item.created_at || item.lastUpdate,
+          updated_at: item.updated_at || item.lastUpdate,
+          group: null,
+          latest: {
+            id: `point-${idx}`,
+            indice_id: item.id || `brvm-${idx}`,
+            close: closeVal,
+            change_percent: changePctVal,
+            ytd_percent: item.ytd_percent || null,
+            direction,
+            as_of: item.as_of || item.lastUpdate || new Date().toISOString().slice(0, 10),
+            created_at: item.created_at || item.lastUpdate,
+          },
+        };
+      });
     } catch (e: any) {
       console.error("[useBrvmIndices] fetchIndicesWithLatest error", e);
       setError(e.message || "Erreur de chargement des indices");

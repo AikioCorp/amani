@@ -41,6 +41,7 @@ import {
   CommoditiesData,
   getCommodityIcon,
 } from "../services/commoditiesApi";
+import { apiCache } from "../lib/apiCache";
 
 // Feature flags for market widgets (BRVM & Commodities)
 // - ENABLE_MARKET_WIDGET: controls rendering of the section
@@ -255,8 +256,21 @@ export default function Index() {
 
   const loadHomepageContent = async () => {
     try {
-      setLoadingContent(true);
-
+      const cached = apiCache.get("homepage_data");
+      if (cached) {
+        setArticles(cached.latestArticles || []);
+        setPodcasts(cached.latestPodcasts || []);
+        setEcoArticles(cached.economie || []);
+        setMarketFinArticles(cached.marchesFinanciers || []);
+        setMarketBoursArticles(cached.marchesBoursiers || []);
+        setIndustryArticles(cached.industrieMiniere || []);
+        setInvestArticles(cached.investissement || []);
+        setInsightsArticles(cached.insights || []);
+        setTechArticles(cached.technologie || []);
+        setLoadingContent(false);
+      } else {
+        setLoadingContent(true);
+      }
 
       const res = await fetch(`${API_BASE}/contents/homepage`);
       if (!res.ok) throw new Error("API error");
@@ -264,6 +278,7 @@ export default function Index() {
       
       if (json.success && json.data) {
         const homeData = json.data;
+        apiCache.set("homepage_data", homeData);
         setArticles(homeData.latestArticles || []);
         setPodcasts(homeData.latestPodcasts || []);
         setEcoArticles(homeData.economie || []);
@@ -456,7 +471,7 @@ export default function Index() {
             </div>
           </div>
 
-          <div className="overflow-hidden whitespace-nowrap flex group border-t border-gray-100 pt-2">
+          <div className="w-full max-w-full overflow-hidden whitespace-nowrap flex group border-t border-gray-100 pt-2">
             <div className="flex animate-marquee group-hover:[animation-play-state:paused]">
               {tickerItems.map((idx, i) => (
                 <div key={i} className="px-8 flex flex-col justify-center min-w-[200px] border-r border-gray-100">

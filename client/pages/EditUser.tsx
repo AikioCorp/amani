@@ -1,22 +1,23 @@
-import { useState, useEffect } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
-import DashboardLayout from "../components/DashboardLayout";
-import {
-  demoAccounts,
-  getRoleDisplayName,
-  DemoUser,
-} from "../lib/demoAccounts";
+import { API_BASE_URL } from "../services/apiConfig";
+import { getSessionToken } from "../services/authService";
 import {
   ArrowLeft,
   Save,
   User,
   Mail,
+  Phone,
   Building,
   Shield,
+  Crown,
   CheckCircle,
-  AlertCircle,
+  Loader2,
+  Lock,
+  X,
+  FileText,
 } from "lucide-react";
 
 export default function EditUser() {
@@ -24,510 +25,347 @@ export default function EditUser() {
   const { user, hasPermission } = useAuth();
   const { success, error } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const passedUser = location.state?.user;
+
+  const [loading, setLoading] = useState(!passedUser);
   const [isSaving, setIsSaving] = useState(false);
-  const [userToEdit, setUserToEdit] = useState<DemoUser | null>(null);
 
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    role: "visiteur",
-    organization: "",
-    sectors: [] as string[],
-    countries: [] as string[],
-    newsletter: false,
-    alerts: false,
+    first_name: passedUser?.first_name || "",
+    last_name: passedUser?.last_name || "",
+    email: passedUser?.email || "",
+    phone: passedUser?.phone || "",
+    organization: passedUser?.organization || "",
+    role: passedUser?.role || passedUser?.roles?.[0] || "subscriber",
+    is_premium: Boolean(passedUser?.is_premium),
+    is_active: passedUser?.is_active !== undefined ? Boolean(passedUser?.is_active) : true,
+    bio: passedUser?.bio || "",
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Check permissions
+  // Vérification des autorisations
   if (!user || !hasPermission("manage_users")) {
     return (
-      <DashboardLayout title="Accès refusé">
-        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md mx-auto">
-          <h2 className="text-2xl font-bold text-amani-primary mb-4">
-            Accès refusé
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Vous n'avez pas les permissions nécessaires pour modifier des
-            utilisateurs.
+      <div className="flex items-center justify-center min-h-[60vh] p-4">
+        <div className="bg-white rounded-3xl shadow-xl border border-gray-200 p-8 max-w-md text-center space-y-4">
+          <div className="w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mx-auto">
+            <Lock className="w-7 h-7" />
+          </div>
+          <h2 className="text-2xl font-black text-gray-900">Accès Refusé</h2>
+          <p className="text-sm text-gray-500">
+            Vous n'avez pas les autorisations requises pour modifier les utilisateurs.
           </p>
           <Link
             to="/dashboard/users"
-            className="bg-amani-primary text-white px-6 py-2 rounded-lg hover:bg-amani-primary/90 transition-colors"
+            className="inline-block bg-gray-900 text-white font-bold px-6 py-3 rounded-xl text-xs hover:bg-black transition-all"
           >
-            Retour à la gestion des utilisateurs
+            Retour aux utilisateurs
           </Link>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
+  // Synchronisation direct avec l'API
   useEffect(() => {
-    if (userId) {
-      const foundUser = demoAccounts.find((u) => u.id === userId);
-      if (foundUser) {
-        setUserToEdit(foundUser);
-        setFormData({
-          firstName: foundUser.firstName,
-          lastName: foundUser.lastName,
-          email: foundUser.email,
-          role: foundUser.role,
-          organization: foundUser.organization,
-          sectors: foundUser.preferences.sectors,
-          countries: foundUser.preferences.countries,
-          newsletter: foundUser.preferences.newsletter,
-          alerts: foundUser.preferences.alerts,
+    if (!userId) return;
+
+    let isMounted = true;
+    const fetchUser = async () => {
+      if (!passedUser) setLoading(true);
+      try {
+        const token = getSessionToken();
+        const res = await fetch(`${API_BASE_URL}/users/${userId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-      } else {
-        error(
-          "Utilisateur introuvable",
-          "L'utilisateur que vous essayez de modifier n'existe pas.",
-        );
-        navigate("/dashboard/users");
+        const json = await res.json();
+
+        if (isMounted && res.ok && json.success && json.data) {
+          const u = json.data;
+          setFormData({
+            first_name: u.first_name || "",
+            last_name: u.last_name || "",
+            email: u.email || "",
+            phone: u.phone || "",
+            organization: u.organization || "",
+            role: u.role || "subscriber",
+            is_premium: Boolean(u.is_premium),
+            is_active: u.is_active !== undefined ? Boolean(u.is_active) : true,
+            bio: u.bio || "",
+          });
+        }
+      } catch (err) {
+        console.error("Erreur de chargement utilisateur:", err);
+      } finally {
+        if (isMounted) setLoading(false);
       }
-    }
-  }, [userId, error, navigate]);
+    };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
-  ) => {
-    const { name, value, type } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]:
-        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
-    }));
-
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
-  };
-
-  const handleSectorToggle = (sector: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      sectors: prev.sectors.includes(sector)
-        ? prev.sectors.filter((s) => s !== sector)
-        : [...prev.sectors, sector],
-    }));
-  };
-
-  const handleCountryToggle = (country: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      countries: prev.countries.includes(country)
-        ? prev.countries.filter((c) => c !== country)
-        : [...prev.countries, country],
-    }));
-  };
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = "Le prénom est requis";
-    }
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = "Le nom est requis";
-    }
-    if (!formData.email.trim()) {
-      newErrors.email = "L'email est requis";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Format d'email invalide";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    fetchUser();
+    return () => {
+      isMounted = false;
+    };
+  }, [userId, passedUser]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      error(
-        "Erreur de validation",
-        "Veuillez corriger les erreurs dans le formulaire.",
-      );
-      return;
-    }
+    if (!userId) return;
 
     setIsSaving(true);
+    try {
+      const token = getSessionToken();
+      const res = await fetch(`${API_BASE_URL}/users/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(formData),
+      });
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+      let json: any = null;
+      try {
+        json = await res.json();
+      } catch (e) {}
 
-    const updatedUser = {
-      ...userToEdit,
-      ...formData,
-      preferences: {
-        ...userToEdit?.preferences,
-        sectors: formData.sectors,
-        countries: formData.countries,
-        newsletter: formData.newsletter,
-        alerts: formData.alerts,
-      },
-      updatedAt: new Date().toISOString(),
-      updatedBy: `${user.firstName} ${user.lastName}`,
-    };
-
-    console.log("Updating user:", updatedUser);
-
-    success(
-      "Utilisateur modifié",
-      `Les informations de ${formData.firstName} ${formData.lastName} ont été mises à jour avec succès.`,
-    );
-
-    setIsSaving(false);
-    navigate("/dashboard/users");
+      if (res.ok && json?.success) {
+        adminCache.invalidate("users_list");
+        success(
+          "Profil mis à jour !",
+          `Les modifications apportées à ${formData.first_name || formData.email} ont été enregistrées.`
+        );
+        navigate("/dashboard/users");
+      } else {
+        const errorMsg = json?.error || (json?.details && json.details[0]?.message) || `Erreur serveur (${res.status})`;
+        error("Erreur de modification", errorMsg);
+      }
+    } catch (err: any) {
+      error("Erreur réseau", err.message || "Impossible de contacter le serveur.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  if (!userToEdit) {
+  // Skeleton screen de chargement
+  if (loading) {
     return (
-      <DashboardLayout title="Chargement...">
-        <div className="text-center py-12">
-          <div className="w-16 h-16 border-4 border-amani-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement des données utilisateur...</p>
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
+        <div className="flex justify-between items-center border-b border-gray-200 pb-4">
+          <div className="space-y-2">
+            <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+            <div className="h-7 w-56 bg-gray-300 rounded-lg animate-pulse" />
+          </div>
         </div>
-      </DashboardLayout>
+
+        <div className="bg-white border border-gray-200 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+          <div className="h-5 w-48 bg-gray-200 rounded animate-pulse" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="h-11 bg-gray-100 rounded-xl animate-pulse" />
+            <div className="h-11 bg-gray-100 rounded-xl animate-pulse" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="h-11 bg-gray-100 rounded-xl animate-pulse" />
+            <div className="h-11 bg-gray-100 rounded-xl animate-pulse" />
+            <div className="h-11 bg-gray-100 rounded-xl animate-pulse" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="h-11 bg-gray-100 rounded-xl animate-pulse" />
+            <div className="h-11 bg-gray-100 rounded-xl animate-pulse" />
+          </div>
+        </div>
+      </div>
     );
   }
 
-  const roles = [
-    {
-      value: "visiteur",
-      name: "Visiteur",
-      description: "Accès public uniquement",
-    },
-    {
-      value: "abonne",
-      name: "Abonné Premium",
-      description: "Contenu premium et alertes",
-    },
-    {
-      value: "moderateur",
-      name: "Modérateur",
-      description: "Modération de contenu",
-    },
-    {
-      value: "analyste",
-      name: "Analyste",
-      description: "Gestion des indices économiques",
-    },
-    {
-      value: "editeur",
-      name: "Éditeur",
-      description: "Création d'articles et podcasts",
-    },
-    { value: "admin", name: "Administrateur", description: "Accès complet" },
-  ];
-
-  const sectors = [
-    "Marché financier",
-    "Économie régionale",
-    "Industrie minière",
-    "Agriculture",
-    "Investissement",
-    "Technologie",
-    "Politique monétaire",
-    "Commerce international",
-  ];
-
-  const countries = [
-    "Mali",
-    "Burkina Faso",
-    "Niger",
-    "Tchad",
-    "Mauritanie",
-    "Sénégal",
-    "UEMOA",
-    "Tous",
-  ];
-
   return (
-    <DashboardLayout
-      title="Modifier l'utilisateur"
-      subtitle={`Modifier les informations de ${userToEdit.firstName} ${userToEdit.lastName}`}
-    >
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* Navigation */}
-        <div className="mb-8">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
+      {/* Header avec Navigation */}
+      <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+        <div>
           <Link
             to="/dashboard/users"
-            className="inline-flex items-center gap-2 text-amani-primary hover:text-amani-primary/80 mb-4"
+            className="text-xs font-bold text-gray-400 hover:text-gray-900 transition-colors flex items-center gap-1.5 mb-1"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Retour à la gestion des utilisateurs
+            <ArrowLeft className="w-4 h-4" /> Retour aux Utilisateurs
           </Link>
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+            <User className="w-6 h-6 text-amber-600" /> Édition de l'Utilisateur
+          </h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Personal Information */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 border border-white/50">
-            <div className="flex items-center gap-3 mb-6">
-              <User className="w-6 h-6 text-amani-primary" />
-              <h2 className="text-xl font-semibold text-amani-primary">
-                Informations personnelles
-              </h2>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Prénom *
-                </label>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amani-primary focus:border-transparent ${
-                    errors.firstName ? "border-red-300" : "border-gray-300"
-                  }`}
-                  placeholder="Prénom"
-                />
-                {errors.firstName && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.firstName}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nom *
-                </label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amani-primary focus:border-transparent ${
-                    errors.lastName ? "border-red-300" : "border-gray-300"
-                  }`}
-                  placeholder="Nom"
-                />
-                {errors.lastName && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.lastName}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email *
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amani-primary focus:border-transparent ${
-                      errors.email ? "border-red-300" : "border-gray-300"
-                    }`}
-                    placeholder="email@exemple.com"
-                  />
-                </div>
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.email}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Organisation
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Building className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    name="organization"
-                    value={formData.organization}
-                    onChange={handleInputChange}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amani-primary focus:border-transparent"
-                    placeholder="Nom de l'organisation"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Role and Permissions */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 border border-white/50">
-            <div className="flex items-center gap-3 mb-6">
-              <Shield className="w-6 h-6 text-amani-primary" />
-              <h2 className="text-xl font-semibold text-amani-primary">
-                Rôle et permissions
-              </h2>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-4">
-                  Rôle utilisateur *
-                </label>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {roles.map((role) => (
-                    <div
-                      key={role.value}
-                      className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                        formData.role === role.value
-                          ? "border-amani-primary bg-amani-secondary/20"
-                          : "border-gray-200 hover:border-amani-primary/50"
-                      }`}
-                      onClick={() =>
-                        setFormData((prev) => ({ ...prev, role: role.value }))
-                      }
-                    >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="role"
-                          value={role.value}
-                          checked={formData.role === role.value}
-                          onChange={handleInputChange}
-                          className="h-4 w-4 text-amani-primary focus:ring-amani-primary"
-                        />
-                        <div>
-                          <div className="font-medium text-amani-primary">
-                            {role.name}
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            {role.description}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Preferences */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 border border-white/50">
-            <h2 className="text-xl font-semibold text-amani-primary mb-6">
-              Préférences
-            </h2>
-
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Secteurs d'intérêt
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {sectors.map((sector) => (
-                    <button
-                      key={sector}
-                      type="button"
-                      onClick={() => handleSectorToggle(sector)}
-                      className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                        formData.sectors.includes(sector)
-                          ? "bg-amani-primary text-white border-amani-primary"
-                          : "bg-white text-gray-700 border-gray-300 hover:border-amani-primary"
-                      }`}
-                    >
-                      {sector}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Pays suivis
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {countries.map((country) => (
-                    <button
-                      key={country}
-                      type="button"
-                      onClick={() => handleCountryToggle(country)}
-                      className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                        formData.countries.includes(country)
-                          ? "bg-amani-primary text-white border-amani-primary"
-                          : "bg-white text-gray-700 border-gray-300 hover:border-amani-primary"
-                      }`}
-                    >
-                      {country}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    name="newsletter"
-                    checked={formData.newsletter}
-                    onChange={handleInputChange}
-                    className="h-4 w-4 text-amani-primary focus:ring-amani-primary border-gray-300 rounded"
-                  />
-                  <label className="ml-2 text-sm text-gray-700">
-                    Abonner à la newsletter hebdomadaire
-                  </label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    name="alerts"
-                    checked={formData.alerts}
-                    onChange={handleInputChange}
-                    className="h-4 w-4 text-amani-primary focus:ring-amani-primary border-gray-300 rounded"
-                  />
-                  <label className="ml-2 text-sm text-gray-700">
-                    Activer les alertes personnalisées
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Submit */}
-          <div className="flex gap-4 justify-end">
-            <Link
-              to="/dashboard/users"
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Annuler
-            </Link>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="flex items-center gap-2 px-6 py-3 bg-amani-primary text-white rounded-lg hover:bg-amani-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSaving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  Enregistrement...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  Enregistrer les modifications
-                </>
-              )}
-            </button>
-          </div>
-        </form>
+        <button
+          type="button"
+          onClick={() => navigate("/dashboard/users")}
+          className="p-2 text-gray-400 hover:text-gray-600 rounded-xl hover:bg-gray-100 transition-all"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
-    </DashboardLayout>
+
+      {/* Formulaire Unique & Réel */}
+      <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+        <div className="border-b border-gray-100 pb-4">
+          <h2 className="text-base font-extrabold text-gray-900">Informations Générales</h2>
+          <p className="text-xs text-gray-500">Données réelles enregistrées dans la base de données Amani.</p>
+        </div>
+
+        {/* Champs Prénom & Nom */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5 flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-gray-400" /> Prénom
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.first_name}
+              onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5 flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-gray-400" /> Nom de famille
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.last_name}
+              onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        {/* Email, Téléphone & Organisation */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5 flex items-center gap-1.5">
+              <Mail className="w-3.5 h-3.5 text-gray-400" /> Adresse E-mail *
+            </label>
+            <input
+              type="email"
+              required
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-900 focus:ring-2 focus:ring-amber-500 focus:outline-none bg-gray-50/50"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5 flex items-center gap-1.5">
+              <Phone className="w-3.5 h-3.5 text-gray-400" /> Téléphone / WhatsApp
+            </label>
+            <input
+              type="tel"
+              placeholder="+223..."
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5 flex items-center gap-1.5">
+              <Building className="w-3.5 h-3.5 text-gray-400" /> Organisation / Société
+            </label>
+            <input
+              type="text"
+              placeholder="Ex: Banque Centrale / Société X"
+              value={formData.organization}
+              onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        {/* Rôle & Options de Compte */}
+        <div className="pt-4 border-t border-gray-100 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5 flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5 text-indigo-600" /> Rôle d'Accès Système *
+              </label>
+              <select
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-bold text-gray-900 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              >
+                <option value="subscriber">Abonné / Utilisateur classique</option>
+                <option value="analyst">Analyste financier</option>
+                <option value="editor">Éditeur de contenu</option>
+                <option value="moderator">Modérateur</option>
+                <option value="admin">Administrateur système</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col justify-end space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer p-2.5 bg-amber-50 border border-amber-200 rounded-xl">
+                <input
+                  type="checkbox"
+                  checked={formData.is_premium}
+                  onChange={(e) => setFormData({ ...formData, is_premium: e.target.checked })}
+                  className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4"
+                />
+                <span className="text-xs font-extrabold text-amber-900">
+                  Accorder le Pass Premium Amani
+                </span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer p-2.5 bg-gray-50 border border-gray-200 rounded-xl">
+                <input
+                  type="checkbox"
+                  checked={formData.is_active}
+                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                  className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                />
+                <span className="text-xs font-bold text-gray-700">Compte Actif (Décocher pour suspendre)</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5 flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-gray-400" /> Bio / Présentation
+            </label>
+            <textarea
+              rows={3}
+              placeholder="Notes confidentielles ou bio de l'utilisateur..."
+              value={formData.bio}
+              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        {/* Actions du Bas */}
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+          <button
+            type="button"
+            onClick={() => navigate("/dashboard/users")}
+            className="px-5 py-2.5 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="flex items-center gap-2 px-6 py-2.5 bg-gray-900 hover:bg-black text-white font-bold text-xs rounded-xl shadow-md disabled:opacity-50 transition-all"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Enregistrement...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 text-amber-400" /> Enregistrer le Profil
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }

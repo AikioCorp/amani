@@ -8,6 +8,8 @@ import {
   ChevronDown,
   LogOut,
   Settings,
+  Crown,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { getRoleDisplayName } from "../lib/demoAccounts";
@@ -21,6 +23,7 @@ const navigationItems = [
   { name: "Insights", href: "/insights" },
   { name: "Tech", href: "/tech" },
   { name: "Podcast", href: "/podcast" },
+  { name: "Pass Premium", href: "/abonnement", isPremium: true },
   { name: "Contact", href: "/contact" },
 ];
 
@@ -51,41 +54,47 @@ export function Navigation() {
               />
             </Link>
           </div>
-
           {/* Desktop Navigation */}
-          <div className="hidden lg:block">
-            <div className="ml-10 flex items-center space-x-1 xl:space-x-4">
+          <div className="hidden xl:flex items-center">
+            <div className="ml-4 xl:ml-8 flex items-center space-x-1 xl:space-x-2.5">
               {navigationItems.map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`px-3 xl:px-4 py-2 text-sm xl:text-base font-medium transition-all duration-300 rounded-lg relative overflow-hidden group ${
-                    isActive(item.href)
-                      ? "text-white bg-white/20"
-                      : "text-white/80 hover:text-white hover:bg-white/10"
+                  title={item.isPremium ? "Pass Premium & Alertes Amani" : item.name}
+                  className={`transition-all duration-300 rounded-lg relative overflow-hidden group flex items-center justify-center ${
+                    item.isPremium
+                      ? "p-2 bg-[#E5DDD5]/20 hover:bg-[#E5DDD5]/35 text-[#E5DDD5] border border-[#E5DDD5]/40 rounded-full shadow-sm"
+                      : isActive(item.href)
+                      ? "px-2.5 xl:px-3.5 py-1.5 xl:py-2 text-xs xl:text-sm font-semibold text-white bg-white/20"
+                      : "px-2.5 xl:px-3.5 py-1.5 xl:py-2 text-xs xl:text-sm font-semibold text-white/80 hover:text-white hover:bg-white/10"
                   }`}
                 >
-                  <span className="relative z-10">{item.name}</span>
-                  {isActive(item.href) && (
+                  {item.isPremium ? (
+                    <Crown className="w-4 h-4 xl:w-5 xl:h-5 text-[#E5DDD5] fill-[#E5DDD5]/30" />
+                  ) : (
+                    <span className="relative z-10">{item.name}</span>
+                  )}
+                  {isActive(item.href) && !item.isPremium && (
                     <div className="absolute bottom-0 left-0 w-full h-0.5 bg-white"></div>
                   )}
                 </Link>
               ))}
 
               {/* User Dropdown */}
-              <div className="ml-6 relative">
+              <div className="ml-2 xl:ml-4 relative">
                 <button
                   onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-white/10 rounded-lg hover:bg-white/20 transition-all duration-200"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs xl:text-sm font-semibold text-white bg-white/10 rounded-lg hover:bg-white/20 transition-all duration-200"
                 >
                   <User className="w-4 h-4" />
                   {isAuthenticated ? (
-                    <span className="hidden lg:block">{user?.firstName}</span>
+                    <span>{user?.firstName}</span>
                   ) : (
-                    <span className="hidden lg:block">Compte</span>
+                    <span>Compte</span>
                   )}
                   <ChevronDown
-                    className={`w-4 h-4 transition-transform duration-200 ${isUserDropdownOpen ? "rotate-180" : ""}`}
+                    className={`w-3.5 h-3.5 transition-transform duration-200 ${isUserDropdownOpen ? "rotate-180" : ""}`}
                   />
                 </button>
 
@@ -108,7 +117,7 @@ export function Navigation() {
                         <Link
                           to="/dashboard"
                           onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
                           <Settings className="w-4 h-4" />
                           Tableau de bord
@@ -118,10 +127,10 @@ export function Navigation() {
                             logout();
                             setIsUserDropdownOpen(false);
                           }}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                          className="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                         >
                           <LogOut className="w-4 h-4" />
-                          Se déconnecter
+                          Déconnexion
                         </button>
                       </>
                     ) : (
@@ -129,7 +138,7 @@ export function Navigation() {
                         <Link
                           to="/login"
                           onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
                           <LogIn className="w-4 h-4" />
                           Connexion
@@ -137,10 +146,10 @@ export function Navigation() {
                         <Link
                           to="/register"
                           onClick={() => setIsUserDropdownOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
                           <User className="w-4 h-4" />
-                          S'inscrire
+                          Inscription
                         </Link>
                       </>
                     )}
@@ -151,7 +160,7 @@ export function Navigation() {
           </div>
 
           {/* Mobile menu button */}
-          <div className="lg:hidden">
+          <div className="xl:hidden">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="inline-flex items-center justify-center p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white transition-colors duration-200"
@@ -177,25 +186,28 @@ export function Navigation() {
 
       {/* Mobile Navigation */}
       <div
-        className={`lg:hidden overflow-hidden transition-all duration-300 ease-in-out ${
+        className={`xl:hidden overflow-hidden transition-all duration-300 ease-in-out ${
           isMobileMenuOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
         }`}
       >
-        <div className="px-4 pt-4 pb-6 space-y-2 bg-gradient-to-b from-amani-primary to-amani-primary/90 border-t border-white/20">
+        <div className="px-4 pt-4 pb-6 space-y-2 bg-[#373B3A] border-t border-white/20">
           {navigationItems.map((item, index) => (
             <Link
               key={item.name}
               to={item.href}
               onClick={() => setIsMobileMenuOpen(false)}
-              className={`block px-4 py-3 text-base font-medium rounded-xl transition-all duration-200 transform ${
+              className={`flex items-center gap-2 px-4 py-3 text-base font-medium rounded-xl transition-all duration-200 transform ${
                 isActive(item.href)
                   ? "text-white bg-white/20 shadow-sm scale-105"
+                  : item.isPremium
+                  ? "text-[#E5DDD5] font-bold bg-[#E5DDD5]/20 border border-[#E5DDD5]/40"
                   : "text-white/80 hover:text-white hover:bg-white/10 hover:scale-105"
               }`}
               style={{
                 animationDelay: isMobileMenuOpen ? `${index * 50}ms` : "0ms",
               }}
             >
+              {item.isPremium && <Crown className="w-5 h-5 text-[#E5DDD5] fill-[#E5DDD5]/30" />}
               {item.name}
             </Link>
           ))}

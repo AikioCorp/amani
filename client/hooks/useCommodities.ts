@@ -36,25 +36,42 @@ export function useCommodities() {
       if (!resp.ok) throw new Error("Erreur lors de la récupération des matières premières");
       const result = await resp.json();
 
-      const rawData = result.data || [];
+      const resData = result.data;
+      let rawData: any[] = [];
+
+      if (Array.isArray(resData)) {
+        rawData = resData;
+      } else if (resData && typeof resData === "object") {
+        if (Array.isArray(resData.items)) {
+          rawData = resData.items;
+        } else if (Array.isArray(resData.commodities)) {
+          rawData = resData.commodities;
+        } else {
+          // Extraire les matières premières depuis les clés de l'objet (gold, oil_brent, cocoa, etc.)
+          rawData = Object.values(resData).filter(
+            (v: any) => v && typeof v === "object" && (v.name || v.price || v.symbol)
+          );
+        }
+      }
+
       if (!Array.isArray(rawData) || rawData.length === 0) return [];
 
       return rawData.map((item: any, idx: number): CommodityPoint => ({
-        id: item.id || `comm-${idx}`,
-        slug: item.slug || item.code?.toLowerCase() || `comm-${idx}`,
+        id: item.id || item.symbol || `comm-${idx}`,
+        slug: item.slug || item.symbol?.toLowerCase()?.replace(/[^a-z0-9]/g, "-") || `comm-${idx}`,
         name: item.name || item.title || `Matière Première ${idx + 1}`,
-        code: item.code || null,
+        code: item.symbol || item.code || null,
         description: item.description || null,
-        category: item.category || "Autre",
+        category: item.category || "Matière Première",
         currency: item.currency || "USD",
         unit: item.unit || "unités",
         source: item.source || "Marchés Globaux",
-        latest: item.latest || {
-          close: item.value || item.close || null,
-          change_percent: item.change_percent || null,
+        latest: {
+          close: item.price || item.latest?.close || item.value || null,
+          change_percent: item.changePercent || item.latest?.change_percent || null,
           ytd_percent: item.ytd_percent || null,
-          direction: item.direction || "neutral",
-          as_of: item.as_of || new Date().toISOString().slice(0, 10),
+          direction: item.isPositive ? "up" : item.isPositive === false ? "down" : item.direction || "neutral",
+          as_of: item.lastUpdate || item.latest?.as_of || new Date().toISOString().slice(0, 10),
           created_at: item.created_at,
         },
       }));

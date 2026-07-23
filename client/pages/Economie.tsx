@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { fetchBRVMData, BRVMData } from "../services/brvmApi";
 import {
   TrendingUp,
   TrendingDown,
@@ -30,6 +31,11 @@ export default function Economie() {
   const [selectedCountry, setSelectedCountry] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [brvmData, setBrvmData] = useState<BRVMData | null>(null);
+
+  useEffect(() => {
+    fetchBRVMData().then(setBrvmData).catch(console.error);
+  }, []);
 
   // Fetch real published economy articles
   const { articles: dbArticles, loading } = useArticles({
@@ -79,23 +85,27 @@ export default function Economie() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              📊 Économie Sahélienne
+              📊 Économie Sahélienne & UEMOA
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-white/90">
-              Analyses, perspectives et données économiques de la région
+              Analyses, perspectives et données macroéconomiques officielles de la région
             </p>
-            <div className="flex items-center justify-center gap-8 text-lg">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-6 h-6" />
-                <span>Croissance: +5.2%</span>
+            <div className="flex flex-wrap items-center justify-center gap-6 text-sm sm:text-base">
+              <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/20">
+                <TrendingUp className="w-5 h-5 text-green-400" />
+                <span>Croissance UEMOA: <strong className="text-white font-bold">+6,4%</strong></span>
               </div>
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-6 h-6" />
-                <span>PIB: 180B USD</span>
+              <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/20">
+                <Activity className="w-5 h-5 text-blue-300" />
+                <span>Taux BCEAO: <strong className="text-white font-bold">{brvmData?.taux_bceao?.value || "3,50%"}</strong></span>
               </div>
-              <div className="flex items-center gap-2">
-                <Users className="w-6 h-6" />
-                <span>86M habitants</span>
+              <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/20">
+                <DollarSign className="w-5 h-5 text-yellow-300" />
+                <span>PIB Régional: <strong className="text-white font-bold">145,8 Mds USD</strong></span>
+              </div>
+              <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/20">
+                <Users className="w-5 h-5 text-indigo-300" />
+                <span>Population: <strong className="text-white font-bold">137M hab.</strong></span>
               </div>
             </div>
           </div>
@@ -111,13 +121,16 @@ export default function Economie() {
               Article à la une
             </h2>
             
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <Link
+              to={`/article/${featuredArticle.slug || featuredArticle.id}`}
+              className="bg-white rounded-2xl shadow-xl overflow-hidden block group hover:shadow-2xl transition-all duration-300"
+            >
               <div className="md:flex">
-                <div className="md:w-1/2">
+                <div className="md:w-1/2 overflow-hidden">
                   <img
                     src={featuredArticle.coverImage}
                     alt={featuredArticle.title}
-                    className="w-full h-64 md:h-full object-cover"
+                    className="w-full h-64 md:h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 </div>
                 <div className="md:w-1/2 p-8">
@@ -134,7 +147,7 @@ export default function Economie() {
                     </span>
                   </div>
                   
-                  <h3 className="text-2xl font-bold text-amani-primary mb-4 leading-tight">
+                  <h3 className="text-2xl font-bold text-amani-primary mb-4 leading-tight group-hover:text-black transition-colors">
                     {featuredArticle.title}
                   </h3>
                   
@@ -154,17 +167,14 @@ export default function Economie() {
                       </span>
                     </div>
                     
-                    <Link
-                      to={`/article/${featuredArticle.slug || featuredArticle.id}`}
-                      className="flex items-center gap-2 px-6 py-3 bg-amani-primary text-white rounded-lg hover:bg-amani-primary/90 transition-colors font-medium"
-                    >
+                    <span className="flex items-center gap-2 px-6 py-3 bg-amani-primary text-white rounded-lg group-hover:bg-black transition-colors font-medium">
                       Lire l'article
                       <ArrowRight className="w-5 h-5" />
-                    </Link>
+                    </span>
                   </div>
                 </div>
               </div>
-            </div>
+            </Link>
           </div>
         </section>
       )}
@@ -258,12 +268,16 @@ export default function Economie() {
           ) : viewMode === "grid" ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredArticles.map((article) => (
-                <article key={article.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-                  <div className="relative">
+                <Link
+                  key={article.id}
+                  to={`/article/${article.slug || article.id}`}
+                  className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 block group"
+                >
+                  <div className="relative overflow-hidden">
                     <img
                       src={article.coverImage}
                       alt={article.title}
-                      className="w-full h-48 object-cover"
+                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute top-4 left-4 flex items-center gap-2">
                       <span className="bg-amani-primary text-white px-3 py-1 rounded-full text-sm font-medium">
@@ -276,7 +290,7 @@ export default function Economie() {
                   </div>
                   
                   <div className="p-6">
-                    <h3 className="text-lg font-bold text-amani-primary mb-3 leading-tight">
+                    <h3 className="text-lg font-bold text-amani-primary mb-3 leading-tight group-hover:text-black transition-colors">
                       {article.title}
                     </h3>
                     
@@ -301,54 +315,57 @@ export default function Economie() {
                       </span>
                     </div>
                     
-                    <Link
-                      to={`/article/${article.slug || article.id}`}
-                      className="flex items-center gap-2 text-amani-primary hover:text-amani-primary/80 font-medium"
-                    >
+                    <div className="flex items-center gap-2 text-amani-primary group-hover:text-black font-medium transition-colors">
                       Lire l'analyse complète
                       <ChevronRight className="w-4 h-4" />
-                    </Link>
+                    </div>
                   </div>
-                </article>
+                </Link>
               ))}
             </div>
           ) : (
             <div className="space-y-6">
               {filteredArticles.map((article) => (
-                <article key={article.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-                  <div className="flex items-start gap-6">
-                    <img
-                      src={article.coverImage}
-                      alt={article.title}
-                      className="w-32 h-24 object-cover rounded-lg flex-shrink-0"
-                    />
+                <Link
+                  key={article.id}
+                  to={`/article/${article.slug || article.id}`}
+                  className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 block group"
+                >
+                  <div className="flex flex-col sm:flex-row items-start gap-6">
+                    <div className="w-full sm:w-48 h-32 overflow-hidden rounded-lg flex-shrink-0">
+                      <img
+                        src={article.coverImage}
+                        alt={article.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
                     
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <span className="bg-amani-primary text-white px-3 py-1 rounded-full text-sm font-medium">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="bg-amani-primary text-white px-3 py-1 rounded-full text-xs font-medium">
                           {article.category}
                         </span>
-                        <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
+                        <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs">
                           {article.country}
                         </span>
                       </div>
                       
-                      <h3 className="text-xl font-bold text-amani-primary mb-3 leading-tight">
+                      <h3 className="text-xl font-bold text-amani-primary mb-2 group-hover:text-black transition-colors">
                         {article.title}
                       </h3>
                       
-                      <p className="text-gray-600 mb-4 leading-relaxed">
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                         {article.excerpt}
                       </p>
                       
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
                           <span className="flex items-center gap-1">
-                            <Users className="w-4 h-4" />
+                            <Users className="w-3.5 h-3.5" />
                             {article.author}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
+                            <Calendar className="w-3.5 h-3.5" />
                             {new Date(article.publishedAt).toLocaleDateString("fr-FR")}
                           </span>
                           <span className="flex items-center gap-1">
@@ -361,17 +378,14 @@ export default function Economie() {
                           </span>
                         </div>
                         
-                        <Link
-                          to={`/article/${article.slug || article.id}`}
-                          className="flex items-center gap-2 px-4 py-2 bg-amani-primary text-white rounded-lg hover:bg-amani-primary/90 transition-colors font-medium"
-                        >
+                        <div className="flex items-center gap-2 px-4 py-2 bg-amani-primary text-white rounded-lg group-hover:bg-black transition-colors font-medium text-xs">
                           Lire
                           <ArrowRight className="w-4 h-4" />
-                        </Link>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </article>
+                </Link>
               ))}
             </div>
           )}

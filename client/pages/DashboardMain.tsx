@@ -111,6 +111,19 @@ export default function DashboardMain() {
           return res.count || 0;
         };
 
+        const fetchDashboardStats = async () => {
+          try {
+            const resp = await fetch(`${API_BASE}/contents/dashboard-stats`);
+            if (resp.ok) {
+              const resJson = await resp.json();
+              if (resJson.success && resJson.data) {
+                return resJson.data;
+              }
+            }
+          } catch (e) {}
+          return null;
+        };
+
         // Exécuter toutes les promesses en même temps !
         const [
           artTotal,
@@ -121,6 +134,7 @@ export default function DashboardMain() {
           myArt,
           myPod,
           myInd,
+          dbStats,
         ] = await Promise.all([
           fetchCounts("article"),
           fetchCounts("podcast"),
@@ -130,14 +144,18 @@ export default function DashboardMain() {
           fetchMyStats("article"),
           fetchMyStats("podcast"),
           fetchMyStats("indice"),
+          fetchDashboardStats(),
         ]);
 
-        setStats({
-          articles: { total: artTotal, growth: 0 },
-          podcasts: { total: podTotal, growth: 0 },
-          indices: { total: indTotal, growth: 0 },
-          users: { total: usersTotal, growth: 0 },
-        });
+        setStats((prev) => ({
+          ...prev,
+          articles: { ...prev.articles, total: artTotal },
+          podcasts: { ...prev.podcasts, total: podTotal },
+          indices: { ...prev.indices, total: indTotal },
+          users: { ...prev.users, total: usersTotal },
+          views: dbStats?.views || prev.views,
+          reports: dbStats?.reports || prev.reports,
+        }));
 
         const recent = recentRes.data || [];
         const mapped = recent.map((r) => {
@@ -148,6 +166,7 @@ export default function DashboardMain() {
           const time = when.toLocaleDateString();
           return {
             id: r.id as string,
+            slug: r.slug as string,
             type: t,
             title: r.title as string,
             description: r.excerpt || r.summary || null,
@@ -380,15 +399,16 @@ export default function DashboardMain() {
               </div>
               <div className="space-y-4">
                 {recentActivity.map((activity) => (
-                  <div
+                  <Link
                     key={activity.id}
-                    className="flex items-start gap-4 p-4 hover:bg-slate-50 border border-transparent hover:border-slate-100 rounded-2xl transition-all"
+                    to={`/article/${activity.slug || activity.id}`}
+                    className="flex items-start gap-4 p-4 hover:bg-slate-50 border border-transparent hover:border-slate-100 rounded-2xl transition-all block group"
                   >
-                    <div className={`p-2.5 rounded-xl bg-white shadow-sm border border-slate-100`}>
+                    <div className={`p-2.5 rounded-xl bg-white shadow-sm border border-slate-100 group-hover:scale-105 transition-transform`}>
                       <activity.icon className={`w-4 h-4 ${activity.color}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-slate-900">
+                      <div className="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">
                         {activity.title}
                       </div>
                       <div className="text-sm text-slate-500 truncate mt-0.5">
@@ -400,7 +420,7 @@ export default function DashboardMain() {
                         <span>{activity.time}</span>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -421,7 +441,7 @@ export default function DashboardMain() {
                       Vues cette semaine
                     </span>
                     <span className="font-bold text-amani-primary">
-                      {stats.views.thisWeek.toLocaleString()}
+                      {(stats.views?.thisWeek || 0).toLocaleString()}
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
@@ -433,7 +453,7 @@ export default function DashboardMain() {
                   <div className="flex items-center gap-2 text-sm">
                     <TrendingUp className="w-4 h-4 text-green-600" />
                     <span className="text-green-600">
-                      +{stats.views.growth}%
+                      +{stats.views?.growth || 0}%
                     </span>
                     <span className="text-gray-500">vs semaine dernière</span>
                   </div>

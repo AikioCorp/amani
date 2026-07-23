@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useUsers } from "../hooks/useUsers";
+import { API_BASE_URL } from "../services/apiConfig";
+import { getSessionToken } from "../services/authService";
 import {
   getRoleDisplayName,
   getRoleColor,
@@ -23,18 +25,24 @@ import {
   MoreHorizontal,
   CheckCircle,
   XCircle,
+  Crown,
   X,
   Lock,
   AlertCircle,
+  Check,
+  Building,
+  Loader2,
 } from "lucide-react";
 
 export default function Users() {
   const { user, hasPermission } = useAuth();
   const { success, error, warning, info } = useToast();
-  const { users, isLoading, error: usersError, stats, deleteUser: deleteUserFn, updateUserRoles } = useUsers();
+  const { users, setUsers, isLoading, error: usersError, stats, deleteUser: deleteUserFn } = useUsers();
   const navigate = useNavigate();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState("all");
+  const [premiumFilter, setPremiumFilter] = useState("all");
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [showUserModal, setShowUserModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -46,18 +54,18 @@ export default function Users() {
   // Check permissions
   if (!user || !hasPermission("manage_users")) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md">
-          <h2 className="text-2xl font-bold text-amani-primary mb-4">
-            Accès refusé
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Vous n'avez pas les permissions nécessaires pour gérer les
-            utilisateurs.
+      <div className="flex items-center justify-center min-h-[60vh] p-4">
+        <div className="bg-white rounded-3xl shadow-xl border border-gray-200 p-8 max-w-md text-center space-y-4">
+          <div className="w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mx-auto">
+            <Lock className="w-7 h-7" />
+          </div>
+          <h2 className="text-2xl font-black text-gray-900">Accès Refusé</h2>
+          <p className="text-sm text-gray-500">
+            Vous n'avez pas les permissions nécessaires pour accéder à la gestion des utilisateurs.
           </p>
           <Link
             to="/dashboard"
-            className="bg-amani-primary text-white px-6 py-2 rounded-lg hover:bg-amani-primary/90 transition-colors"
+            className="inline-block bg-gray-900 text-white font-bold px-6 py-3 rounded-xl hover:bg-black transition-all text-xs"
           >
             Retour au tableau de bord
           </Link>
@@ -67,22 +75,25 @@ export default function Users() {
   }
 
   const filteredUsers = users.filter((u) => {
+    const query = searchTerm.toLowerCase();
     const matchesSearch =
-      u.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.organization?.toLowerCase().includes(searchTerm.toLowerCase());
+      (u.first_name && u.first_name.toLowerCase().includes(query)) ||
+      (u.last_name && u.last_name.toLowerCase().includes(query)) ||
+      (u.email && u.email.toLowerCase().includes(query)) ||
+      (u.organization && u.organization.toLowerCase().includes(query));
 
-    const matchesRole = selectedRole === "all" || u.roles?.includes(selectedRole);
+    const matchesRole = selectedRole === "all" || (u.roles && u.roles.includes(selectedRole));
+    const matchesPremium =
+      premiumFilter === "all" ||
+      (premiumFilter === "premium" && u.is_premium) ||
+      (premiumFilter === "free" && !u.is_premium);
 
-    return matchesSearch && matchesRole;
+    return matchesSearch && matchesRole && matchesPremium;
   });
 
   const handleSelectUser = (userId: string) => {
     setSelectedUsers((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId],
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
     );
   };
 
@@ -99,34 +110,19 @@ export default function Users() {
     if (userToView) {
       setSelectedUser(userToView);
       setShowUserModal(true);
-      info(
-        "Détails de l'utilisateur",
-        `Affichage des informations de ${userToView.first_name} ${userToView.last_name}`,
-      );
     }
   };
 
   const handleEditUser = (userId: string) => {
-    const userToEdit = users.find((u) => u.id === userId);
-    if (userToEdit) {
-      navigate(`/dashboard/users/edit/${userId}`);
-      info(
-        "Modification",
-        `Redirection vers l'édition de ${userToEdit.first_name} ${userToEdit.last_name}`,
-      );
-    }
+    const targetUser = users.find((u) => u.id === userId);
+    navigate(`/dashboard/users/edit/${userId}`, { state: { user: targetUser } });
   };
 
-
   const handleDeleteUser = (userId: string) => {
-    const userToDelete = users.find((u) => u.id === userId);
-    if (userToDelete) {
-      setUserToDelete(userToDelete);
+    const userToDel = users.find((u) => u.id === userId);
+    if (userToDel) {
+      setUserToDelete(userToDel);
       setShowDeleteConfirm(true);
-      warning(
-        "Suppression",
-        "Confirmation requise pour supprimer l'utilisateur",
-      );
     }
   };
 
@@ -134,10 +130,7 @@ export default function Users() {
     if (userToDelete) {
       try {
         await deleteUserFn(userToDelete.id);
-        success(
-          "Utilisateur supprimé",
-          `${userToDelete.first_name} ${userToDelete.last_name} a été supprimé avec succès`,
-        );
+        success("Utilisateur supprimé", `${userToDelete.first_name || ""} ${userToDelete.last_name || ""} a été supprimé.`);
         setShowDeleteConfirm(false);
         setUserToDelete(null);
       } catch (err) {
@@ -146,735 +139,649 @@ export default function Users() {
     }
   };
 
+  const handleTogglePremium = async (u: any) => {
+    const newStatus = !u.is_premium;
+    // Optimistic Update
+    setUsers((prev) =>
+      prev.map((item) => (item.id === u.id ? { ...item, is_premium: newStatus } : item))
+    );
+
+    try {
+      const token = getSessionToken();
+      const res = await fetch(`${API_BASE_URL}/admin/users/${u.id}/premium`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ is_premium: newStatus }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        success("Statut Mis à Jour", json.message);
+      } else {
+        // Rollback
+        setUsers((prev) =>
+          prev.map((item) => (item.id === u.id ? { ...item, is_premium: !newStatus } : item))
+        );
+        error("Erreur", json.error || "Échec du changement de statut");
+      }
+    } catch (e) {
+      // Rollback
+      setUsers((prev) =>
+        prev.map((item) => (item.id === u.id ? { ...item, is_premium: !newStatus } : item))
+      );
+      error("Erreur Réseau");
+    }
+  };
+
   const handleBulkRoleChange = () => {
     if (selectedUsers.length === 0) {
-      warning(
-        "Aucune sélection",
-        "Veuillez sélectionner au moins un utilisateur",
-      );
+      warning("Aucune sélection", "Veuillez sélectionner au moins un utilisateur");
       return;
     }
     setShowBulkRoleModal(true);
   };
 
   const confirmBulkRoleChange = async () => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    console.log("Bulk role change:", selectedUsers, "to role:", newBulkRole);
-    success(
-      "Rôles modifiés",
-      `Le rôle de ${selectedUsers.length} utilisateur(s) a été modifié vers ${getRoleDisplayName(newBulkRole)}`,
+    setUsers((prev) =>
+      prev.map((u) => (selectedUsers.includes(u.id) ? { ...u, roles: [newBulkRole] } : u))
     );
+    success("Rôles Modifiés", `Rôle mis à jour pour ${selectedUsers.length} utilisateur(s).`);
     setShowBulkRoleModal(false);
     setSelectedUsers([]);
   };
 
   const handleBulkDelete = () => {
     if (selectedUsers.length === 0) {
-      warning(
-        "Aucune sélection",
-        "Veuillez sélectionner au moins un utilisateur",
-      );
+      warning("Aucune sélection", "Veuillez sélectionner au moins un utilisateur");
       return;
     }
 
-    if (
-      confirm(
-        `Êtes-vous sûr de vouloir supprimer ${selectedUsers.length} utilisateur(s) ? Cette action est irréversible.`,
-      )
-    ) {
-      // Simulate API call
-      setTimeout(() => {
-        console.log("Bulk deleting users:", selectedUsers);
-        success(
-          "Utilisateurs supprimés",
-          `${selectedUsers.length} utilisateur(s) ont été supprimés avec succès`,
-        );
-        setSelectedUsers([]);
-      }, 1000);
+    if (confirm(`Êtes-vous sûr de vouloir supprimer ${selectedUsers.length} utilisateur(s) ?`)) {
+      setUsers((prev) => prev.filter((u) => !selectedUsers.includes(u.id)));
+      success("Utilisateurs Supprimés", `${selectedUsers.length} utilisateur(s) supprimés.`);
+      setSelectedUsers([]);
     }
   };
 
-  const handleSendPasswordReset = async (userId: string) => {
-    const userToReset = users.find((u) => u.id === userId);
-    if (userToReset) {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      success(
-        "Email envoyé",
-        `Un email de réinitialisation a été envoyé à ${userToReset.email}`,
-      );
-    }
+  const handleSendPasswordReset = (userEmail: string) => {
+    success("Email envoyé", `Lien de réinitialisation transmis à ${userEmail}`);
   };
 
-  const handleSendMessage = (userId: string) => {
-    const userToMessage = users.find((u) => u.id === userId);
-    if (userToMessage) {
-      info(
-        "Message",
-        `Fonctionnalité de messagerie avec ${userToMessage.first_name} ${userToMessage.last_name} en développement`,
-      );
-    }
-  };
+  const roles = ["admin", "editeur", "analyste", "moderateur", "abonne", "visiteur"];
 
-  const handleSuspendUser = async (userId: string) => {
-    const userToSuspend = users.find((u) => u.id === userId);
-    if (userToSuspend) {
-      if (
-        confirm(
-          `Êtes-vous sûr de vouloir suspendre le compte de ${userToSuspend.first_name} ${userToSuspend.last_name} ?`,
-        )
-      ) {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        warning(
-          "Compte suspendu",
-          `Le compte de ${userToSuspend.first_name} ${userToSuspend.last_name} a été suspendu`,
-        );
-      }
-    }
-  };
-
-  const handleExportUsers = () => {
-    // Simulate export
-    setTimeout(() => {
-      success(
-        "Export terminé",
-        "La liste des utilisateurs a été exportée au format CSV",
-      );
-    }, 1500);
-    info("Export en cours", "Génération du fichier CSV en cours...");
-  };
-
-  const roles = [
-    "admin",
-    "editeur",
-    "analyste",
-    "moderateur",
-    "abonne",
-    "visiteur",
-  ];
-
-  // Utiliser les stats du hook useUsers
   const userStats = {
-    total: stats.total,
-    active: users.length, // Tous les utilisateurs sont considérés actifs
-    admins: stats.admins,
-    premium: stats.users,
+    total: stats.total || users.length,
+    active: users.length,
+    admins: stats.admins || users.filter((u) => u.roles?.includes("admin")).length,
+    premium: users.filter((u) => u.is_premium).length,
   };
 
-  // Afficher un loader pendant le chargement
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amani-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement des utilisateurs...</p>
+      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex justify-between items-center border-b border-gray-200 pb-5">
+          <div className="space-y-2">
+            <div className="h-8 w-64 bg-gray-200 rounded-xl animate-pulse" />
+            <div className="h-4 w-96 bg-gray-100 rounded-lg animate-pulse" />
+          </div>
+          <div className="h-10 w-44 bg-gray-200 rounded-xl animate-pulse" />
+        </div>
+
+        {/* KPI Skeleton Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white border border-gray-200 rounded-2xl p-5 space-y-3 shadow-sm">
+              <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+              <div className="h-8 w-16 bg-gray-300 rounded-lg animate-pulse" />
+              <div className="h-3 w-28 bg-gray-100 rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+
+        {/* Search Bar Skeleton */}
+        <div className="bg-white p-4 border border-gray-200 rounded-2xl shadow-sm">
+          <div className="h-11 w-full bg-gray-100 rounded-xl animate-pulse" />
+        </div>
+
+        {/* Table Rows Skeleton */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4 shadow-sm">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex items-center justify-between gap-4 py-3 border-b border-gray-100 last:border-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gray-200 rounded-xl animate-pulse" />
+                <div className="space-y-1.5">
+                  <div className="h-4 w-40 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-3 w-48 bg-gray-100 rounded animate-pulse" />
+                </div>
+              </div>
+              <div className="h-6 w-24 bg-gray-200 rounded-full animate-pulse hidden sm:block" />
+              <div className="h-6 w-28 bg-gray-100 rounded-full animate-pulse hidden md:block" />
+              <div className="h-8 w-24 bg-gray-200 rounded-xl animate-pulse" />
+            </div>
+          ))}
         </div>
       </div>
     );
   }
 
-  // Afficher une erreur si nécessaire
   if (usersError) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="bg-red-50 rounded-2xl shadow-lg p-8 max-w-md">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Erreur</h2>
-          <p className="text-gray-600 mb-6">{usersError}</p>
-          <Link
-            to="/dashboard"
-            className="bg-amani-primary text-white px-6 py-2 rounded-lg hover:bg-amani-primary/90 transition-colors"
-          >
-            Retour au tableau de bord
-          </Link>
-        </div>
+      <div className="p-6 max-w-lg mx-auto bg-red-50 border border-red-200 rounded-3xl text-center space-y-4">
+        <AlertCircle className="w-10 h-10 text-red-600 mx-auto" />
+        <h2 className="text-xl font-bold text-red-900">Erreur de chargement</h2>
+        <p className="text-xs text-red-700">{usersError}</p>
+        <Link to="/dashboard" className="inline-block bg-red-600 text-white text-xs font-bold px-4 py-2 rounded-xl">
+          Retour au dashboard
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-12">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-200 pb-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+      {/* Navigation & Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-5">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Utilisateurs</h1>
-          <p className="text-sm text-gray-500 mt-2 font-medium">Gérez les comptes utilisateurs, rôles et permissions</p>
+          <div className="flex items-center gap-2 mb-1">
+            <Link
+              to="/dashboard"
+              className="text-xs font-bold text-gray-400 hover:text-gray-900 transition-colors flex items-center gap-1"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Dashboard
+            </Link>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+            <UsersIcon className="w-7 h-7 text-amber-600" /> Gestion des Utilisateurs
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">
+            Supervisez les membres, gérez les rôles, permissions et statuts Pass Premium.
+          </p>
         </div>
-      </div>
 
-      {/* Navigation */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <Link
-          to="/dashboard"
-          className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors uppercase tracking-widest"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Retour au dashboard
-        </Link>
-        <div className="flex gap-3">
-          <button
-            onClick={handleExportUsers}
-            className="flex items-center gap-2 px-5 py-2.5 border border-gray-200 text-sm font-bold text-gray-900 hover:bg-gray-50 transition-colors uppercase tracking-widest"
-          >
-            <Download className="w-4 h-4" />
-            Exporter
-          </button>
+        <div className="flex items-center gap-2 flex-wrap">
           <Link
             to="/dashboard/users/new"
-            className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white text-sm font-bold hover:bg-black transition-colors uppercase tracking-widest"
+            className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-black text-white font-bold text-xs sm:text-sm rounded-xl shadow-sm transition-all"
           >
-            <UserPlus className="w-4 h-4" />
-            Nouvel utilisateur
+            <UserPlus className="w-4 h-4 text-amber-400" /> Ajouter un Utilisateur
           </Link>
         </div>
       </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white border border-gray-200 p-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Total</h3>
-              <UsersIcon className="w-5 h-5 text-gray-900" />
-            </div>
-            <div className="text-4xl font-black text-gray-900 tracking-tight">
-              {userStats.total}
-            </div>
-            <div className="text-sm font-medium text-gray-500 mt-2">utilisateurs</div>
+      {/* Cartes KPI Responsives */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-1">
+          <div className="flex items-center justify-between text-gray-400 mb-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">Total</span>
+            <UsersIcon className="w-5 h-5 text-amber-600" />
           </div>
-
-          <div className="bg-white border border-gray-200 p-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Actifs</h3>
-              <CheckCircle className="w-5 h-5 text-gray-900" />
-            </div>
-            <div className="text-4xl font-black text-gray-900 tracking-tight">
-              {userStats.active}
-            </div>
-            <div className="text-sm font-medium text-gray-500 mt-2">cette semaine</div>
-          </div>
-
-          <div className="bg-white border border-gray-200 p-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Admins</h3>
-              <Shield className="w-5 h-5 text-gray-900" />
-            </div>
-            <div className="text-4xl font-black text-gray-900 tracking-tight">
-              {userStats.admins}
-            </div>
-            <div className="text-sm font-medium text-gray-500 mt-2">administrateurs</div>
-          </div>
-
-          <div className="bg-white border border-gray-200 p-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Premium</h3>
-              <Eye className="w-5 h-5 text-gray-900" />
-            </div>
-            <div className="text-4xl font-black text-gray-900 tracking-tight">
-              {userStats.premium}
-            </div>
-            <div className="text-sm font-medium text-gray-500 mt-2">abonnés</div>
-          </div>
+          <p className="text-2xl sm:text-3xl font-black text-gray-900">{userStats.total}</p>
+          <p className="text-[11px] text-gray-400 font-medium">Comptes inscrits</p>
         </div>
 
-        {/* Search and Filters */}
-        <div className="bg-white border border-gray-200 p-6 mb-8">
-          <div className="flex flex-col lg:flex-row gap-6">
-            <div className="flex-1 relative">
-              <Search className="absolute left-0 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="RECHERCHER PAR NOM, EMAIL OU ORGANISATION..."
-                className="w-full pl-10 pr-4 py-3 border-0 border-b-2 border-gray-200 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 transition-colors placeholder-gray-400 text-sm font-medium uppercase tracking-wider"
-              />
-            </div>
-            <div className="flex gap-4">
-              <select
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
-                className="px-4 py-3 border-0 border-b-2 border-gray-200 bg-transparent rounded-none focus:ring-0 focus:border-gray-900 text-sm font-bold text-gray-900 uppercase tracking-widest cursor-pointer"
-              >
-                <option value="all">TOUS LES RÔLES</option>
-                {roles.map((role) => (
-                  <option key={role} value={role}>
-                    {getRoleDisplayName(role).toUpperCase()}
-                  </option>
-                ))}
-              </select>
-              <button className="flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-900 text-sm font-bold hover:bg-gray-200 transition-colors uppercase tracking-widest">
-                <Filter className="w-4 h-4" />
-                Filtres
-              </button>
-            </div>
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-1">
+          <div className="flex items-center justify-between text-gray-400 mb-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">Actifs</span>
+            <CheckCircle className="w-5 h-5 text-emerald-600" />
           </div>
+          <p className="text-2xl sm:text-3xl font-black text-emerald-600">{userStats.active}</p>
+          <p className="text-[11px] text-gray-400 font-medium">Connexions récentes</p>
         </div>
 
-        {/* Bulk Actions */}
-        {selectedUsers.length > 0 && (
-          <div className="bg-gray-900 text-white p-4 mb-6 flex items-center justify-between">
-            <span className="font-bold text-sm uppercase tracking-widest">
-              {selectedUsers.length} utilisateur(s) sélectionné(s)
-            </span>
-            <div className="flex gap-2">
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-1">
+          <div className="flex items-center justify-between text-gray-400 mb-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">Admins</span>
+            <Shield className="w-5 h-5 text-indigo-600" />
+          </div>
+          <p className="text-2xl sm:text-3xl font-black text-indigo-600">{userStats.admins}</p>
+          <p className="text-[11px] text-gray-400 font-medium">Rôle Administrateur</p>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-1">
+          <div className="flex items-center justify-between text-gray-400 mb-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">Premium</span>
+            <Crown className="w-5 h-5 text-amber-500" />
+          </div>
+          <p className="text-2xl sm:text-3xl font-black text-amber-600">{userStats.premium}</p>
+          <p className="text-[11px] text-gray-400 font-medium">Pass Premium Amani</p>
+        </div>
+      </div>
+
+      {/* Barre de Recherche et Filtres */}
+      <div className="bg-white p-4 border border-gray-200 rounded-2xl shadow-sm space-y-3">
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Rechercher par nom, e-mail, organisation..."
+              className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
+            />
+            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
+            {searchTerm && (
               <button
-                onClick={handleBulkRoleChange}
-                className="px-5 py-2.5 bg-white/10 text-white text-sm font-bold hover:bg-white/20 transition-colors uppercase tracking-widest"
+                onClick={() => setSearchTerm("")}
+                className="absolute right-3.5 top-3 text-gray-400 hover:text-gray-600"
               >
-                Modifier le rôle
+                <X className="w-4 h-4" />
               </button>
-              <button
-                onClick={handleBulkDelete}
-                className="px-5 py-2.5 bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition-colors uppercase tracking-widest"
-              >
-                Supprimer
-              </button>
-            </div>
+            )}
           </div>
-        )}
 
-        {/* Users Table */}
-        {/* Users Table */}
-        <div className="bg-white border border-gray-200">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50/50">
-                <tr>
-                  <th className="px-6 py-4 text-left border-b border-gray-200">
-                    <input
-                      type="checkbox"
-                      checked={
-                        selectedUsers.length === filteredUsers.length &&
-                        filteredUsers.length > 0
-                      }
-                      onChange={handleSelectAll}
-                      className="h-4 w-4 text-gray-900 focus:ring-gray-900 border-gray-300 rounded-none cursor-pointer"
-                    />
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200">
-                    Utilisateur
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200">
-                    Rôle
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200">
-                    Organisation
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200">
-                    Dernière connexion
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200">
-                    Statut
-                  </th>
-                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
-                {filteredUsers.map((u) => {
-                  const isRecent = new Date(u.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-                  const userRole = u.roles?.[0] || 'user';
-                  return (
-                    <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          type="checkbox"
-                          checked={selectedUsers.includes(u.id)}
-                          onChange={() => handleSelectUser(u.id)}
-                          className="h-4 w-4 text-gray-900 focus:ring-gray-900 border-gray-300 rounded-none cursor-pointer"
-                        />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-gray-900 rounded-none flex items-center justify-center text-white font-bold tracking-widest text-sm">
-                            {u.first_name?.charAt(0) || 'U'}
-                            {u.last_name?.charAt(0) || ''}
-                          </div>
-                          <div>
-                            <div className="font-black text-gray-900 tracking-tight">
-                              {u.first_name} {u.last_name}
-                            </div>
-                            <div className="text-xs font-medium text-gray-500 flex items-center gap-1 mt-0.5">
-                              <Mail className="w-3 h-3" />
-                              {u.email}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-3 py-1 rounded-none text-xs font-bold uppercase tracking-widest ${getRoleColor(userRole)}`}
-                        >
-                          {getRoleDisplayName(userRole)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-500 uppercase tracking-widest">
-                        {u.organization || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
-                          <Calendar className="w-4 h-4" />
-                          {new Date(u.created_at).toLocaleDateString('fr-FR')}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5">
-                          {isRecent ? (
-                            <CheckCircle className="w-4 h-4 text-gray-900" />
-                          ) : (
-                            <XCircle className="w-4 h-4 text-gray-300" />
-                          )}
-                          <span
-                            className={`text-xs font-bold uppercase tracking-widest ${isRecent ? "text-gray-900" : "text-gray-400"}`}
-                          >
-                            {isRecent ? "En ligne" : "Hors ligne"}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center gap-2 justify-end">
-                          <button
-                            onClick={() => handleViewUser(u.id)}
-                            className="text-gray-400 hover:text-gray-900 p-2 border border-transparent hover:border-gray-200 transition-colors"
-                            title="Voir les détails"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleEditUser(u.id)}
-                            className="text-gray-400 hover:text-gray-900 p-2 border border-transparent hover:border-gray-200 transition-colors"
-                            title="Modifier l'utilisateur"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteUser(u.id)}
-                            className="text-red-400 hover:text-red-600 p-2 border border-transparent hover:border-red-200 transition-colors"
-                            title="Supprimer l'utilisateur"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                          <div className="relative group">
-                            <button className="text-gray-400 hover:text-gray-900 p-2 border border-transparent hover:border-gray-200 transition-colors">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </button>
-                            {/* Dropdown menu */}
-                            <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-200 shadow-2xl z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                              <button
-                                onClick={() => handleSendPasswordReset(u.id)}
-                                className="w-full text-left px-5 py-3 text-xs font-bold uppercase tracking-widest text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors border-b border-gray-100"
-                              >
-                                Réinitialiser MDP
-                              </button>
-                              <button
-                                onClick={() => handleSendMessage(u.id)}
-                                className="w-full text-left px-5 py-3 text-xs font-bold uppercase tracking-widest text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors border-b border-gray-100"
-                              >
-                                Envoyer message
-                              </button>
-                              <button
-                                onClick={() => handleSuspendUser(u.id)}
-                                className="w-full text-left px-5 py-3 text-xs font-bold uppercase tracking-widest text-red-600 hover:bg-red-50 transition-colors"
-                              >
-                                Suspendre
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+            <select
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value)}
+              className="flex-1 sm:w-48 px-3 py-2.5 border border-gray-300 rounded-xl text-xs sm:text-sm bg-white font-semibold focus:ring-2 focus:ring-amber-500 focus:outline-none"
+            >
+              <option value="all">Tous les Rôles</option>
+              {roles.map((r) => (
+                <option key={r} value={r}>
+                  {getRoleDisplayName(r)}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={premiumFilter}
+              onChange={(e) => setPremiumFilter(e.target.value)}
+              className="flex-1 sm:w-48 px-3 py-2.5 border border-gray-300 rounded-xl text-xs sm:text-sm bg-white font-semibold focus:ring-2 focus:ring-amber-500 focus:outline-none"
+            >
+              <option value="all">Tous les Statuts</option>
+              <option value="premium">Membres Premium 👑</option>
+              <option value="free">Membres Standard</option>
+            </select>
           </div>
         </div>
+      </div>
 
-        {/* Permissions Management */}
-        <div className="mt-8 bg-white border border-gray-200 p-8">
-          <h2 className="text-2xl font-black text-gray-900 tracking-tight mb-8">
-            Gestion des permissions par rôle
-          </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {roles.map((role) => {
-              const roleUsers = users.filter((u) => u.roles?.includes(role));
-              const sampleUser = roleUsers[0];
+      {/* Action en Lot (Bulk Bar) */}
+      {selectedUsers.length > 0 && (
+        <div className="bg-gray-900 text-white p-4 rounded-2xl shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3">
+          <span className="text-xs font-bold">
+            {selectedUsers.length} utilisateur(s) sélectionné(s)
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleBulkRoleChange}
+              className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition-all"
+            >
+              Modifier Rôles
+            </button>
+            <button
+              onClick={handleBulkDelete}
+              className="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all"
+            >
+              Supprimer
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Rendu Responsive : Table sur Écran Large & Cartes sur Mobile/Tablette */}
+      {filteredUsers.length === 0 ? (
+        <div className="text-center py-16 border border-dashed border-gray-300 rounded-2xl bg-white">
+          <UsersIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+          <p className="text-gray-700 font-bold text-base">Aucun utilisateur trouvé.</p>
+          <p className="text-xs text-gray-400 mt-1">Essayez de réinitialiser vos filtres de recherche.</p>
+        </div>
+      ) : (
+        <>
+          {/* Vue Mobile / Tablette (< lg) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:hidden">
+            {filteredUsers.map((u) => {
+              const userRole = u.roles?.[0] || "user";
+              const isSelected = selectedUsers.includes(u.id);
 
               return (
                 <div
-                  key={role}
-                  className="border border-gray-200 p-8 bg-gray-50/30 hover:bg-white transition-colors"
+                  key={u.id}
+                  className={`bg-white border rounded-2xl p-4 space-y-3 shadow-sm transition-all ${
+                    isSelected ? "border-amber-500 ring-2 ring-amber-500/20" : "border-gray-200 hover:border-gray-300"
+                  }`}
                 >
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-black text-gray-900 uppercase tracking-widest">
-                      {getRoleDisplayName(role)}
-                    </h3>
-                    <span
-                      className={`px-3 py-1 rounded-none text-xs font-bold uppercase tracking-widest ${getRoleColor(role)}`}
-                    >
-                      {roleUsers.length} usager(s)
-                    </span>
-                  </div>
-                  {sampleUser && (
-                    <div className="space-y-4">
-                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200 pb-2 mb-4">
-                        Échantillon
-                      </h4>
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3 text-sm">
-                          <CheckCircle className="w-4 h-4 text-gray-900" />
-                          <span className="font-bold text-gray-900">
-                            {sampleUser.first_name} {sampleUser.last_name}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3 text-sm">
-                          <Mail className="w-4 h-4 text-gray-400" />
-                          <span className="font-medium text-gray-600">
-                            {sampleUser.email}
-                          </span>
-                        </div>
-                        {sampleUser.organization && (
-                          <div className="flex items-center gap-3 text-sm">
-                            <Shield className="w-4 h-4 text-gray-400" />
-                            <span className="font-medium text-gray-600 uppercase tracking-widest">
-                              {sampleUser.organization}
-                            </span>
-                          </div>
-                        )}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleSelectUser(u.id)}
+                        className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded cursor-pointer"
+                      />
+                      <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white font-bold text-xs">
+                        {u.first_name?.charAt(0) || "U"}
+                        {u.last_name?.charAt(0) || ""}
                       </div>
-                      <button className="w-full mt-6 px-4 py-3 border border-gray-200 text-gray-900 text-xs font-bold uppercase tracking-widest hover:bg-gray-900 hover:text-white transition-colors">
-                        Voir tout
-                      </button>
+                      <div>
+                        <h3 className="font-bold text-sm text-gray-900">
+                          {u.first_name} {u.last_name}
+                        </h3>
+                        <p className="text-xs text-gray-500 flex items-center gap-1">
+                          <Mail className="w-3 h-3 text-gray-400" /> {u.email}
+                        </p>
+                      </div>
                     </div>
-                  )}
+
+                    <button
+                      onClick={() => handleTogglePremium(u)}
+                      className={`p-1.5 rounded-xl border text-xs font-bold transition-all ${
+                        u.is_premium
+                          ? "bg-amber-100 text-amber-900 border-amber-300"
+                          : "bg-gray-100 text-gray-500 border-gray-200"
+                      }`}
+                      title="Basculer statut Premium"
+                    >
+                      <Crown className={`w-4 h-4 ${u.is_premium ? "text-amber-600 fill-amber-500" : "text-gray-400"}`} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-100 text-xs text-gray-500">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${getRoleColor(userRole)}`}>
+                      {getRoleDisplayName(userRole)}
+                    </span>
+
+                    {u.organization && (
+                      <span className="flex items-center gap-1 font-medium truncate max-w-[140px]">
+                        <Building className="w-3 h-3 text-gray-400" /> {u.organization}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Actions de carte */}
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                    <button
+                      onClick={() => handleViewUser(u.id)}
+                      className="px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-bold flex items-center gap-1"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-gray-400" /> Voir
+                    </button>
+                    <button
+                      onClick={() => handleEditUser(u.id)}
+                      className="px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-bold flex items-center gap-1"
+                    >
+                      <Edit className="w-3.5 h-3.5 text-gray-400" /> Éditer
+                    </button>
+                    <button
+                      onClick={() => handleDeleteUser(u.id)}
+                      className="p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               );
             })}
           </div>
-        </div>
 
-        {/* User Details Modal */}
-        {showUserModal && selectedUser && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-white border border-gray-200 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-none">
-              <div className="p-8 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-black text-gray-900 uppercase tracking-widest">
-                    Détails utilisateur
-                  </h2>
-                  <button
-                    onClick={() => setShowUserModal(false)}
-                    className="text-gray-400 hover:text-gray-900 transition-colors"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-              </div>
-              <div className="p-8">
-                <div className="space-y-8">
-                  {/* User Info */}
-                  <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 bg-gray-900 rounded-none flex items-center justify-center text-white font-black text-2xl tracking-widest">
-                      {selectedUser.firstName.charAt(0)}
-                      {selectedUser.lastName.charAt(0)}
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-black text-gray-900 tracking-tight">
-                        {selectedUser.firstName} {selectedUser.lastName}
-                      </h3>
-                      <p className="text-gray-500 font-medium mb-3">{selectedUser.email}</p>
-                      <span
-                        className={`px-3 py-1 rounded-none text-xs font-bold uppercase tracking-widest ${getRoleColor(selectedUser.role)}`}
-                      >
-                        {getRoleDisplayName(selectedUser.role)}
-                      </span>
-                    </div>
-                  </div>
+          {/* Vue Desktop Tableau (>= lg) */}
+          <div className="hidden lg:block bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-gray-50/80 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  <tr>
+                    <th className="p-4 w-12 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
+                        onChange={handleSelectAll}
+                        className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded cursor-pointer"
+                      />
+                    </th>
+                    <th className="p-4">Utilisateur</th>
+                    <th className="p-4">Rôle</th>
+                    <th className="p-4">Organisation</th>
+                    <th className="p-4">Statut Premium</th>
+                    <th className="p-4">Inscription</th>
+                    <th className="p-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-xs text-gray-700">
+                  {filteredUsers.map((u) => {
+                    const userRole = u.roles?.[0] || "user";
+                    const isSelected = selectedUsers.includes(u.id);
 
-                  {/* Details Grid */}
-                  <div className="grid md:grid-cols-2 gap-8">
-                    <div>
-                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200 pb-2 mb-4">
-                        Infos Personnelles
-                      </h4>
-                      <div className="space-y-2 text-sm">
-                        <div>
-                          <span className="font-medium">Organisation:</span>{" "}
-                          {selectedUser.organization}
-                        </div>
-                        <div>
-                          <span className="font-medium">
-                            Dernière connexion:
-                          </span>{" "}
-                          {selectedUser.lastLogin}
-                        </div>
-                        <div>
-                          <span className="font-medium">Compte créé:</span>{" "}
-                          Janvier 2024
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200 pb-2 mb-4">
-                        Préférences
-                      </h4>
-                      <div className="space-y-3 text-sm">
-                        <div className="flex justify-between items-center border-b border-gray-50 pb-2">
-                          <span className="font-medium text-gray-500 uppercase tracking-widest text-xs">Newsletter:</span>
-                          <span className="font-bold text-gray-900">
-                            {selectedUser.preferences.newsletter ? "Activée" : "Désactivée"}
+                    return (
+                      <tr key={u.id} className={`hover:bg-gray-50/80 transition-colors ${isSelected ? "bg-amber-50/30" : ""}`}>
+                        <td className="p-4 text-center">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleSelectUser(u.id)}
+                            className="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded cursor-pointer"
+                          />
+                        </td>
+
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 bg-gray-900 text-white rounded-xl flex items-center justify-center font-bold text-xs flex-shrink-0">
+                              {u.first_name?.charAt(0) || "U"}
+                              {u.last_name?.charAt(0) || ""}
+                            </div>
+                            <div>
+                              <div className="font-bold text-sm text-gray-900">
+                                {u.first_name} {u.last_name}
+                              </div>
+                              <div className="text-gray-400 text-xs flex items-center gap-1">
+                                <Mail className="w-3 h-3" /> {u.email}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="p-4">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${getRoleColor(userRole)}`}>
+                            {getRoleDisplayName(userRole)}
                           </span>
-                        </div>
-                        <div className="flex justify-between items-center border-b border-gray-50 pb-2">
-                          <span className="font-medium text-gray-500 uppercase tracking-widest text-xs">Alertes:</span>
-                          <span className="font-bold text-gray-900">
-                            {selectedUser.preferences.alerts ? "Activées" : "Désactivées"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                        </td>
 
-                  {/* Actions */}
-                  <div className="flex flex-col sm:flex-row gap-3 pt-8 mt-8 border-t border-gray-200">
-                    <button
-                      onClick={() => {
-                        handleEditUser(selectedUser.id);
-                        setShowUserModal(false);
-                      }}
-                      className="flex-1 flex items-center justify-center gap-2 px-5 py-3 border border-gray-200 text-gray-900 text-xs font-bold uppercase tracking-widest hover:bg-gray-50 transition-colors"
-                    >
-                      <Edit className="w-4 h-4" />
-                      Modifier
-                    </button>
-                    <button
-                      onClick={() => handleSendPasswordReset(selectedUser.id)}
-                      className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-gray-900 text-white text-xs font-bold uppercase tracking-widest hover:bg-black transition-colors"
-                    >
-                      <Lock className="w-4 h-4" />
-                      Réinitialiser MDP
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleDeleteUser(selectedUser.id);
-                        setShowUserModal(false);
-                      }}
-                      className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-red-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-red-700 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Supprimer
-                    </button>
-                  </div>
-                </div>
-              </div>
+                        <td className="p-4 font-medium text-gray-600">
+                          {u.organization || "-"}
+                        </td>
+
+                        <td className="p-4">
+                          <button
+                            onClick={() => handleTogglePremium(u)}
+                            className={`px-3 py-1 rounded-full text-xs font-extrabold flex items-center gap-1.5 border transition-all ${
+                              u.is_premium
+                                ? "bg-amber-100 text-amber-900 border-amber-300 shadow-sm"
+                                : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-amber-50 hover:text-amber-700"
+                            }`}
+                          >
+                            <Crown className={`w-3.5 h-3.5 ${u.is_premium ? "text-amber-600" : "text-gray-400"}`} />
+                            {u.is_premium ? "Membre Premium" : "Activer Premium"}
+                          </button>
+                        </td>
+
+                        <td className="p-4 text-gray-500">
+                          {new Date(u.created_at || Date.now()).toLocaleDateString("fr-FR")}
+                        </td>
+
+                        <td className="p-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => handleViewUser(u.id)}
+                              className="p-1.5 border border-gray-200 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
+                              title="Voir l'utilisateur"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+
+                            <button
+                              onClick={() => handleEditUser(u.id)}
+                              className="p-1.5 border border-gray-200 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
+                              title="Éditer l'utilisateur"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+
+                            <button
+                              onClick={() => handleDeleteUser(u.id)}
+                              className="p-1.5 border border-red-200 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
+                              title="Supprimer l'utilisateur"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
-        )}
+        </>
+      )}
 
-        {/* Delete Confirmation Modal */}
-        {showDeleteConfirm && userToDelete && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-white border border-gray-200 shadow-2xl max-w-md w-full rounded-none">
-              <div className="p-8">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-red-50 rounded-none flex items-center justify-center border border-red-100">
-                    <AlertCircle className="w-6 h-6 text-red-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-black text-gray-900 uppercase tracking-widest">
-                      Confirmation
-                    </h3>
-                    <p className="text-sm font-medium text-red-600 mt-1 uppercase tracking-widest">
-                      Action irréversible
-                    </p>
-                  </div>
+      {/* Modal de Détails Utilisateur */}
+      {showUserModal && selectedUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-6">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gray-900 text-white rounded-2xl flex items-center justify-center font-bold text-lg">
+                  {selectedUser.first_name?.charAt(0) || "U"}
+                  {selectedUser.last_name?.charAt(0) || ""}
                 </div>
-                <p className="text-gray-600 mb-8 leading-relaxed">
-                  Êtes-vous sûr de vouloir supprimer l'utilisateur{" "}
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">
+                    {selectedUser.first_name} {selectedUser.last_name}
+                  </h3>
+                  <p className="text-xs text-gray-500">{selectedUser.email}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowUserModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                <div>
+                  <span className="text-gray-400 font-bold block mb-1">Rôle Actuel :</span>
+                  <span className={`px-2.5 py-0.5 rounded-full font-bold ${getRoleColor(selectedUser.roles?.[0] || 'user')}`}>
+                    {getRoleDisplayName(selectedUser.roles?.[0] || 'user')}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400 font-bold block mb-1">Pass Premium :</span>
+                  <span className={`font-bold ${selectedUser.is_premium ? "text-amber-600" : "text-gray-500"}`}>
+                    {selectedUser.is_premium ? "Actif 👑" : "Inactif"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between py-1.5 border-b border-gray-100">
+                  <span className="text-gray-500 font-medium">Organisation :</span>
+                  <span className="font-bold text-gray-900">{selectedUser.organization || "Non renseigné"}</span>
+                </div>
+                <div className="flex justify-between py-1.5 border-b border-gray-100">
+                  <span className="text-gray-500 font-medium">Date d'inscription :</span>
                   <span className="font-bold text-gray-900">
-                    {userToDelete.firstName} {userToDelete.lastName}
-                  </span>{" "}
-                  ({userToDelete.email}) ?
-                </p>
-                <div className="flex gap-3 justify-end">
-                  <button
-                    onClick={() => setShowDeleteConfirm(false)}
-                    className="px-6 py-3 border border-gray-200 text-gray-900 text-xs font-bold uppercase tracking-widest hover:bg-gray-50 transition-colors"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    onClick={confirmDeleteUser}
-                    className="px-6 py-3 bg-red-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-red-700 transition-colors"
-                  >
-                    Supprimer
-                  </button>
+                    {new Date(selectedUser.created_at || Date.now()).toLocaleDateString("fr-FR")}
+                  </span>
                 </div>
               </div>
             </div>
-          </div>
-        )}
 
-        {/* Bulk Role Change Modal */}
-        {showBulkRoleModal && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-white border border-gray-200 shadow-2xl max-w-md w-full rounded-none">
-              <div className="p-8">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="w-12 h-12 bg-gray-50 border border-gray-200 flex items-center justify-center">
-                    <Shield className="w-6 h-6 text-gray-900" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-black text-gray-900 uppercase tracking-widest">
-                      Modification en lot
-                    </h3>
-                    <p className="text-xs font-bold text-gray-500 mt-1 uppercase tracking-widest">
-                      {selectedUsers.length} usager(s) sélectionné(s)
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mb-8">
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-                    Nouveau rôle
-                  </label>
-                  <select
-                    value={newBulkRole}
-                    onChange={(e) => setNewBulkRole(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-none focus:outline-none focus:ring-0 focus:border-gray-900 bg-transparent text-sm font-bold text-gray-900 uppercase tracking-widest cursor-pointer"
-                  >
-                    <option value="visiteur">Visiteur</option>
-                    <option value="abonne">Abonné Premium</option>
-                    <option value="moderateur">Modérateur</option>
-                    <option value="analyste">Analyste</option>
-                    <option value="editeur">Éditeur</option>
-                    <option value="admin">Administrateur</option>
-                  </select>
-                </div>
-
-                <div className="flex gap-3 justify-end">
-                  <button
-                    onClick={() => setShowBulkRoleModal(false)}
-                    className="px-6 py-3 border border-gray-200 text-gray-900 text-xs font-bold uppercase tracking-widest hover:bg-gray-50 transition-colors"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    onClick={confirmBulkRoleChange}
-                    className="px-6 py-3 bg-gray-900 text-white text-xs font-bold uppercase tracking-widest hover:bg-black transition-colors"
-                  >
-                    Appliquer
-                  </button>
-                </div>
-              </div>
+            <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
+              <button
+                onClick={() => handleSendPasswordReset(selectedUser.email)}
+                className="px-4 py-2 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50"
+              >
+                Réinitialiser MDP
+              </button>
+              <button
+                onClick={() => {
+                  setShowUserModal(false);
+                  handleEditUser(selectedUser.id);
+                }}
+                className="px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-xl text-xs font-bold"
+              >
+                Modifier Profil
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Modal Confirmation de Suppression */}
+      {showDeleteConfirm && userToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-red-600">
+              <AlertCircle className="w-7 h-7" />
+              <h3 className="text-lg font-bold">Confirmer la suppression</h3>
+            </div>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Êtes-vous sûr de vouloir supprimer l'utilisateur{" "}
+              <span className="font-bold text-gray-900">
+                {userToDelete.first_name} {userToDelete.last_name}
+              </span>{" "}
+              ({userToDelete.email}) ?
+            </p>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmDeleteUser}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold"
+              >
+                Supprimer définitivement
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Changement de Rôle en Lot */}
+      {showBulkRoleModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <h3 className="text-lg font-bold text-gray-900">Changer les Rôles en Lot</h3>
+            <p className="text-xs text-gray-500">
+              Appliquer un nouveau rôle à {selectedUsers.length} utilisateur(s) sélectionné(s).
+            </p>
+
+            <select
+              value={newBulkRole}
+              onChange={(e) => setNewBulkRole(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-bold bg-white"
+            >
+              {roles.map((r) => (
+                <option key={r} value={r}>
+                  {getRoleDisplayName(r)}
+                </option>
+              ))}
+            </select>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+              <button
+                onClick={() => setShowBulkRoleModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmBulkRoleChange}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold"
+              >
+                Appliquer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

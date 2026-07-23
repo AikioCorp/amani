@@ -228,9 +228,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // `permissions` vide soit totalement bloqué (les permissions explicites
   // en base s'ajoutent à ces défauts).
   const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
-    editor: ["view_dashboard", "create_articles", "create_podcasts", "create_indices", "view_analytics"],
-    analyst: ["view_dashboard", "create_articles", "view_analytics"],
+    admin: ["view_dashboard", "create_articles", "edit_articles", "delete_articles", "publish_articles", "create_podcasts", "edit_podcasts", "delete_podcasts", "publish_podcasts", "create_economic_reports", "create_indices", "view_indices", "manage_users", "view_analytics", "manage_settings"],
+    editor: ["view_dashboard", "create_articles", "create_podcasts", "create_indices", "view_indices", "view_analytics"],
+    editeur: ["view_dashboard", "create_articles", "create_podcasts", "create_indices", "view_indices", "view_analytics"],
+    analyst: ["view_dashboard", "create_articles", "view_analytics", "view_indices"],
+    analyste: ["view_dashboard", "create_articles", "view_analytics", "view_indices"],
     moderator: ["view_dashboard"],
+    moderateur: ["view_dashboard"],
   };
 
   const hasPermission = useCallback(

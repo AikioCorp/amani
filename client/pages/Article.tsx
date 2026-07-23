@@ -1,15 +1,19 @@
 import React from "react";
 import { API_BASE_URL as API_BASE } from "../services/apiConfig";
 import { useParams, Link } from "react-router-dom";
-import { Calendar, ArrowLeft, Share2, Mail, Send } from "lucide-react";
+import { Calendar, ArrowLeft, Share2, Mail, Send, Crown, Lock, Sparkles } from "lucide-react";
 import { useArticles } from "../hooks/useArticles";
 import { useToast } from "../context/ToastContext";
+import { useAuth } from "../context/AuthContext";
+import { getSessionToken } from "../services/authService";
 import { ArticleDetailSkeleton } from "../components/ui/SkeletonLoaders";
+import { apiCache } from "../lib/apiCache";
 
 export default function Article() {
   const { id } = useParams();
   const { fetchArticleByIdOrSlug } = useArticles({ status: 'all', limit: 1, offset: 0 });
   const toast = useToast();
+  const { user } = useAuth();
 
   const [article, setArticle] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
@@ -19,14 +23,26 @@ export default function Article() {
     let mounted = true;
     const run = async () => {
       try {
-        setLoading(true);
-        setError(null);
         if (!id) throw new Error('Identifiant article manquant');
+        
+        // Instant 0ms cache display
+        const cached = apiCache.get(`article_slug_${id}`) || apiCache.get(`article_id_${id}`);
+        if (cached && mounted) {
+          setArticle(cached);
+          setLoading(false);
+        } else if (mounted) {
+          setLoading(true);
+        }
+        setError(null);
+
         const res = await fetchArticleByIdOrSlug(id);
-        if (mounted) setArticle(res);
+        if (mounted) {
+          setArticle(res);
+          setLoading(false);
+        }
       } catch (e: any) {
         console.error('❌ Erreur chargement article:', e);
-        if (mounted) setError(e?.message || 'Erreur inconnue');
+        if (mounted && !article) setError(e?.message || 'Erreur inconnue');
       } finally {
         if (mounted) setLoading(false);
       }
@@ -35,7 +51,7 @@ export default function Article() {
     return () => {
       mounted = false;
     };
-  }, [id, fetchArticleByIdOrSlug]);
+  }, [id]);
 
   // Sticky header visibility on scroll
   React.useEffect(() => {
@@ -50,21 +66,42 @@ export default function Article() {
 
   return (
     <div className="min-h-screen bg-[#FDFBF9]">
-      {/* Sticky header on scroll */}
+      {/* Sticky Header avec Titre de l'article et bouton Retour */}
       {article && (
         <div
-          className={`sticky top-16 z-50 transition-all duration-300 ${showSticky ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}
+          className={`sticky top-16 lg:top-20 z-40 transition-all duration-300 ${
+            showSticky ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"
+          }`}
         >
-          <div className="backdrop-blur-md bg-white/90 border-b border-gray-100 shadow-sm">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center gap-4">
-              <Link to="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors">
-                <ArrowLeft className="w-4 h-4" />
-                <span className="hidden sm:inline font-medium text-sm">Retour</span>
-              </Link>
-              <div className="h-4 w-px bg-gray-200"></div>
-              <div className="truncate text-sm font-semibold text-gray-900">
-                {article?.title}
+          <div className="bg-[#373B3A]/95 backdrop-blur-md border-b border-white/10 text-white shadow-md">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <button
+                  onClick={() => window.history.back()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-lg transition-colors flex-shrink-0"
+                >
+                  <ArrowLeft className="w-4 h-4 text-[#E5DDD5]" />
+                  <span>Retour</span>
+                </button>
+                <div className="h-4 w-px bg-white/20 flex-shrink-0" />
+                <h2 className="truncate text-xs sm:text-sm font-extrabold text-[#E5DDD5]">
+                  {article?.title}
+                </h2>
               </div>
+              <button
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({ title: article?.title, url: window.location.href });
+                  } else {
+                    navigator.clipboard.writeText(window.location.href);
+                    toast.success("Lien copié !", "Le lien a été copié dans votre presse-papier.");
+                  }
+                }}
+                className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
+                title="Partager cet article"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
@@ -167,28 +204,86 @@ export default function Article() {
                 </div>
 
                 <div className="p-8 md:p-10 pt-10">
-                  {/* Full Article Content */}
-                  {article.content && article.content.trim().length > 10 ? (
+                  {/* Full Article Content / Gated Premium Paywall */}
+                  {article.is_premium && !user?.is_premium ? (
+                    <div className="space-y-6">
+                      {/* Aperçu partiel du résumé */}
+                      <div className="prose prose-lg prose-gray max-w-none text-gray-800 leading-[1.8] font-serif blur-[1px] select-none pointer-events-none">
+                        <p>{article.summary}</p>
+                        <p>Cette analyse financière exclusive contient des données stratégiques réservées aux abonnés...</p>
+                      </div>
+
+                      {/* Paywall Card Modern Solid Design */}
+                      <div className="bg-slate-900 text-white rounded-2xl p-8 shadow-2xl border border-slate-800 text-center relative overflow-hidden my-8">
+                        <div className="w-14 h-14 bg-amber-500/20 border border-amber-500/40 text-amber-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Crown className="w-7 h-7" />
+                        </div>
+
+                        <h3 className="text-2xl font-extrabold tracking-tight mb-2">
+                          Contenu Exclusif Membre Premium
+                        </h3>
+                        <p className="text-slate-300 text-sm max-w-lg mx-auto mb-6 leading-relaxed">
+                          Cet article et ses analyses stratégiques sont réservés aux abonnés Premium Amani Finance. 
+                          Abonnez-vous pour débloquer l'accès illimité à tous nos contenus exclusifs, podcasts et dossiers d'analyse.
+                        </p>
+
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                          {user ? (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const token = getSessionToken();
+                                  const res = await fetch(`${API_BASE}/user/subscribe-premium`, {
+                                    method: "POST",
+                                    headers: token ? { Authorization: `Bearer ${token}` } : {},
+                                  });
+                                  const json = await res.json();
+                                  if (json.success) {
+                                    toast.success("Abonnement Activé !", "Vous avez désormais accès à tous les contenus Premium Amani Finance.");
+                                    window.location.reload();
+                                  } else {
+                                    toast.error("Erreur", json.error || "Échec de l'activation Premium.");
+                                  }
+                                } catch (e) {
+                                  toast.error("Erreur réseau");
+                                }
+                              }}
+                              className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 text-sm"
+                            >
+                              <Sparkles className="w-4 h-4" /> Activer mon Pass Premium Amani
+                            </button>
+                          ) : (
+                            <Link
+                              to="/login"
+                              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 text-sm"
+                            >
+                              <Lock className="w-4 h-4" /> Se connecter / S'abonner pour débloquer
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : article.content && article.content.trim().length > 10 ? (
                     <div className="prose prose-lg prose-gray max-w-none text-gray-800 leading-[1.8] mb-12 font-serif">
                       <div dangerouslySetInnerHTML={{ __html: article.content }} />
                     </div>
-              ) : (
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 mb-8 text-center">
-                  <p className="text-slate-600 mb-4">
-                    Cet article est actuellement présenté en format extrait synthétique.
-                  </p>
-                  {article.article_data?.original_link && (
-                    <a
-                      href={article.article_data.original_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 font-medium transition-colors"
-                    >
-                      Lire la source complète d'origine ↗
-                    </a>
+                  ) : (
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 mb-8 text-center">
+                      <p className="text-slate-600 mb-4">
+                        Cet article est actuellement présenté en format extrait synthétique.
+                      </p>
+                      {article.article_data?.original_link && (
+                        <a
+                          href={article.article_data.original_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 font-medium transition-colors"
+                        >
+                          Lire la source complète d'origine ↗
+                        </a>
+                      )}
+                    </div>
                   )}
-                </div>
-              )}
 
                   {/* Tags */}
                   {Array.isArray(article.tags) && article.tags.length > 0 && (

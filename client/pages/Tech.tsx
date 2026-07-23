@@ -143,51 +143,51 @@ const Tech = () => {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {filteredNews.map((article) => (
-                <Card key={article.id} className="hover:shadow-lg transition-shadow flex flex-col justify-between">
-                  <div>
-                    <div className="relative">
-                      <img
-                        src={article.image}
-                        alt={article.title}
-                        className="w-full h-48 object-cover rounded-t-lg"
-                      />
-                      {article.trending && (
-                        <Badge className="absolute top-3 left-3 bg-red-500 text-white">
-                          <TrendingUp className="h-3 w-3 mr-1" />
-                          Tendance
-                        </Badge>
-                      )}
-                    </div>
-                    <CardHeader>
-                      <div className="flex justify-between items-start mb-3">
-                        <Badge variant="secondary">{article.category}</Badge>
-                        <Badge className={getDifficultyColor(article.difficulty)}>
-                          {article.difficulty}
-                        </Badge>
+                <Link key={article.id} to={`/article/${article.slug || article.id}`} className="block group">
+                  <Card className="hover:shadow-lg transition-all duration-300 flex flex-col justify-between h-full">
+                    <div>
+                      <div className="relative overflow-hidden rounded-t-lg">
+                        <img
+                          src={article.image}
+                          alt={article.title}
+                          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        {article.trending && (
+                          <Badge className="absolute top-3 left-3 bg-red-500 text-white">
+                            <TrendingUp className="h-3 w-3 mr-1" />
+                            Tendance
+                          </Badge>
+                        )}
                       </div>
-                      <CardTitle className="text-xl mb-2">{article.title}</CardTitle>
-                      <CardDescription className="text-gray-600 line-clamp-3">
-                        {article.summary}
-                      </CardDescription>
-                    </CardHeader>
-                  </div>
-                  <CardContent>
-                    <div className="flex justify-between items-center text-sm text-gray-600 mb-4">
-                      <span>Par {article.author}</span>
-                      <span>{article.readTime} de lecture</span>
+                      <CardHeader>
+                        <div className="flex justify-between items-start mb-3">
+                          <Badge variant="secondary">{article.category}</Badge>
+                          <Badge className={getDifficultyColor(article.difficulty)}>
+                            {article.difficulty}
+                          </Badge>
+                        </div>
+                        <CardTitle className="text-xl mb-2 group-hover:text-blue-600 transition-colors">{article.title}</CardTitle>
+                        <CardDescription className="text-gray-600 line-clamp-3">
+                          {article.summary}
+                        </CardDescription>
+                      </CardHeader>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-500">
-                        {new Date(article.date).toLocaleDateString('fr-FR')}
-                      </span>
-                      <Link to={`/article/${article.slug || article.id}`}>
-                        <Button size="sm">
+                    <CardContent>
+                      <div className="flex justify-between items-center text-sm text-gray-600 mb-4">
+                        <span>Par {article.author}</span>
+                        <span>{article.readTime} de lecture</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-500">
+                          {new Date(article.date).toLocaleDateString('fr-FR')}
+                        </span>
+                        <Button size="sm" className="group-hover:bg-blue-600 transition-colors">
                           Lire l'Article
                         </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           )}
