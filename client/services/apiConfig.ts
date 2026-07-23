@@ -6,14 +6,13 @@ const isLocal =
   /^172\.\d+\.\d+\.\d+$/.test(host) ||
   /^10\.\d+\.\d+\.\d+$/.test(host);
 
-// URL de base dynamique pour le réseau local, Railway et la production.
+// URL de secours directe de l'API backend sur Railway
+const RAILWAY_BACKEND_API = "https://amani-api-production.up.railway.app/api";
+
+// URL de base dynamique : utilise VITE_API_URL, l'IP locale en dev, ou l'API Railway en production.
 export const API_BASE_URL = (
   import.meta.env.VITE_API_URL ||
-  (isLocal
-    ? `http://${host}:5000/api`
-    : typeof window !== "undefined"
-    ? `${window.location.origin}/api`
-    : "/api")
+  (isLocal ? `http://${host}:5000/api` : RAILWAY_BACKEND_API)
 ).replace(/\/+$/, "");
 
 export const getApiUrl = (path: string): string => {
