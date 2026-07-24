@@ -72,7 +72,7 @@ export default function BrvmIndicesManagement() {
       description: `Titre BRVM - ${formData.name}`,
       latest: {
         id: `lat_stock_${Date.now()}`,
-        index_id: `custom_stock_${Date.now()}`,
+        indice_id: `custom_stock_${Date.now()}`,
         recorded_at: new Date().toISOString(),
         close: numPrice,
         change_percent: formData.changePercent,

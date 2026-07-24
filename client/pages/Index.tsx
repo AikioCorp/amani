@@ -32,7 +32,14 @@ import {
   Heart,
   CheckCircle,
   RefreshCw,
+  Crown,
+  Pause,
+  Mail,
+  X,
 } from "lucide-react";
+import { useAudio } from "../context/AudioContext";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 import InteractiveMap from "../components/InteractiveMap";
 import { Skeleton } from "../components/ui/skeleton";
 import { fetchBRVMData, BRVMData } from "../services/brvmApi";
@@ -222,6 +229,51 @@ export default function Index() {
     return sorted.slice(0, 4);
   }, [marketFinArticles, marketBoursArticles]);
 
+
+  const { playTrack, activeTrack, isPlaying } = useAudio();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const [podcastSubscribeModal, setPodcastSubscribeModal] = React.useState(false);
+  const [podcastSubscribeEmail, setPodcastSubscribeEmail] = React.useState("");
+  const [podcastSubscribeSuccess, setPodcastSubscribeSuccess] = React.useState(false);
+
+  const handlePlayHomepagePodcast = (p: any, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+
+    // Check Premium Paywall: If podcast is premium and user is NOT logged in
+    if (p.is_premium && !user) {
+      navigate("/login");
+      return;
+    }
+
+    const duration = p.podcast_data?.duration || undefined;
+    const audioUrl = p.podcast_data?.audio_url || p.podcast_data?.audio_file || undefined;
+    const videoUrl = p.podcast_data?.video_url || undefined;
+    const host = p.podcast_data?.host || "Animateur Amani";
+
+    playTrack({
+      id: p.id,
+      title: p.title,
+      host,
+      coverImage: p.featured_image || p.podcast_data?.cover_image || 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=300&q=80',
+      audioUrl,
+      videoUrl,
+      category: p.categories?.name || 'Podcast',
+      duration,
+      isPremium: Boolean(p.is_premium),
+    });
+  };
+
+  const handleSubscribePodcastClick = () => {
+    if (!user) {
+      setPodcastSubscribeModal(true);
+    } else if (!user.is_premium) {
+      navigate("/abonnement");
+    } else {
+      navigate("/podcast");
+    }
+  };
 
   // Fonction pour charger toutes les données (BRVM + Commodités)
   const loadAllData = async (isManual = false) => {
@@ -1003,8 +1055,23 @@ export default function Index() {
                 Amani Podcast : L'Économie à l'oreille
               </h2>
             </div>
-            <button className="border border-[#9C8464] text-[#9C8464] text-[10px] font-extrabold uppercase tracking-widest px-4 py-2.5 rounded hover:bg-[#9C8464] hover:text-white transition-all self-start sm:self-auto">
-              S'abonner aux podcasts
+            <button
+              onClick={handleSubscribePodcastClick}
+              className="border border-[#9C8464] text-[#9C8464] text-[10px] font-extrabold uppercase tracking-widest px-4 py-2.5 rounded hover:bg-[#9C8464] hover:text-white transition-all self-start sm:self-auto flex items-center gap-2"
+            >
+              {user?.is_premium ? (
+                <>
+                  <Crown className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Pass Premium Actif</span>
+                </>
+              ) : user ? (
+                <>
+                  <Crown className="w-3.5 h-3.5 text-[#9C8464]" />
+                  <span>Devenir Membre Premium</span>
+                </>
+              ) : (
+                <span>S'abonner aux podcasts</span>
+              )}
             </button>
           </div>
 
@@ -1016,13 +1083,26 @@ export default function Index() {
                   <img
                     src={podcasts[0].featured_image || 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=300&q=80'}
                     alt={podcasts[0].title}
-                    className="absolute inset-0 w-full h-full object-cover opacity-75"
+                    className="absolute inset-0 w-full h-full object-cover opacity-75 cursor-pointer"
+                    onClick={() => navigate(`/podcast/${podcasts[0].id}`)}
                   />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <button className="w-12 h-12 bg-[#9C8464] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform">
-                      <Play className="w-5 h-5 fill-current ml-0.5" />
+                    <button
+                      onClick={(e) => handlePlayHomepagePodcast(podcasts[0], e)}
+                      className="w-12 h-12 bg-[#9C8464] hover:bg-[#867052] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
+                    >
+                      {activeTrack?.id === podcasts[0].id && isPlaying ? (
+                        <Pause className="w-5 h-5 fill-current" />
+                      ) : (
+                        <Play className="w-5 h-5 fill-current ml-0.5" />
+                      )}
                     </button>
                   </div>
+                  {podcasts[0].is_premium && (
+                    <div className="absolute top-2 left-2 bg-[#373B3A]/90 text-amber-300 rounded-full px-2 py-0.5 text-[9px] font-black border border-amber-500/30 flex items-center gap-1">
+                      <Crown className="w-3 h-3" /> PREMIUM
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex-1 flex flex-col justify-between">
@@ -1030,7 +1110,10 @@ export default function Index() {
                     <span className="text-[9px] font-extrabold text-[#9C8464] tracking-widest uppercase mb-1 block">
                       ÉMISSION EN COURS
                     </span>
-                    <h3 className="text-base font-bold leading-snug mb-2 hover:text-[#EADFC9] cursor-pointer">
+                    <h3
+                      onClick={() => navigate(`/podcast/${podcasts[0].id}`)}
+                      className="text-base font-bold leading-snug mb-2 hover:text-[#EADFC9] cursor-pointer transition-colors"
+                    >
                       {podcasts[0].title}
                     </h3>
                     <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed mb-4">
@@ -1038,15 +1121,14 @@ export default function Index() {
                     </p>
                   </div>
                   
-                  {/* progress track simulation */}
-                  <div className="space-y-2">
-                    <div className="w-full bg-[#3E342B] h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-[#9C8464] w-2/3 h-full rounded-full"></div>
-                    </div>
-                    <div className="flex items-center justify-between text-[10px] text-gray-500 font-semibold">
-                      <span>{podcasts[0].podcast_data?.duration || '08:12'}</span>
-                      <span>12:45</span>
-                    </div>
+                  <div className="flex items-center justify-between text-[10px] text-gray-400 font-semibold border-t border-[#3E342B] pt-3">
+                    <span>Durée : {podcasts[0].podcast_data?.duration || '12:45'}</span>
+                    <button
+                      onClick={(e) => handlePlayHomepagePodcast(podcasts[0], e)}
+                      className="text-[#9C8464] font-extrabold uppercase hover:underline"
+                    >
+                      {activeTrack?.id === podcasts[0].id && isPlaying ? "Pause" : "Lancer l'écoute →"}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1063,13 +1145,26 @@ export default function Index() {
                   <img
                     src={podcasts[1].featured_image || 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?auto=format&fit=crop&w=300&q=80'}
                     alt={podcasts[1].title}
-                    className="absolute inset-0 w-full h-full object-cover opacity-75"
+                    className="absolute inset-0 w-full h-full object-cover opacity-75 cursor-pointer"
+                    onClick={() => navigate(`/podcast/${podcasts[1].id}`)}
                   />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <button className="w-12 h-12 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center backdrop-blur-sm shadow-lg hover:scale-105 transition-transform">
-                      <Play className="w-5 h-5 fill-current ml-0.5" />
+                    <button
+                      onClick={(e) => handlePlayHomepagePodcast(podcasts[1], e)}
+                      className="w-12 h-12 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center backdrop-blur-sm shadow-lg hover:scale-105 transition-transform"
+                    >
+                      {activeTrack?.id === podcasts[1].id && isPlaying ? (
+                        <Pause className="w-5 h-5 fill-current" />
+                      ) : (
+                        <Play className="w-5 h-5 fill-current ml-0.5" />
+                      )}
                     </button>
                   </div>
+                  {podcasts[1].is_premium && (
+                    <div className="absolute top-2 left-2 bg-[#373B3A]/90 text-amber-300 rounded-full px-2 py-0.5 text-[9px] font-black border border-amber-500/30 flex items-center gap-1">
+                      <Crown className="w-3 h-3" /> PREMIUM
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex-1 flex flex-col justify-between">
@@ -1077,7 +1172,10 @@ export default function Index() {
                     <span className="text-[9px] font-extrabold text-[#9C8464] tracking-widest uppercase mb-1 block">
                       ÉPISODE PRÉCÉDENT
                     </span>
-                    <h3 className="text-base font-bold leading-snug mb-2 hover:text-[#EADFC9] cursor-pointer">
+                    <h3
+                      onClick={() => navigate(`/podcast/${podcasts[1].id}`)}
+                      className="text-base font-bold leading-snug mb-2 hover:text-[#EADFC9] cursor-pointer transition-colors"
+                    >
                       {podcasts[1].title}
                     </h3>
                     <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed mb-4">
@@ -1086,9 +1184,14 @@ export default function Index() {
                   </div>
                   
                   {/* duration badge */}
-                  <div className="flex items-center justify-between text-[10px] text-gray-500 font-semibold border-t border-[#3E342B] pt-3">
+                  <div className="flex items-center justify-between text-[10px] text-gray-400 font-semibold border-t border-[#3E342B] pt-3">
                     <span>Durée : {podcasts[1].podcast_data?.duration || '15:30'}</span>
-                    <span>Publié le {podcasts[1].published_at ? new Date(podcasts[1].published_at).toLocaleDateString('fr-FR') : ''}</span>
+                    <button
+                      onClick={(e) => handlePlayHomepagePodcast(podcasts[1], e)}
+                      className="text-[#9C8464] font-extrabold uppercase hover:underline"
+                    >
+                      {activeTrack?.id === podcasts[1].id && isPlaying ? "Pause" : "Lancer l'écoute →"}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1100,6 +1203,83 @@ export default function Index() {
           </div>
         </div>
       </section>
+
+      {/* MODAL S'ABONNER AUX NOTIFICATIONS PODCASTS */}
+      {podcastSubscribeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#373B3A]/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="bg-[#1E1712] border border-[#3E342B] text-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative space-y-6">
+            <button
+              onClick={() => {
+                setPodcastSubscribeModal(false);
+                setPodcastSubscribeSuccess(false);
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-14 h-14 bg-[#9C8464]/20 border border-[#9C8464]/40 text-[#9C8464] rounded-2xl flex items-center justify-center mx-auto">
+              <Mic className="w-7 h-7" />
+            </div>
+
+            <div className="text-center space-y-2">
+              <h3 className="text-xl font-black text-white">S'abonner aux Podcasts Amani</h3>
+              <p className="text-xs text-gray-400 leading-relaxed font-medium">
+                Recevez directement par email les nouveaux épisodes, les interviews d'experts et les alertes d'émissions dès leur sortie.
+              </p>
+            </div>
+
+            {podcastSubscribeSuccess ? (
+              <div className="bg-[#9C8464]/20 border border-[#9C8464] rounded-2xl p-4 text-center space-y-2">
+                <p className="text-sm font-bold text-amber-300">🎉 Félicitations !</p>
+                <p className="text-xs text-gray-300">
+                  Votre abonnement aux alertes podcasts a bien été enregistré.
+                </p>
+              </div>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (podcastSubscribeEmail.trim()) {
+                    setPodcastSubscribeSuccess(true);
+                  }
+                }}
+                className="space-y-4"
+              >
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="email"
+                    required
+                    value={podcastSubscribeEmail}
+                    onChange={(e) => setPodcastSubscribeEmail(e.target.value)}
+                    placeholder="Votre adresse email..."
+                    className="w-full pl-11 pr-4 py-3 bg-[#2B231A] border border-[#3E342B] rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#9C8464] transition-colors font-medium"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-[#9C8464] hover:bg-[#867052] text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md"
+                >
+                  Recevoir les prochains épisodes
+                </button>
+
+                <div className="pt-2 text-center border-t border-[#3E342B]">
+                  <Link
+                    to="/abonnement"
+                    onClick={() => setPodcastSubscribeModal(false)}
+                    className="text-[11px] text-amber-400 hover:underline font-bold flex items-center justify-center gap-1"
+                  >
+                    <Crown className="w-3.5 h-3.5" />
+                    <span>Découvrir l'accès illimité Pass Premium →</span>
+                  </Link>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Commodities Section */}
       {commoditiesData && (

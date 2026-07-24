@@ -74,7 +74,7 @@ const SECTIONS: Section[] = [
           { label: "Recherche Serper", to: "/dashboard/serper", icon: Globe, permission: "create_articles" },
         ],
       },
-      { label: "Vue unifiée", to: "/dashboard/content-management", icon: Layers, permission: "view_dashboard" },
+      { label: "Vue unifiée", to: "/dashboard/content-management", icon: Layers, permission: "create_articles" },
     ],
   },
   {
@@ -119,6 +119,32 @@ const SECTIONS: Section[] = [
   },
 ];
 
+const SUBSCRIBER_SECTIONS: Section[] = [
+  {
+    title: "💼 Investissements",
+    items: [
+      { label: "Mon Suivi de Dossiers", to: "/dashboard", icon: LayoutDashboard },
+      { label: "Explorer les Projets", to: "/investissement", icon: LineChart },
+    ],
+  },
+  {
+    title: "📰 Espace Médias",
+    items: [
+      { label: "Analyses & Articles", to: "/actualites", icon: FileText },
+      { label: "Podcasts Financiers", to: "/podcast", icon: Mic },
+      { label: "Indices BRVM", to: "/marche", icon: BarChart3 },
+    ],
+  },
+  {
+    title: "⚙️ Mon Compte",
+    items: [
+      { label: "Mon Profil", to: "/dashboard/profile", icon: UserIcon },
+      { label: "Offres & Abonnement", to: "/pricing", icon: Crown },
+      { label: "Notifications & Alertes", to: "/dashboard/notifications", icon: Bell },
+    ],
+  },
+];
+
 // Single Dashboard link rendered above sections (no Accueil group)
 const DASHBOARD_ITEM: MenuItem = {
   label: "Tableau de bord",
@@ -132,11 +158,14 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
   const navigate = useNavigate();
   const { hasPermission, logout, user } = useAuth();
 
-  const visibleSections = SECTIONS.map((section) => ({
+  const isStaff = hasPermission("create_articles") || hasPermission("manage_users") || hasPermission("create_indices");
+  const activeSections = isStaff ? SECTIONS : SUBSCRIBER_SECTIONS;
+
+  const visibleSections = activeSections.map((section) => ({
     title: section.title,
     items: section.items.filter((m) => !m.permission || hasPermission(m.permission)),
   })).filter((s) => s.items.length > 0);
-  const showDashboard = !DASHBOARD_ITEM.permission || hasPermission(DASHBOARD_ITEM.permission);
+  const showDashboard = isStaff && (!DASHBOARD_ITEM.permission || hasPermission(DASHBOARD_ITEM.permission));
 
   // Accordion open/close state, persisted in localStorage
   const storageKey = 'amani-sidebar-sections';

@@ -272,6 +272,222 @@ export default function DashboardMain() {
     );
   };
 
+  // Subscriber state
+  const [myRequests, setMyRequests] = useState<any[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+
+  const isStaff = hasPermission("create_articles") || hasPermission("manage_users") || hasPermission("create_indices");
+
+  useEffect(() => {
+    if (!isStaff && user) {
+      const token = getSessionToken();
+      setLoadingRequests(true);
+      fetch(`${API_BASE}/investments/my-requests`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.success) setMyRequests(json.data || []);
+        })
+        .catch((e) => console.error("Error loading my-requests", e))
+        .finally(() => setLoadingRequests(false));
+    }
+  }, [isStaff, user?.id]);
+
+  // Subscriber View
+  if (!isStaff) {
+    return (
+      <div className="space-y-8">
+        {/* Welcome Header */}
+        <div className="bg-[#373B3A] text-white p-6 md:p-8 rounded-3xl shadow-sm border border-[#9C8464]/30 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#9C8464]/20 border border-[#9C8464]/40 rounded-full text-xs font-bold text-[#9C8464]">
+              <Sparkles className="w-3.5 h-3.5" />
+              Espace Membre Amani
+            </div>
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+              Bonjour, {user?.firstName || user?.first_name || "Abonné"} !
+            </h1>
+            <p className="text-xs md:text-sm text-gray-300 max-w-xl leading-relaxed">
+              Bienvenue sur votre portail. Consultez vos options d'investissement engagées, suivez l'avancement de vos demandes et accédez aux outils financiers exclusifs.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+            {user?.is_premium ? (
+              <span className="px-4 py-2.5 bg-[#9C8464] text-white rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm">
+                <Star className="w-4 h-4 fill-white" /> Membre Premium
+              </span>
+            ) : (
+              <Link
+                to="/pricing"
+                className="px-4 py-2.5 bg-[#9C8464] hover:bg-[#857053] text-white rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-sm"
+              >
+                <Zap className="w-4 h-4" /> Passer à Premium
+              </Link>
+            )}
+            <Link
+              to="/investissement"
+              className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-bold uppercase tracking-wider text-center transition-all"
+            >
+              Voir les opportunités
+            </Link>
+          </div>
+        </div>
+
+        {/* Section 1: Mes Suivis d'Investissement */}
+        <div className="bg-white rounded-3xl shadow-xs p-6 md:p-8 border border-gray-100 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+            <div>
+              <h2 className="text-xl font-bold text-[#373B3A] flex items-center gap-2">
+                <Target className="w-5 h-5 text-[#9C8464]" /> Mes Options & Demandes d'Investissement
+              </h2>
+              <p className="text-xs text-gray-500 font-medium mt-1">
+                Suivi en temps réel de vos intentions et dossiers transmis à l'équipe Amani.
+              </p>
+            </div>
+            <Link
+              to="/investissement"
+              className="inline-flex items-center gap-2 text-xs font-bold text-[#9C8464] hover:text-[#373B3A] uppercase tracking-wider transition-colors"
+            >
+              + Nouvelle souscription →
+            </Link>
+          </div>
+
+          {loadingRequests ? (
+            <div className="py-8 text-center text-xs text-gray-500">Chargement de vos demandes...</div>
+          ) : myRequests.length === 0 ? (
+            <div className="bg-[#FDFBF9] border border-[#E5DDD5]/80 rounded-2xl p-8 text-center space-y-3">
+              <div className="w-12 h-12 bg-[#9C8464]/10 rounded-full flex items-center justify-center mx-auto text-[#9C8464]">
+                <BarChart3 className="w-6 h-6" />
+              </div>
+              <h4 className="font-bold text-[#373B3A] text-sm">Vous n'avez pas encore formulé d'option d'investissement.</h4>
+              <p className="text-xs text-gray-500 max-w-md mx-auto">
+                Explorez nos opportunités d'investissement dans la santé, l'agrobusiness, la fintech et l'industrie en Afrique de l'Ouest.
+              </p>
+              <Link
+                to="/investissement"
+                className="inline-block px-5 py-2.5 bg-[#373B3A] hover:bg-[#9C8464] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs mt-2"
+              >
+                Découvrir les projets
+              </Link>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-200 text-[#373B3A] uppercase text-[10px] tracking-wider font-extrabold bg-[#FDFBF9]">
+                    <th className="py-3 px-4">Projet / Opportunité</th>
+                    <th className="py-3 px-4">Montant Engagé</th>
+                    <th className="py-3 px-4">Profil Investisseur</th>
+                    <th className="py-3 px-4">Date de soumission</th>
+                    <th className="py-3 px-4">Statut Dossier</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {myRequests.map((req) => (
+                    <tr key={req.id} className="hover:bg-gray-50/80 transition-colors">
+                      <td className="py-3.5 px-4 font-bold text-[#373B3A]">
+                        {req.opportunity?.title || req.opportunity_id || "Opportunité Amani"}
+                      </td>
+                      <td className="py-3.5 px-4 font-extrabold text-[#9C8464]">
+                        {req.amount}
+                      </td>
+                      <td className="py-3.5 px-4 text-gray-600 font-medium">
+                        {req.investor_type || "Particulier"}
+                      </td>
+                      <td className="py-3.5 px-4 text-gray-500">
+                        {new Date(req.created_at).toLocaleDateString("fr-FR")}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        {req.status === "PENDING" || req.status === "pending" ? (
+                          <span className="px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-full font-bold text-[10px] uppercase">
+                            En cours de revue
+                          </span>
+                        ) : req.status === "APPROVED" || req.status === "approved" ? (
+                          <span className="px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full font-bold text-[10px] uppercase">
+                            Validé & Transmis
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded-full font-bold text-[10px] uppercase">
+                            Traitement Amani
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Section 2: Outils Financiers & Accès Rapides */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Link
+            to="/calculateur"
+            className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs hover:border-[#9C8464] hover:shadow-md transition-all space-y-2 group"
+          >
+            <div className="w-10 h-10 bg-[#9C8464]/10 rounded-xl flex items-center justify-center text-[#9C8464] group-hover:scale-105 transition-transform">
+              <BarChart3 className="w-5 h-5" />
+            </div>
+            <h4 className="font-bold text-sm text-[#373B3A] group-hover:text-[#9C8464] transition-colors">
+              Calculateur de Rendement
+            </h4>
+            <p className="text-xs text-gray-500 font-medium">
+              Simulez vos placements et gains potentiels.
+            </p>
+          </Link>
+
+          <Link
+            to="/guide-debutant"
+            className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs hover:border-[#9C8464] hover:shadow-md transition-all space-y-2 group"
+          >
+            <div className="w-10 h-10 bg-[#9C8464]/10 rounded-xl flex items-center justify-center text-[#9C8464] group-hover:scale-105 transition-transform">
+              <FileText className="w-5 h-5" />
+            </div>
+            <h4 className="font-bold text-sm text-[#373B3A] group-hover:text-[#9C8464] transition-colors">
+              Guide de l'Investisseur
+            </h4>
+            <p className="text-xs text-gray-500 font-medium">
+              Apprenez les bases de la BRVM et du capital-risque.
+            </p>
+          </Link>
+
+          <Link
+            to="/marche"
+            className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs hover:border-[#9C8464] hover:shadow-md transition-all space-y-2 group"
+          >
+            <div className="w-10 h-10 bg-[#9C8464]/10 rounded-xl flex items-center justify-center text-[#9C8464] group-hover:scale-105 transition-transform">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <h4 className="font-bold text-sm text-[#373B3A] group-hover:text-[#9C8464] transition-colors">
+              Cours BRVM en Direct
+            </h4>
+            <p className="text-xs text-gray-500 font-medium">
+              Suivez l'évolution des indices et actions.
+            </p>
+          </Link>
+
+          <Link
+            to="/podcast"
+            className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs hover:border-[#9C8464] hover:shadow-md transition-all space-y-2 group"
+          >
+            <div className="w-10 h-10 bg-[#9C8464]/10 rounded-xl flex items-center justify-center text-[#9C8464] group-hover:scale-105 transition-transform">
+              <Mic className="w-5 h-5" />
+            </div>
+            <h4 className="font-bold text-sm text-[#373B3A] group-hover:text-[#9C8464] transition-colors">
+              Podcasts Financiers
+            </h4>
+            <p className="text-xs text-gray-500 font-medium">
+              Écoutez nos interviews et analyses audio.
+            </p>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
         {loading && (

@@ -161,18 +161,24 @@ const Footer = () => {
               </div>
             </div>
             
-            <div className="flex items-center gap-6 text-sm">
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-sm">
               <Link to="/about" className="text-gray-400 hover:text-white transition-colors">
                 À propos
               </Link>
               <Link to="/contact" className="text-gray-400 hover:text-white transition-colors">
                 Contact
               </Link>
-              <Link to="#" className="text-gray-400 hover:text-white transition-colors">
+              <Link to="/terms" className="text-gray-400 hover:text-white transition-colors">
+                Conditions (CGU)
+              </Link>
+              <Link to="/confidentialite" className="text-gray-400 hover:text-white transition-colors">
                 Confidentialité
               </Link>
-              <Link to="#" className="text-gray-400 hover:text-white transition-colors">
+              <Link to="/mentions-legales" className="text-gray-400 hover:text-white transition-colors">
                 Mentions légales
+              </Link>
+              <Link to="/cookies" className="text-gray-400 hover:text-white transition-colors">
+                Cookies
               </Link>
             </div>
           </div>

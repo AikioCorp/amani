@@ -160,6 +160,29 @@ export function useUsers() {
     }
   };
 
+  const createUser = async (userData: any) => {
+    try {
+      const token = getSessionToken();
+      const resp = await fetch(`${API_BASE}/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(userData),
+      });
+      const json = await resp.json();
+      if (!resp.ok || !json.success) {
+        throw new Error(json.error || 'Erreur lors de la création de l\'utilisateur');
+      }
+      adminCache.invalidate(CACHE_KEY);
+      fetchUsers(true);
+      return json;
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
   return {
     users,
     setUsers,
@@ -170,5 +193,6 @@ export function useUsers() {
     deleteUser,
     updateUserRoles,
     updateUser,
+    createUser,
   };
 }

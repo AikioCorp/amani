@@ -2,11 +2,15 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-interface User {
+export interface User {
   id: string;
   email: string;
   firstName?: string;
   lastName?: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  is_premium?: boolean;
   organization?: string;
   avatarUrl?: string;
   role?: string;
@@ -84,6 +88,10 @@ function buildUserFromSession(sessionUser: any, profile?: any): User {
     email: merged.email || sessionUser.email || "",
     firstName: merged.first_name || merged.user_metadata?.first_name || "Utilisateur",
     lastName: merged.last_name || merged.user_metadata?.last_name || "",
+    first_name: merged.first_name || merged.user_metadata?.first_name || "",
+    last_name: merged.last_name || merged.user_metadata?.last_name || "",
+    phone: merged.phone || merged.user_metadata?.phone || "",
+    is_premium: Boolean(merged.is_premium),
     organization: merged.organization || "",
     avatarUrl: merged.avatar_url || merged.user_metadata?.avatar_url || "",
     role,

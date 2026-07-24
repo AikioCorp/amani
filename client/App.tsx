@@ -59,6 +59,10 @@ import ResetPassword from "./pages/ResetPassword";
 import SerperIntegration from "./pages/SerperIntegration";
 import PipelineMonitoring from "./pages/PipelineMonitoring";
 import ImportsManagement from "./pages/ImportsManagement";
+import Terms from "./pages/Terms";
+import Confidentialite from "./pages/Confidentialite";
+import MentionsLegales from "./pages/MentionsLegales";
+import CookiesPage from "./pages/Cookies";
 
 // Dashboard Pages
 import DashboardMain from "./pages/DashboardMain";
@@ -93,11 +97,14 @@ import Integrations from "./pages/Integrations";
 import Pricing from "./pages/Pricing";
 import SubscriptionsManagement from "./pages/SubscriptionsManagement";
 
-// Create a single instance of QueryClient
+// Create a single instance of QueryClient with aggressive caching (5 min staleTime)
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes cache before refetch
+      gcTime: 10 * 60 * 1000, // 10 minutes memory retention
       retry: 1,
     },
   },
@@ -187,6 +194,16 @@ const AppContent = () => {
         <Route path="/tech" element={<Tech />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/abonnement" element={<Pricing />} />
+
+        {/* Pages Légales & Réglementaires */}
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/conditions-utilisation" element={<Terms />} />
+        <Route path="/confidentialite" element={<Confidentialite />} />
+        <Route path="/privacy" element={<Confidentialite />} />
+        <Route path="/mentions-legales" element={<MentionsLegales />} />
+        <Route path="/legal" element={<MentionsLegales />} />
+        <Route path="/cookies" element={<CookiesPage />} />
+        <Route path="/politique-cookies" element={<CookiesPage />} />
 
         {/* Protected Dashboard Routes (persistent layout with nested routes) */}
         <Route

@@ -15,6 +15,7 @@ export interface Database {
 
           // MÉTADONNÉES COMMUNES
           status: "draft" | "published" | "archived";
+          is_premium?: boolean;
           // Nouvel ID de catégorie (clé étrangère)
           category_id: string;
           category: string;

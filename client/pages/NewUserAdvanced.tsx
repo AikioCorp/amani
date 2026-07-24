@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
+import { useUsers } from "../hooks/useUsers";
 import DashboardLayout from "../components/DashboardLayout";
 import { ALL_PERMISSIONS } from "../lib/demoAccounts";
 import {
@@ -18,6 +19,10 @@ import {
   Plus,
   X,
   Settings,
+  Copy,
+  Check,
+  Key,
+  Sparkles,
 } from "lucide-react";
 
 export default function NewUserAdvanced() {
@@ -26,6 +31,14 @@ export default function NewUserAdvanced() {
   const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [createdUserModal, setCreatedUserModal] = useState<{
+    email: string;
+    fullName: string;
+    role: string;
+    passwordMethod: string;
+    tempPassword?: string;
+  } | null>(null);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -310,6 +323,8 @@ export default function NewUserAdvanced() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const { createUser } = useUsers();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -331,31 +346,35 @@ export default function NewUserAdvanced() {
 
     setIsSaving(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const primaryRole = formData.roles[0] || "subscriber";
+      const payload = {
+        email: formData.email.trim().toLowerCase(),
+        password: formData.passwordMethod === "generate" ? formData.generatedPassword : "EMAIL_SETUP",
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        role: primaryRole,
+        organization: formData.organization,
+        phone: "",
+        is_premium: formData.roles.includes("abonne"),
+        is_active: true,
+      };
 
-    const newUser = {
-      id: `user-${Date.now()}`,
-      ...formData,
-      role: formData.roles[0] || "visiteur", // Primary role
-      permissions: getAllPermissions(),
-      lastLogin: "Jamais connecté",
-      mustChangePassword: true,
-      accountStatus:
-        formData.passwordMethod === "email" ? "pending_setup" : "active",
-      createdAt: new Date().toISOString(),
-      createdBy: `${user.firstName} ${user.lastName}`,
-    };
+      const result = await createUser(payload);
 
-    console.log("Creating new user:", newUser);
+      setCreatedUserModal({
+        email: formData.email.trim(),
+        fullName: `${formData.firstName} ${formData.lastName}`.trim() || formData.email,
+        role: primaryRole,
+        passwordMethod: formData.passwordMethod,
+        tempPassword: result?.generatedPassword || formData.generatedPassword,
+      });
 
-    success(
-      "Utilisateur créé",
-      `L'utilisateur ${formData.firstName} ${formData.lastName} a été créé avec ${formData.roles.length} rôle(s) et ${getAllPermissions().length} permission(s).`,
-    );
-
-    setIsSaving(false);
-    navigate("/dashboard/users");
+      setIsSaving(false);
+    } catch (err: any) {
+      error("Erreur de création", err.message || "Impossible de créer l'utilisateur.");
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -796,6 +815,117 @@ export default function NewUserAdvanced() {
           </button>
         </div>
       </form>
+
+      {/* Modern Success Modal */}
+      {createdUserModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-200">
+            {/* Header Banner */}
+            <div className="bg-[#373B3A] text-white p-6 relative">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#9C8464]/20 border border-[#9C8464]/40 rounded-full text-xs font-bold text-[#9C8464] mb-2">
+                <Sparkles className="w-3.5 h-3.5 text-[#9C8464]" /> Compte Utilisateur Créé
+              </div>
+              <h3 className="text-2xl font-extrabold tracking-tight">Compte créé avec succès !</h3>
+              <p className="text-xs text-gray-300 mt-1">L'utilisateur a été enregistré dans la base de données Amani.</p>
+            </div>
+
+            {/* Body Content */}
+            <div className="p-6 space-y-6">
+              {/* User Summary Card */}
+              <div className="bg-[#FDFBF9] border border-[#E5DDD5] rounded-2xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Identité</span>
+                  <span className="px-2.5 py-0.5 bg-[#373B3A] text-[#9C8464] rounded-full text-[11px] font-extrabold uppercase">
+                    {createdUserModal.role}
+                  </span>
+                </div>
+                <div>
+                  <div className="text-base font-extrabold text-[#373B3A]">{createdUserModal.fullName}</div>
+                  <div className="text-xs text-gray-500 font-medium">{createdUserModal.email}</div>
+                </div>
+              </div>
+
+              {/* Password / Credentials Box */}
+              {createdUserModal.passwordMethod === "generate" && createdUserModal.tempPassword ? (
+                <div className="space-y-2">
+                  <label className="text-xs font-extrabold text-[#373B3A] uppercase tracking-wider flex items-center gap-1.5">
+                    <Key className="w-4 h-4 text-[#9C8464]" /> Mot de passe temporaire généré
+                  </label>
+                  <div className="flex items-center justify-between p-3.5 bg-gray-900 text-white rounded-2xl font-mono text-sm font-bold border border-gray-800">
+                    <span className="select-all tracking-wider text-[#9C8464]">
+                      {createdUserModal.tempPassword}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(createdUserModal.tempPassword || "");
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#9C8464] hover:bg-[#857053] text-white text-xs font-bold rounded-xl transition-all shadow-xs"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="w-3.5 h-3.5" /> Copié !
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" /> Copier
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-gray-500 leading-normal">
+                    Veuillez transmettre ce mot de passe temporaire à l'utilisateur. Il pourra le modifier dès sa première connexion.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs space-y-1">
+                  <div className="font-bold flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-600" /> Email de configuration envoyé
+                  </div>
+                  <p className="text-emerald-700">
+                    Un lien sécurisé pour définir son mot de passe a été envoyé à <strong>{createdUserModal.email}</strong>.
+                  </p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (createdUserModal.tempPassword) {
+                      navigator.clipboard.writeText(createdUserModal.tempPassword);
+                    }
+                    setCreatedUserModal(null);
+                    navigate("/dashboard/users");
+                  }}
+                  className="flex-1 py-3 px-4 bg-[#373B3A] hover:bg-black text-white rounded-xl text-xs font-extrabold uppercase tracking-wider text-center transition-all shadow-sm"
+                >
+                  Voir la liste des utilisateurs
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreatedUserModal(null);
+                    setFormData((prev) => ({
+                      ...prev,
+                      firstName: "",
+                      lastName: "",
+                      email: "",
+                      generatedPassword: "",
+                    }));
+                  }}
+                  className="py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-xs font-bold uppercase tracking-wider text-center transition-all"
+                >
+                  Créer un autre
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
