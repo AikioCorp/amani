@@ -52,6 +52,7 @@ export default function NewArticle() {
         description: formData.description,
         content: formData.content,
         status: formData.status,
+        is_premium: Boolean(formData.is_premium),
         category_id: formData.category,
         author_id: user?.id || '',
         country: formData.country,
@@ -104,7 +105,7 @@ export default function NewArticle() {
           Retour
         </button>
       </div>
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full">
         {/* Formulaire unifié pour articles */}
         <UnifiedContentForm
           type="article"

@@ -10,6 +10,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 // Context Providers
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
+import { AudioProvider } from "./context/AudioContext";
 
 // Components
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -20,6 +21,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import { Navigation } from "./components/Navigation";
 import DashboardShell from "./components/DashboardShell";
 import Footer from "./components/Footer";
+import GlobalAudioPlayer from "./components/GlobalAudioPlayer";
 import { useLocation } from "react-router-dom";
 
 // Global Footer component that hides on Dashboard routes
@@ -38,6 +40,7 @@ import Register from "./pages/Register";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Podcast from "./pages/Podcast";
+import PodcastDetail from "./pages/PodcastDetail";
 import Indices from "./pages/Indices";
 import BrvmLatest from "./pages/BrvmLatest";
 import Calculateur from "./pages/Calculateur";
@@ -168,6 +171,7 @@ const AppContent = () => {
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/podcast" element={<Podcast />} />
+        <Route path="/podcast/:id" element={<PodcastDetail />} />
         <Route path="/indices" element={<Indices />} />
         <Route path="/brvm-latest" element={<BrvmLatest />} />
         <Route path="/calculateur" element={<Calculateur />} />
@@ -238,6 +242,7 @@ const AppContent = () => {
         />
       </Routes>
       <GlobalFooter />
+      <GlobalAudioPlayer />
     </BrowserRouter>
   );
 };
@@ -249,11 +254,13 @@ const App = () => {
       <TooltipProvider>
         <AuthProvider>
           <ToastProvider>
-            <Toaster />
-            <Sonner />
-            <ErrorBoundary>
-              <AppContent />
-            </ErrorBoundary>
+            <AudioProvider>
+              <Toaster />
+              <Sonner />
+              <ErrorBoundary>
+                <AppContent />
+              </ErrorBoundary>
+            </AudioProvider>
           </ToastProvider>
         </AuthProvider>
       </TooltipProvider>

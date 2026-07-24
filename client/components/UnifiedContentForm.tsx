@@ -33,6 +33,7 @@ import {
   Sparkles,
   Video,
   ShieldCheck,
+  Type,
 } from "lucide-react";
 
 interface UnifiedContentFormProps {
@@ -115,6 +116,7 @@ export default function UnifiedContentForm({
       description: "",
       content: "",
       status: "draft" as "draft" | "published",
+      is_premium: false,
       category: "",
       category_id: "",
       country: "mali",
@@ -136,6 +138,7 @@ export default function UnifiedContentForm({
           mergedData[key] = value;
         }
       });
+      mergedData.is_premium = Boolean(initialData.is_premium);
       mergedData.category = parseCategorySlug(initialData);
       mergedData.category_id = parseCategoryId(initialData) || mergedData.category_id;
       mergedData.podcast_data = parsePodcastData(initialData);
@@ -164,6 +167,7 @@ export default function UnifiedContentForm({
           ])
         ),
         podcast_data: parsedPodcastData,
+        is_premium: Boolean(initialData.is_premium),
         category: derivedCategory || prev.category,
         category_id: derivedCategoryId || prev.category_id,
         published_at: formattedPublishedAt || prev.published_at,
@@ -380,16 +384,33 @@ export default function UnifiedContentForm({
     });
   };
 
-  const addTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === ",") {
+  const addTag = (tagText?: string) => {
+    const valueToAdd = (tagText !== undefined ? tagText : newTag).trim().replace(/,/g, "");
+    if (valueToAdd && !formData.tags.includes(valueToAdd)) {
+      setFormData((prev: any) => ({
+        ...prev,
+        tags: [...prev.tags, valueToAdd],
+      }));
+    }
+    setNewTag("");
+  };
+
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === "," || e.key === "Tab") {
       e.preventDefault();
-      if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-        setFormData((prev: any) => ({
-          ...prev,
-          tags: [...prev.tags, newTag.trim()],
-        }));
-        setNewTag("");
-      }
+      addTag();
+    }
+  };
+
+  const handleTagInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val.includes(",")) {
+      const parts = val.split(",");
+      parts.forEach((p) => {
+        if (p.trim()) addTag(p);
+      });
+    } else {
+      setNewTag(val);
     }
   };
 
@@ -499,6 +520,14 @@ export default function UnifiedContentForm({
       }
 
       // Préparer les données finales
+      let finalTags = Array.isArray(formData.tags) ? [...formData.tags] : [];
+      if (newTag.trim()) {
+        const pendingTag = newTag.trim().replace(/,/g, "");
+        if (pendingTag && !finalTags.includes(pendingTag)) {
+          finalTags.push(pendingTag);
+        }
+      }
+
       // Fallback: si category_id manquant mais slug présent, résoudre via la liste en mémoire
       const resolvedCategoryId = (formData as any).category_id
         || categories.find(c => c.slug === (formData as any).category)?.id
@@ -506,6 +535,7 @@ export default function UnifiedContentForm({
 
       const finalData = {
         ...formData,
+        tags: finalTags,
         category_id: resolvedCategoryId,
         type,
         author_id: user?.id,
@@ -513,11 +543,6 @@ export default function UnifiedContentForm({
       };
 
       await onSave(finalData);
-
-      success(
-        `${getTypeLabel()} ${formData.status === "published" ? "publié" : "sauvegardé"}`,
-        `${getTypeLabel()} "${formData.title}" ${formData.status === "published" ? "publié" : "sauvegardé en brouillon"} avec succès.`,
-      );
     } catch (err) {
       error("Erreur", "Une erreur est survenue lors de la sauvegarde.");
       console.error(err);
@@ -591,10 +616,24 @@ export default function UnifiedContentForm({
 
   
 
+  const [showFloatingButton, setShowFloatingButton] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 250) {
+        setShowFloatingButton(true);
+      } else {
+        setShowFloatingButton(false);
+      }
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
     <form onSubmit={handleSubmit} className="max-w-[1400px] mx-auto pb-24 relative flex flex-col space-y-8">
-      {/* HEADER STICKY (Top Action Bar) */}
-      <div className="sticky top-[80px] lg:top-[90px] z-50 bg-white/90 backdrop-blur-xl border border-slate-200/60 rounded-2xl p-3 lg:p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
+      {/* HEADER ACTION BAR (NON-STICKY) */}
+      <div className="bg-white/90 backdrop-blur-xl border border-slate-200/60 rounded-2xl p-3 lg:p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold shadow-md">
             {getTypeIcon()}
@@ -606,7 +645,9 @@ export default function UnifiedContentForm({
             <div className="flex items-center gap-2 mt-0.5">
               <span className={`w-2 h-2 rounded-full ${formData.status === "published" ? "bg-emerald-500" : "bg-amber-400 animate-pulse"}`}></span>
               <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
-                {formData.status === "published" ? "Publié" : "Brouillon non sauvegardé"}
+                {formData.status === "published"
+                  ? (initialData ? "Publié" : "Prêt à être publié")
+                  : "Brouillon non sauvegardé"}
               </p>
             </div>
           </div>
@@ -633,7 +674,9 @@ export default function UnifiedContentForm({
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                {formData.status === "published" ? "Mettre à jour" : "Enregistrer"}
+                {initialData
+                  ? (formData.status === "published" ? "Mettre à jour" : "Mettre à jour le brouillon")
+                  : (formData.status === "published" ? "Publier le podcast" : "Enregistrer le brouillon")}
               </>
             )}
           </button>
@@ -647,38 +690,56 @@ export default function UnifiedContentForm({
         <div className="lg:col-span-8 space-y-8">
           
           {/* TITLE & SLUG SECTION */}
-          <div className="pt-4 pb-2 transition-all">
+          <div className="bg-white rounded-3xl p-8 lg:p-10 shadow-sm border border-slate-100/50 space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <Type className="w-4 h-4 text-blue-600" />
+                {type === "podcast" ? "Titre du Podcast" : "Titre du Contenu"}
+              </h3>
+              <span className="text-xs font-bold text-slate-400">
+                {formData.title?.length || 0} / 100 caractères
+              </span>
+            </div>
+
             <div className="space-y-4">
               <div>
                 <textarea
                   name="title"
                   value={formData.title || ""}
                   onChange={handleInputChange}
-                  className="w-full bg-transparent text-4xl md:text-5xl lg:text-[56px] font-black text-[#1d1d1f] placeholder:text-slate-300 border-none p-0 focus:ring-0 resize-none overflow-hidden leading-[1.1] tracking-tighter"
-                  placeholder="Titre de votre contenu..."
-                  rows={1}
-                  style={{ minHeight: '70px' }}
+                  rows={2}
+                  className={`w-full p-5 bg-slate-50 border rounded-2xl focus:ring-2 focus:ring-slate-900 focus:bg-white text-2xl md:text-3xl font-extrabold text-slate-900 placeholder:text-slate-300 transition-all resize-none leading-tight ${
+                    errors.title ? "border-red-500 bg-red-50/50" : "border-slate-100"
+                  }`}
+                  placeholder="Saisissez un titre percutant..."
                 />
                 {errors.title && (
-                  <p className="text-sm font-bold text-red-500 flex items-center gap-1.5 mt-2">
-                    <AlertCircle className="w-4 h-4" />
+                  <p className="text-xs font-bold text-red-500 flex items-center gap-1.5 mt-2">
+                    <AlertCircle className="w-3.5 h-3.5" />
                     {errors.title}
                   </p>
                 )}
               </div>
-              
-              <div className="flex items-center gap-3 max-w-2xl group opacity-60 hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                <span className="text-[#86868b] text-[11px] font-bold uppercase tracking-widest shrink-0">
-                  Slug / Lien :
-                </span>
-                <input
-                  type="text"
-                  name="slug"
-                  value={formData.slug || ""}
-                  onChange={handleInputChange}
-                  className="w-full bg-transparent text-slate-500 border-b border-transparent hover:border-slate-300 focus:border-blue-500 px-0 py-2 text-sm font-medium focus:ring-0 transition-all outline-none"
-                  placeholder="titre-optimise-seo"
-                />
+
+              {/* SLUG / PERMALINK BOX */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs">
+                <div className="flex items-center gap-2 text-slate-400 font-bold uppercase tracking-wider shrink-0">
+                  <Globe className="w-4 h-4 text-blue-500" />
+                  <span>Permalien / Slug :</span>
+                </div>
+                <div className="flex-1 flex items-center gap-1 bg-white border border-slate-200/80 rounded-xl px-3.5 py-2.5 font-mono text-slate-600 shadow-inner overflow-hidden focus-within:ring-2 focus-within:ring-slate-900">
+                  <span className="text-slate-400 font-sans select-none shrink-0">
+                    amani.finance/{type === "podcast" ? "podcasts" : "articles"}/
+                  </span>
+                  <input
+                    type="text"
+                    name="slug"
+                    value={formData.slug || ""}
+                    onChange={handleInputChange}
+                    className="w-full bg-transparent border-none p-0 text-xs font-bold text-slate-800 outline-none focus:ring-0"
+                    placeholder="titre-optimise-seo"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -916,9 +977,9 @@ export default function UnifiedContentForm({
 
         </div>
 
-        {/* SETTINGS SIDEBAR COLUMN (Right, 4/12, Sticky) */}
+        {/* SETTINGS SIDEBAR COLUMN (Right, 4/12) */}
         <div className="lg:col-span-4">
-          <div className="space-y-8 lg:sticky lg:top-[180px]">
+          <div className="space-y-8">
             
             {/* PUBLICATION CARD */}
           <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100/50 space-y-6">
@@ -989,7 +1050,7 @@ export default function UnifiedContentForm({
                     onClick={() => setFormData((prev: any) => ({ ...prev, is_premium: false }))}
                     className={`flex-1 py-2 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest ${
                       !formData.is_premium
-                        ? "bg-white text-slate-900 shadow-sm border border-slate-200"
+                        ? "bg-emerald-500 text-white shadow-sm"
                         : "text-slate-400 hover:text-slate-900"
                     }`}
                   >
@@ -1051,15 +1112,15 @@ export default function UnifiedContentForm({
                   <input
                     type="text"
                     value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="Ex: Cacao"
+                    onChange={handleTagInputChange}
+                    onKeyDown={handleTagKeyDown}
+                    placeholder="Ex: Cacao, Mali (Entrée ou virgule)"
                     className="flex-1 px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg focus:ring-2 focus:ring-slate-900 text-xs font-medium transition-all"
-                    onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
                   />
                   <button
                     type="button"
-                    onClick={addTag}
-                    className="px-3 py-2 bg-slate-900 hover:bg-black text-white font-bold text-[10px] uppercase tracking-wider rounded-lg transition-colors"
+                    onClick={() => addTag()}
+                    className="px-3.5 py-2 bg-slate-900 hover:bg-black text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-colors"
                   >
                     +
                   </button>
@@ -1102,6 +1163,32 @@ export default function UnifiedContentForm({
           </div>
         </div>
       </div>
+      {/* FLOATING ACTION BUTTON ON SCROLL */}
+      {showFloatingButton && (
+        <div className="fixed bottom-8 right-8 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="px-6 py-3.5 bg-slate-900 hover:bg-black text-white font-bold text-sm uppercase tracking-wider rounded-full shadow-2xl hover:shadow-black/25 flex items-center gap-3 transition-all transform hover:scale-105 active:scale-95 border border-slate-700/50 backdrop-blur-md"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin text-white" />
+                <span>Sauvegarde...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-5 h-5" />
+                <span>
+                  {initialData
+                    ? (formData.status === "published" ? "Mettre à jour" : "Mettre à jour le brouillon")
+                    : (formData.status === "published" ? "Publier le podcast" : "Enregistrer le brouillon")}
+                </span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </form>
   );
 }

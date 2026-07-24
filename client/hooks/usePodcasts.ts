@@ -12,6 +12,7 @@ export interface Podcast {
   description?: string | null;
   content: string | null;
   status: PodcastStatus;
+  is_premium?: boolean;
   category_id: string;
   country: string;
   tags?: string[];
@@ -79,6 +80,7 @@ function generateSlug(title: string): string {
 function formatPodcast(item: any): Podcast {
   return {
     ...item,
+    is_premium: Boolean(item.is_premium),
     type: 'podcast',
     author: item.author || {
       id: item.author_id,

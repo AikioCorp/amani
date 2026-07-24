@@ -18,7 +18,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error("[ErrorBoundary] Erreur non gérée :", error, info.componentStack);
+    console.error("[ErrorBoundary] Erreur non gérée:", error?.message, error?.stack, info.componentStack);
   }
 
   handleReset = () => {
