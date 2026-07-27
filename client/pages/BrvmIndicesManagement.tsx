@@ -5,6 +5,8 @@ import { useToast } from "../context/ToastContext";
 import { useBrvmIndices, BrvmIndexWithLatest, BrvmIndexGroup } from "../hooks/useBrvmIndices";
 import { BarChart3, TrendingDown, TrendingUp, Minus, RefreshCcw, Plus, Search, X, ArrowUpDown, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { getSessionToken } from "../services/authService";
+import { API_BASE_URL as API_BASE } from "../services/apiConfig";
 
 export default function BrvmIndicesManagement() {
   const { user, hasPermission } = useAuth();
@@ -31,28 +33,50 @@ export default function BrvmIndicesManagement() {
     changePercent: "+0.00%",
   });
 
+  const persistItems = async (updatedItems: BrvmIndexWithLatest[]) => {
+    try {
+      const token = getSessionToken();
+      const res = await fetch(`${API_BASE}/admin/market/brvm`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ items: updatedItems }),
+      });
+      if (!res.ok) {
+        toastError("Erreur de persistance", "Les modifications n'ont pas pu être sauvegardées sur le serveur.");
+      }
+    } catch (e) {
+      console.error(e);
+      toastError("Erreur réseau", "Impossible de sauvegarder les modifications.");
+    }
+  };
+
   const handleTogglePublic = (id: string) => {
-    setItems((prev) =>
-      prev.map((it) => (it.id === id ? { ...it, is_public: !it.is_public } : it))
-    );
+    const updated = items.map((it) => (it.id === id ? { ...it, is_public: !it.is_public } : it));
+    setItems(updated);
     toastSuccess("Visibilité modifiée", "Le statut de publication a été mis à jour.");
+    persistItems(updated);
   };
 
   const handleUpdateStockIndex = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingItem) return;
 
-    setItems((prev) =>
-      prev.map((it) => (it.id === editingItem.id ? editingItem : it))
-    );
+    const updated = items.map((it) => (it.id === editingItem.id ? editingItem : it));
+    setItems(updated);
     toastSuccess("Modifié avec succès", `Le titre ${editingItem.name} a été mis à jour.`);
     setEditingItem(null);
+    persistItems(updated);
   };
 
   const handleDeleteStockIndex = (id: string, name: string) => {
     if (window.confirm(`Voulez-vous vraiment supprimer le titre "${name}" ?`)) {
-      setItems((prev) => prev.filter((it) => it.id !== id));
+      const updated = items.filter((it) => it.id !== id);
+      setItems(updated);
       toastSuccess("Titre supprimé", `Le titre ${name} a été retiré.`);
+      persistItems(updated);
     }
   };
 
@@ -67,20 +91,23 @@ export default function BrvmIndicesManagement() {
     const numPrice = parseFloat(formData.price.replace(/[^\d.-]/g, "")) || 0;
     const newItem: BrvmIndexWithLatest = {
       id: `custom_stock_${Date.now()}`,
+      slug: formData.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
       code: formData.code.toUpperCase() || formData.name.substring(0, 4).toUpperCase(),
       name: formData.name,
       description: `Titre BRVM - ${formData.name}`,
+      group_id: null,
       latest: {
         id: `lat_stock_${Date.now()}`,
         indice_id: `custom_stock_${Date.now()}`,
-        recorded_at: new Date().toISOString(),
+        as_of: new Date().toISOString(),
         close: numPrice,
         change_percent: formData.changePercent,
         direction: isPositive ? "up" : "down",
       },
     };
 
-    setItems((prev) => [newItem, ...prev]);
+    const updated = [newItem, ...items];
+    setItems(updated);
     toastSuccess("Titre ajouté", `Le titre / indice ${formData.name} a été ajouté avec succès.`);
     setIsAddModalOpen(false);
     setFormData({
@@ -90,6 +117,7 @@ export default function BrvmIndicesManagement() {
       price: "",
       changePercent: "+0.00%",
     });
+    persistItems(updated);
   };
 
   const loadAll = async () => {

@@ -83,7 +83,6 @@ export default function Indices() {
     </div>
   );
 
-  // Composant pour afficher un indice/commodité
   const MarketItem = ({
     name,
     value,
@@ -105,38 +104,38 @@ export default function Indices() {
     icon?: string;
     source?: string;
   }) => (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          {icon && <span className="text-2xl">{icon}</span>}
+    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6 hover:shadow-xl transition-all duration-300">
+      <div className="flex items-start justify-between mb-3 sm:mb-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {icon && <span className="text-xl sm:text-2xl">{icon}</span>}
           <div>
-            <h3 className="text-xl font-bold text-gray-900">{name}</h3>
-            {unit && <p className="text-sm text-gray-500">({unit})</p>}
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 line-clamp-1">{name}</h3>
+            {unit && <p className="text-xs sm:text-sm text-gray-500">({unit})</p>}
           </div>
         </div>
         {source && !source.toLowerCase().includes("sikafinance") && !source.toLowerCase().includes("marché") && (
-          <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full font-medium">
+          <span className="text-[10px] sm:text-xs px-2 py-0.5 sm:py-1 bg-gray-100 text-gray-600 rounded-full font-medium hidden sm:inline-block">
             {source}
           </span>
         )}
       </div>
 
-      <div className="mb-4">
-        <div className="text-3xl font-bold text-gray-900 mb-1">{value}</div>
+      <div className="mb-3 sm:mb-4">
+        <div className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-1">{value}</div>
         <div
-          className={`flex items-center gap-1 text-sm font-semibold ${isPositive ? "text-green-600" : "text-red-600"}`}
+          className={`flex flex-wrap items-center gap-1 text-xs sm:text-sm font-semibold ${isPositive ? "text-green-600" : "text-red-600"}`}
         >
           {isPositive ? (
-            <TrendingUp className="w-4 h-4" />
+            <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           ) : (
-            <TrendingDown className="w-4 h-4" />
+            <TrendingDown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           )}
           <span>{change}</span>
           <span>({changePercent})</span>
         </div>
       </div>
 
-      <p className="text-gray-600 text-sm leading-relaxed">{description}</p>
+      <p className="text-gray-600 text-xs sm:text-sm leading-relaxed hidden sm:block">{description}</p>
     </div>
   );
 
@@ -292,12 +291,12 @@ export default function Indices() {
                   <span>🏢</span>
                   Sociétés & Actions Cotées (BRVM)
                 </h3>
-                <div className="grid lg:grid-cols-3 gap-6">
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {brvmData.topStocks.map((stock, i) => (
                     <MarketItem
                       key={stock.symbol || i}
                       name={stock.name || stock.symbol}
-                      value={`${stock.price || stock.value} FCFA`}
+                      value={`${stock.price} FCFA`}
                       change={stock.change}
                       changePercent={stock.changePercent}
                       isPositive={stock.isPositive}
@@ -317,7 +316,7 @@ export default function Indices() {
                   <span>📊</span>
                   Indices Sectoriels BRVM
                 </h3>
-                <div className="grid lg:grid-cols-3 gap-6">
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {brvmData.sectoriels.map((index, i) => (
                     <MarketItem
                       key={i}
@@ -354,7 +353,7 @@ export default function Indices() {
               </div>
 
               {/* Affichage dynamique de toutes les matières premières disponibles */}
-              <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {Object.entries(commoditiesData)
                   .filter(([key, val]) => val && typeof val === "object" && (val as any).name && (val as any).price)
                   .map(([key, item]: [string, any]) => (

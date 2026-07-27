@@ -650,7 +650,7 @@ const Investissement = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[11px] font-bold uppercase tracking-wider text-[#373B3A] mb-1.5">
                         Représentant *
@@ -681,7 +681,7 @@ const Investissement = () => {
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in duration-200">
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-wider text-[#373B3A] mb-1.5">
                       Nom et Prénom *
@@ -713,7 +713,7 @@ const Investissement = () => {
               )}
 
               {/* Téléphone & Montant d'option */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-[#373B3A] mb-1.5">
                     Téléphone / WhatsApp *

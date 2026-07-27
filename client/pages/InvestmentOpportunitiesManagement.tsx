@@ -177,7 +177,7 @@ export default function InvestmentOpportunitiesManagement() {
 
   const handleUpdateRequestStatus = async (requestId: string, newStatus: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/investments/requests/${requestId}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/investment-requests/${requestId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ status: newStatus }),

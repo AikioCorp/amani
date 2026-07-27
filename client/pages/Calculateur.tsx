@@ -182,7 +182,7 @@ export default function Calculateur() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Type d'intérêts
                 </label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     onClick={() => setTypeCalcul("simple")}
                     className={`px-4 py-3 rounded-lg border text-sm font-medium transition-colors ${

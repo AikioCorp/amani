@@ -48,19 +48,15 @@ const Footer = () => {
   return (
     <footer className="bg-[#373B3A] text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Logo and Description */}
-          <div className="col-span-1 lg:col-span-2">
-            <div className="flex items-center gap-3 mb-6">
+          <div className="col-span-2">
+            <div className="mb-6">
               <img
                 src="https://cdn.builder.io/api/v1/image/assets%2Fa7441c9084eb43e6855cf7e960c5c609%2F6ebebc1a91e8447db48a68aa5b391a28?format=webp&width=800"
                 alt="Amani Finance"
                 className="h-10 w-auto"
               />
-              <div>
-                <div className="text-xl font-bold text-white">Amani Finance</div>
-                <div className="text-sm text-gray-300">Économie & Finance Africaine</div>
-              </div>
             </div>
             <p className="text-gray-300 leading-relaxed mb-6 max-w-md">
               Votre plateforme de référence pour l'information économique et financière en Afrique. 
@@ -122,33 +118,35 @@ const Footer = () => {
                 </li>
               ))}
             </ul>
+          </div>
+        </div>
 
-            {/* Newsletter Signup */}
-            <div className="mt-8 p-4 bg-gray-700 rounded-lg">
-              <h4 className="text-sm font-semibold mb-3 text-white">Newsletter</h4>
-              <p className="text-xs text-gray-300 mb-3">
-                Recevez nos analyses directement dans votre boîte mail
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="email"
-                  placeholder="Votre email"
-                  className="flex-1 px-3 py-2 bg-gray-600 text-white placeholder-gray-400 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#E5DDD5]"
-                />
-                <button className="px-3 py-2 bg-[#E5DDD5] text-[#373B3A] rounded text-sm font-medium hover:bg-[#E5DDD2] transition-colors">
-                  OK
-                </button>
-              </div>
-            </div>
+        {/* Newsletter Signup Banner */}
+        <div className="mt-12 p-6 bg-gray-700 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h4 className="text-base font-bold text-white mb-1">Newsletter</h4>
+            <p className="text-xs sm:text-sm text-gray-300">
+              Recevez nos analyses directement dans votre boîte mail.
+            </p>
+          </div>
+          <div className="flex gap-2 w-full md:w-auto max-w-md">
+            <input
+              type="email"
+              placeholder="Votre email"
+              className="flex-1 px-4 py-2.5 bg-gray-600 text-white placeholder-gray-400 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E5DDD5] min-w-0"
+            />
+            <button className="px-5 py-2.5 bg-[#E5DDD5] text-[#373B3A] rounded-lg text-sm font-semibold hover:bg-[#E5DDD2] transition-colors whitespace-nowrap">
+              S'abonner
+            </button>
           </div>
         </div>
 
         {/* Bottom Bar */}
         <div className="border-t border-gray-600 mt-12 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex flex-col md:flex-row items-center gap-4 text-sm text-gray-400">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-4 text-sm text-gray-400 text-center">
               <div>© {currentYear} Amani Finance. Tous droits réservés.</div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center justify-center gap-1">
                 Créé avec <Heart className="w-4 h-4 text-red-500 fill-current" /> par 
                 <a 
                   href="https://www.aikio.co" 
@@ -161,7 +159,7 @@ const Footer = () => {
               </div>
             </div>
             
-            <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-sm">
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-center">
               <Link to="/about" className="text-gray-400 hover:text-white transition-colors">
                 À propos
               </Link>

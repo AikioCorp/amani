@@ -32,6 +32,7 @@ const Tech = () => {
   const techNews = useMemo(() => {
     return (dbArticles || []).map((art: any) => ({
       id: art.id,
+      slug: art.slug || art.id,
       title: art.title,
       category: art.category_info?.name || 'Technologie',
       summary: art.summary || art.excerpt || '',

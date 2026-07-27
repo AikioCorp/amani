@@ -50,6 +50,7 @@ export default function DashboardMain() {
     user?: string;
     icon: React.ComponentType<{ className?: string }>;
     color: string;
+    slug?: string;
   }>>([]);
   const [personal, setPersonal] = useState({
     myArticles: 0,

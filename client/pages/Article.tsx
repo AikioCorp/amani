@@ -1,13 +1,14 @@
 import React from "react";
 import { API_BASE_URL as API_BASE } from "../services/apiConfig";
 import { useParams, Link } from "react-router-dom";
-import { Calendar, ArrowLeft, Share2, Mail, Send, Crown, Lock, Sparkles } from "lucide-react";
+import { Calendar, ArrowLeft, Share2, Mail, Send, Crown, Lock, Sparkles, Heart, Bookmark, MessageSquare } from "lucide-react";
 import { useArticles } from "../hooks/useArticles";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 import { getSessionToken } from "../services/authService";
 import { ArticleDetailSkeleton } from "../components/ui/SkeletonLoaders";
 import { apiCache } from "../lib/apiCache";
+import { CommentService, InteractionService } from "../services/supabase";
 
 export default function Article() {
   const { id } = useParams();
@@ -19,6 +20,36 @@ export default function Article() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [showSticky, setShowSticky] = React.useState(false);
+
+  const [isLiked, setIsLiked] = React.useState(false);
+  const [likesCount, setLikesCount] = React.useState(0);
+  const [isBookmarked, setIsBookmarked] = React.useState(false);
+  const [comments, setComments] = React.useState<any[]>([]);
+  const [newComment, setNewComment] = React.useState("");
+  const [commenting, setCommenting] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!article) return;
+    setLikesCount(article.likes || 0);
+
+    const loadInteractionsAndComments = async () => {
+      try {
+        const comms = await CommentService.getComments(article.id);
+        setComments(comms);
+
+        if (user) {
+          const inters = await InteractionService.getUserInteractions(user.id, [article.id]);
+          if (inters && inters[article.id]) {
+            setIsLiked(inters[article.id].liked);
+            setIsBookmarked(inters[article.id].bookmarked);
+          }
+        }
+      } catch (e) {
+        console.error("Error loading interactions/comments:", e);
+      }
+    };
+    loadInteractionsAndComments();
+  }, [article, user]);
   React.useEffect(() => {
     let mounted = true;
     const run = async () => {
@@ -301,6 +332,163 @@ export default function Article() {
                       </div>
                     </div>
                   )}
+
+                  {/* Barre d'interactions (Likes / Bookmarks / Comments count) */}
+                  <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                      {/* Bouton Like */}
+                      <button
+                        onClick={async () => {
+                          if (!user) {
+                            toast.warning("Connexion requise", "Veuillez vous connecter pour aimer cet article.");
+                            return;
+                          }
+                          const liked = await InteractionService.toggleLike(article.id);
+                          setIsLiked(liked);
+                          setLikesCount(prev => liked ? prev + 1 : prev - 1);
+                        }}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                          isLiked
+                            ? "bg-red-50 text-red-600 border border-red-100"
+                            : "bg-gray-50 text-gray-500 hover:text-gray-900 border border-gray-100"
+                        }`}
+                      >
+                        <Heart className={`w-4 h-4 ${isLiked ? "fill-red-600 text-red-600" : ""}`} />
+                        <span>{likesCount}</span>
+                      </button>
+
+                      {/* Indicateur de Commentaires */}
+                      <div className="flex items-center gap-2 text-gray-500 text-sm font-bold">
+                        <MessageSquare className="w-4 h-4" />
+                        <span>{comments.length}</span>
+                      </div>
+                    </div>
+
+                    {/* Bouton Bookmark */}
+                    <button
+                      onClick={async () => {
+                        if (!user) {
+                          toast.warning("Connexion requise", "Veuillez vous connecter pour ajouter cet article à vos favoris.");
+                          return;
+                        }
+                        const bookmarked = await InteractionService.toggleBookmark(article.id);
+                        setIsBookmarked(bookmarked);
+                        if (bookmarked) {
+                          toast.success("Favori ajouté", "Cet article a été ajouté à vos favoris.");
+                        } else {
+                          toast.success("Favori retiré", "Cet article a été retiré de vos favoris.");
+                        }
+                      }}
+                      className={`p-2.5 rounded-full transition-all border ${
+                        isBookmarked
+                          ? "bg-amber-50 text-amber-600 border-amber-100"
+                          : "bg-gray-50 text-gray-400 hover:text-gray-900 border-gray-100"
+                      }`}
+                      title={isBookmarked ? "Retirer des favoris" : "Ajouter aux favoris"}
+                    >
+                      <Bookmark className={`w-4 h-4 ${isBookmarked ? "fill-amber-600 text-amber-600" : ""}`} />
+                    </button>
+                  </div>
+
+                  {/* Section des Commentaires */}
+                  <div className="mt-10 pt-8 border-t border-gray-100">
+                    <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                      <MessageSquare className="w-5 h-5 text-gray-500" />
+                      Commentaires ({comments.length})
+                    </h3>
+
+                    {/* Formulaire d'ajout de commentaire */}
+                    {user ? (
+                      <form
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          if (!newComment.trim()) return;
+                          try {
+                            setCommenting(true);
+                            const added = await CommentService.createComment(article.id, newComment);
+                            setComments(prev => [...prev, added]);
+                            setNewComment("");
+                            toast.success("Commentaire publié", "Votre commentaire est en ligne !");
+                          } catch (err: any) {
+                            toast.error("Erreur", err.message || "Impossible de publier le commentaire.");
+                          } finally {
+                            setCommenting(false);
+                          }
+                        }}
+                        className="mb-8"
+                      >
+                        <textarea
+                          rows={3}
+                          value={newComment}
+                          onChange={(e) => setNewComment(e.target.value)}
+                          placeholder="Partagez votre avis sur cette analyse..."
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#9C8464] placeholder-gray-400 transition-all resize-none"
+                          disabled={commenting}
+                        />
+                        <div className="flex justify-end mt-2">
+                          <button
+                            type="submit"
+                            disabled={commenting || !newComment.trim()}
+                            className="px-5 py-2 bg-[#9C8464] hover:bg-[#857053] disabled:opacity-50 text-white text-xs font-bold uppercase tracking-widest rounded-lg shadow-sm transition-all"
+                          >
+                            {commenting ? "Publication..." : "Publier"}
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className="bg-gray-50 border border-gray-100 rounded-xl p-6 text-center mb-8">
+                        <p className="text-sm text-gray-500 mb-3">Veuillez vous connecter pour laisser un commentaire.</p>
+                        <Link
+                          to="/login"
+                          className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-900 hover:bg-black text-white text-xs font-bold uppercase tracking-widest rounded-lg shadow-sm transition-all"
+                        >
+                          Se connecter
+                        </Link>
+                      </div>
+                    )}
+
+                    {/* Liste des commentaires */}
+                    {comments.length > 0 ? (
+                      <div className="space-y-4">
+                        {comments.map((comm) => (
+                          <div key={comm.id || comm.comment_id} className="bg-gray-50/50 border border-gray-100 rounded-xl p-5 flex gap-4">
+                            {/* Avatar */}
+                            <div className="w-10 h-10 bg-[#9C8464]/10 text-[#9C8464] font-bold rounded-full flex items-center justify-center flex-shrink-0">
+                              {comm.user?.avatar_url ? (
+                                <img
+                                  src={comm.user.avatar_url}
+                                  alt={`${comm.user.first_name}`}
+                                  className="w-full h-full object-cover rounded-full"
+                                />
+                              ) : (
+                                <span>{(comm.user?.first_name || "A")?.[0]?.toUpperCase()}</span>
+                              )}
+                            </div>
+
+                            {/* Contenu */}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-bold text-sm text-gray-900">
+                                  {comm.user ? `${comm.user.first_name} ${comm.user.last_name}` : "Utilisateur"}
+                                </span>
+                                <span className="text-[11px] text-gray-400 font-medium">
+                                  {new Date(comm.created_at).toLocaleDateString("fr-FR", {
+                                    day: "numeric",
+                                    month: "short",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                              </div>
+                              <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{comm.comment}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-400 italic mb-8">Aucun commentaire pour le moment. Soyez le premier à donner votre avis !</p>
+                    )}
+                  </div>
 
                   {/* Related Articles */}
                   <div className="mt-12">

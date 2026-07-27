@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
+import { getSessionToken } from "../services/authService";
+import { API_BASE_URL as API_BASE } from "../services/apiConfig";
 import {
   Activity,
   Users,
@@ -44,6 +46,48 @@ export default function UserActivity() {
   const [filterDate, setFilterDate] = useState("today");
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
 
+  const [summaryData, setSummaryData] = useState<any>(null);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const token = getSessionToken();
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+        const [summaryRes, activitiesRes] = await Promise.all([
+          fetch(`${API_BASE}/admin/analytics/summary`, { headers }),
+          fetch(`${API_BASE}/admin/analytics/activities`, { headers }),
+        ]);
+
+        if (!summaryRes.ok || !activitiesRes.ok) {
+          throw new Error("Erreur lors de la récupération des données d'activité");
+        }
+
+        const [summaryJson, activitiesJson] = await Promise.all([
+          summaryRes.json(),
+          activitiesRes.json(),
+        ]);
+
+        if (summaryJson.success && activitiesJson.success) {
+          setSummaryData(summaryJson.data);
+          setActivities(activitiesJson.data);
+        } else {
+          throw new Error(summaryJson.error || activitiesJson.error || "Erreur inconnue");
+        }
+      } catch (err: any) {
+        console.error(err);
+        setFetchError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
   // Check permissions
   if (!user || !hasPermission("view_user_activity")) {
     return (
@@ -61,126 +105,33 @@ export default function UserActivity() {
     );
   }
 
-  // Mock data - in real app would come from API
-  const activities = [
-    {
-      id: "1",
-      userId: "user-123",
-      userName: "Fatou Diallo",
-      userEmail: "fatou@example.com",
-      userRole: "editeur",
-      action: "login",
-      actionLabel: "Connexion",
-      description: "Connexion depuis Bamako, Mali",
-      timestamp: "2024-01-15T14:30:00Z",
-      ipAddress: "197.149.89.10",
-      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      device: "desktop",
-      location: "Bamako, Mali",
-      status: "success",
-      details: {
-        sessionDuration: "2h 45m",
-        pagesVisited: 12,
-      },
-    },
-    {
-      id: "2",
-      userId: "user-456",
-      userName: "Ibrahim Touré",
-      userEmail: "ibrahim@example.com",
-      userRole: "analyste",
-      action: "create_article",
-      actionLabel: "Article créé",
-      description: "Création de l'article 'Évolution du FCFA'",
-      timestamp: "2024-01-15T13:15:00Z",
-      ipAddress: "197.149.89.15",
-      userAgent:
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-      device: "desktop",
-      location: "Ouagadougou, Burkina Faso",
-      status: "success",
-      details: {
-        articleId: "article-789",
-        category: "Économie",
-        wordCount: 1250,
-      },
-    },
-    {
-      id: "3",
-      userId: "user-789",
-      userName: "Aïcha Koné",
-      userEmail: "aicha@example.com",
-      userRole: "moderateur",
-      action: "moderate_comment",
-      actionLabel: "Commentaire modéré",
-      description: "Modération d'un commentaire inapproprié",
-      timestamp: "2024-01-15T12:45:00Z",
-      ipAddress: "197.149.89.25",
-      userAgent:
-        "Mozilla/5.0 (iPad; CPU OS 15_0 like Mac OS X) AppleWebKit/605.1.15",
-      device: "tablet",
-      location: "Niamey, Niger",
-      status: "success",
-      details: {
-        commentId: "comment-456",
-        action: "hidden",
-        reason: "Contenu inapproprié",
-      },
-    },
-    {
-      id: "4",
-      userId: "user-321",
-      userName: "Moussa Traoré",
-      userEmail: "moussa@example.com",
-      userRole: "abonne",
-      action: "download_report",
-      actionLabel: "Rapport téléchargé",
-      description: "Téléchargement du rapport économique mensuel",
-      timestamp: "2024-01-15T11:20:00Z",
-      ipAddress: "197.149.89.30",
-      userAgent:
-        "Mozilla/5.0 (Android 12; Mobile; rv:108.0) Gecko/108.0 Firefox/108.0",
-      device: "mobile",
-      location: "Bamako, Mali",
-      status: "success",
-      details: {
-        reportId: "report-202401",
-        format: "PDF",
-        size: "2.3 MB",
-      },
-    },
-    {
-      id: "5",
-      userId: "user-654",
-      userName: "Salif Keita",
-      userEmail: "salif@example.com",
-      userRole: "editeur",
-      action: "failed_login",
-      actionLabel: "Échec de connexion",
-      description: "Tentative de connexion échouée - mot de passe incorrect",
-      timestamp: "2024-01-15T10:05:00Z",
-      ipAddress: "41.189.178.45",
-      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      device: "desktop",
-      location: "Abidjan, Côte d'Ivoire",
-      status: "failed",
-      details: {
-        attempts: 3,
-        lastSuccessfulLogin: "2024-01-14T08:30:00Z",
-      },
-    },
-  ];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-amani-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="bg-red-50 text-red-600 p-6 rounded-2xl border border-red-100">
+        <h3 className="font-bold text-lg mb-2">Erreur de chargement</h3>
+        <p>{fetchError}</p>
+      </div>
+    );
+  }
 
   const stats = {
-    totalUsers: 25847,
-    activeToday: 1247,
-    totalSessions: 3456,
-    averageSessionTime: "24m",
-    topActions: {
-      login: 890,
-      view_article: 567,
-      download_report: 234,
-      create_content: 123,
+    totalUsers: summaryData?.totalUsers || 0,
+    activeToday: summaryData?.activeToday || 0,
+    totalSessions: summaryData?.totalSessions || 0,
+    averageSessionTime: summaryData?.averageSessionTime || "0m",
+    topActions: summaryData?.topActions || {
+      login: 0,
+      view_article: 0,
+      download_report: 0,
+      create_content: 0,
     },
     deviceBreakdown: {
       desktop: 65,
@@ -501,7 +452,7 @@ export default function UserActivity() {
                 >
                   <ActionIcon className={`w-5 h-5 ${getActionColor(action)}`} />
                   <div>
-                    <div className="font-bold text-amani-primary">{count}</div>
+                    <div className="font-bold text-amani-primary">{String(count)}</div>
                     <div className="text-sm text-gray-600">
                       {getActionLabel(action)}
                     </div>

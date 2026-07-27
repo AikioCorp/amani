@@ -47,6 +47,7 @@ export default function Economie() {
   const articles = useMemo(() => {
     return (dbArticles || []).map((art: any) => ({
       id: art.id,
+      slug: art.slug || art.id,
       title: art.title,
       excerpt: art.summary || art.excerpt || '',
       content: art.content || '',
@@ -155,7 +156,7 @@ export default function Economie() {
                     {featuredArticle.excerpt}
                   </p>
                   
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-4 text-sm text-gray-600">
                       <span className="flex items-center gap-1">
                         <Users className="w-4 h-4" />
@@ -167,7 +168,7 @@ export default function Economie() {
                       </span>
                     </div>
                     
-                    <span className="flex items-center gap-2 px-6 py-3 bg-amani-primary text-white rounded-lg group-hover:bg-black transition-colors font-medium">
+                    <span className="flex items-center justify-center gap-2 px-6 py-3 bg-amani-primary text-white rounded-lg group-hover:bg-black transition-colors font-medium">
                       Lire l'article
                       <ArrowRight className="w-5 h-5" />
                     </span>
@@ -195,7 +196,7 @@ export default function Economie() {
                 />
               </div>
               
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                 <div className="flex items-center gap-2">
                   <Filter className="w-5 h-5 text-gray-500" />
                   <select
@@ -358,7 +359,7 @@ export default function Economie() {
                         {article.excerpt}
                       </p>
                       
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-wrap items-center justify-between gap-4">
                         <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
                           <span className="flex items-center gap-1">
                             <Users className="w-3.5 h-3.5" />

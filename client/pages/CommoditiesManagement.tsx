@@ -22,6 +22,8 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { useCommodities, CommodityPoint } from "../hooks/useCommodities";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { getSessionToken } from "../services/authService";
+import { API_BASE_URL as API_BASE } from "../services/apiConfig";
 
 export default function CommoditiesManagement() {
   const { user, hasPermission } = useAuth();
@@ -46,6 +48,26 @@ export default function CommoditiesManagement() {
     changePercent: "+0.0%",
   });
 
+  const persistCommodities = async (updatedCommodities: CommodityPoint[], updatedHiddenIds: string[]) => {
+    try {
+      const token = getSessionToken();
+      const res = await fetch(`${API_BASE}/admin/market/commodities`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ items: updatedCommodities, hiddenIds: updatedHiddenIds }),
+      });
+      if (!res.ok) {
+        toastError("Erreur de persistance", "Les modifications n'ont pas pu être sauvegardées sur le serveur.");
+      }
+    } catch (e) {
+      console.error(e);
+      toastError("Erreur réseau", "Impossible de sauvegarder les modifications.");
+    }
+  };
+
   const handleAddCommodity = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.price.trim()) {
@@ -56,20 +78,20 @@ export default function CommoditiesManagement() {
     const isPositive = !formData.changePercent.includes("-");
     const newPoint: CommodityPoint = {
       id: `custom_${Date.now()}`,
+      slug: formData.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
       code: formData.code.toUpperCase() || formData.name.substring(0, 4).toUpperCase(),
       name: formData.name,
       category: formData.category,
       latest: {
-        id: `lat_${Date.now()}`,
-        commodity_id: `custom_${Date.now()}`,
-        recorded_at: new Date().toISOString(),
+        as_of: new Date().toISOString(),
         close: `${formData.price} ${formData.unit}`,
         change_percent: formData.changePercent,
         direction: isPositive ? "up" : "down",
       },
     };
 
-    setCommodities((prev) => [newPoint, ...prev]);
+    const updated = [newPoint, ...commodities];
+    setCommodities(updated);
     toastSuccess("Matière ajoutée", `La matière première ${formData.name} a été ajoutée avec succès.`);
     setIsAddModalOpen(false);
     setFormData({
@@ -80,6 +102,7 @@ export default function CommoditiesManagement() {
       unit: "USD / Tonne",
       changePercent: "+0.0%",
     });
+    persistCommodities(updated, hiddenIds);
   };
 
   // Édition & Suppression
@@ -89,26 +112,71 @@ export default function CommoditiesManagement() {
     e.preventDefault();
     if (!editingCommodity) return;
 
-    setCommodities((prev) =>
-      prev.map((item) =>
-        item.id === editingCommodity.id ? editingCommodity : item
-      )
+    const updated = commodities.map((item) =>
+      item.id === editingCommodity.id ? editingCommodity : item
     );
+    setCommodities(updated);
     toastSuccess("Mise à jour réussie", `La matière ${editingCommodity.name} a été modifiée.`);
     setEditingCommodity(null);
+    persistCommodities(updated, hiddenIds);
   };
 
   const handleDeleteCommodity = (id: string, name: string) => {
     if (window.confirm(`Voulez-vous vraiment supprimer la matière première "${name}" ?`)) {
-      setCommodities((prev) => prev.filter((item) => item.id !== id));
+      const updated = commodities.filter((item) => item.id !== id);
+      setCommodities(updated);
       toastSuccess("Suppression effectuée", `La matière première ${name} a été supprimée.`);
+      persistCommodities(updated, hiddenIds);
     }
   };
 
   const loadAll = async () => {
     try {
-      const data = await fetchCommodities();
-      setCommodities(data);
+      const resp = await fetch(`${API_BASE}/commodities`);
+      if (!resp.ok) throw new Error("Erreur de chargement des matières premières");
+      const result = await resp.json();
+      const resData = result.data;
+
+      let rawData: any[] = [];
+      let loadedHidden: string[] = [];
+
+      if (resData && typeof resData === "object") {
+        if (Array.isArray(resData.items)) {
+          rawData = resData.items;
+        } else {
+          rawData = Object.values(resData).filter(
+            (v: any) => v && typeof v === "object" && (v.name || v.price || v.symbol)
+          );
+        }
+        if (Array.isArray(resData.hiddenIds)) {
+          loadedHidden = resData.hiddenIds;
+        }
+      } else if (Array.isArray(resData)) {
+        rawData = resData;
+      }
+
+      const points = rawData.map((item: any, idx: number): CommodityPoint => ({
+        id: item.id || item.symbol || `comm-${idx}`,
+        slug: item.slug || item.symbol?.toLowerCase()?.replace(/[^a-z0-9]/g, "-") || `comm-${idx}`,
+        name: item.name || item.title || `Matière Première ${idx + 1}`,
+        code: item.symbol || item.code || null,
+        description: item.description || null,
+        category: item.category || "Matière Première",
+        currency: item.currency || "USD",
+        unit: item.unit || "unités",
+        source: item.source || "Marchés Globaux",
+        latest: {
+          close: item.price || item.latest?.close || item.value || null,
+          change_percent: item.changePercent || item.latest?.change_percent || null,
+          ytd_percent: item.ytd_percent || null,
+          direction: item.isPositive ? "up" : item.isPositive === false ? "down" : item.direction || "neutral",
+          as_of: item.lastUpdate || item.latest?.as_of || new Date().toISOString().slice(0, 10),
+          created_at: item.created_at,
+        },
+      }));
+
+      setCommodities(points);
+      setHiddenIds(loadedHidden);
     } catch (e: any) {
       toastError("Erreur", e?.message || "Erreur de chargement des matières premières");
     }
@@ -119,9 +187,9 @@ export default function CommoditiesManagement() {
   }, []);
 
   const toggleHide = (id: string) => {
-    setHiddenIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
+    const updatedHidden = hiddenIds.includes(id) ? hiddenIds.filter((i) => i !== id) : [...hiddenIds, id];
+    setHiddenIds(updatedHidden);
+    persistCommodities(commodities, updatedHidden);
   };
 
   // Categories derivation

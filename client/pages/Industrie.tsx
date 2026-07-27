@@ -22,6 +22,7 @@ const Industrie = () => {
   const industrialNews = useMemo(() => {
     return (dbArticles || []).map((art: any) => ({
       id: art.id,
+      slug: art.slug || art.id,
       title: art.title,
       summary: art.summary || art.excerpt || '',
       sector: art.category_info?.name || 'Mines & Industrie',

@@ -1303,7 +1303,7 @@ export default function Index() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
               {[
                 commoditiesData.gold,
                 commoditiesData.cotton,
@@ -1313,42 +1313,42 @@ export default function Index() {
                 // Map symbol to Lucide icons
                 const getIcon = (sym: string) => {
                   switch (sym) {
-                    case "XAU/USD": return <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100"><span className="font-bold text-sm">Au</span></div>; // Gold
-                    case "CT": return <div className="w-10 h-10 rounded-full bg-slate-50 text-slate-600 flex items-center justify-center border border-slate-200"><Heart className="w-5 h-5" /></div>; // Cotton
-                    case "BZ": return <div className="w-10 h-10 rounded-full bg-zinc-100 text-zinc-800 flex items-center justify-center border border-zinc-200"><Zap className="w-5 h-5" /></div>; // Oil
-                    case "CC": return <div className="w-10 h-10 rounded-full bg-orange-50 text-[#857053] flex items-center justify-center border border-orange-100"><Target className="w-5 h-5" /></div>; // Cocoa
-                    default: return <div className="w-10 h-10 rounded-full bg-gray-50 text-gray-600 flex items-center justify-center border border-gray-200"><BarChart3 className="w-5 h-5" /></div>;
+                    case "XAU/USD": return <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100"><span className="font-bold text-xs sm:text-sm">Au</span></div>; // Gold
+                    case "CT": return <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-50 text-slate-600 flex items-center justify-center border border-slate-200"><Heart className="w-4 h-4 sm:w-5 sm:h-5" /></div>; // Cotton
+                    case "BZ": return <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-zinc-100 text-zinc-800 flex items-center justify-center border border-zinc-200"><Zap className="w-4 h-4 sm:w-5 sm:h-5" /></div>; // Oil
+                    case "CC": return <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-orange-50 text-[#857053] flex items-center justify-center border border-orange-100"><Target className="w-4 h-4 sm:w-5 sm:h-5" /></div>; // Cocoa
+                    default: return <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-50 text-gray-600 flex items-center justify-center border border-gray-200"><BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" /></div>;
                   }
                 };
 
                 return (
                   <div
                     key={index}
-                    className="bg-[#FDFBF9] border border-[#EBE6DD] rounded-2xl p-6 hover:border-[#9C8464]/40 hover:shadow-sm transition-all duration-300 group"
+                    className="bg-[#FDFBF9] border border-[#EBE6DD] rounded-2xl p-4 sm:p-6 hover:border-[#9C8464]/40 hover:shadow-sm transition-all duration-300 group"
                   >
-                    <div className="flex items-start justify-between mb-6">
+                    <div className="flex items-start justify-between mb-4 sm:mb-6">
                       {getIcon(commodity.symbol)}
                       <div
-                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${commodity.isPositive ? "bg-green-50 text-green-700 border border-green-100" : "bg-red-50 text-red-700 border border-red-100"}`}
+                        className={`flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold ${commodity.isPositive ? "bg-green-50 text-green-700 border border-green-100" : "bg-red-50 text-red-700 border border-red-100"}`}
                       >
                         {commodity.isPositive ? (
-                          <TrendingUp className="w-3.5 h-3.5" />
+                          <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                         ) : (
-                          <TrendingDown className="w-3.5 h-3.5" />
+                          <TrendingDown className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                         )}
                         {commodity.changePercent}
                       </div>
                     </div>
 
-                    <h4 className="text-gray-500 font-medium text-sm mb-1 uppercase tracking-wide">
+                    <h4 className="text-gray-500 font-medium text-xs sm:text-sm mb-1 uppercase tracking-wide line-clamp-1">
                       {commodity.name}
                     </h4>
                     <div className="flex items-baseline gap-2 mb-1">
-                      <span className="text-2xl font-black text-gray-900 tracking-tight">
+                      <span className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
                         ${commodity.price}
                       </span>
                     </div>
-                    <div className="text-xs font-medium text-gray-400">
+                    <div className="text-[10px] sm:text-xs font-medium text-gray-400">
                       {commodity.unit}
                     </div>
                   </div>
@@ -1387,7 +1387,7 @@ export default function Index() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {[
               {
                 icon: BarChart3,
@@ -1428,17 +1428,17 @@ export default function Index() {
             ].map((service, index) => (
               <div
                 key={index}
-                className="bg-[#FDFBF9] border border-[#EBE6DD] rounded-2xl p-8 hover:border-[#9C8464]/40 hover:shadow-sm transition-all duration-300 group"
+                className="bg-[#FDFBF9] border border-[#EBE6DD] rounded-2xl p-4 sm:p-6 md:p-8 hover:border-[#9C8464]/40 hover:shadow-sm transition-all duration-300 group"
               >
                 <div
-                  className="w-14 h-14 rounded-xl flex items-center justify-center mb-6 bg-white border border-gray-100 group-hover:bg-[#9C8464] group-hover:border-[#9C8464] transition-all duration-300"
+                  className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center mb-4 sm:mb-6 bg-white border border-gray-100 group-hover:bg-[#9C8464] group-hover:border-[#9C8464] transition-all duration-300"
                 >
-                  <service.icon className="w-6 h-6 text-[#9C8464] group-hover:text-white transition-colors duration-300" />
+                  <service.icon className="w-5 h-5 sm:w-6 sm:h-6 text-[#9C8464] group-hover:text-white transition-colors duration-300" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 mb-2 sm:mb-3 line-clamp-1">
                   {service.title}
                 </h3>
-                <p className="text-sm text-gray-500 leading-relaxed font-medium">
+                <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-medium line-clamp-3 sm:line-clamp-none">
                   {service.description}
                 </p>
               </div>
@@ -1463,7 +1463,7 @@ export default function Index() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-12">
             {[
               {
                 icon: CheckCircle,
@@ -1491,13 +1491,13 @@ export default function Index() {
               },
             ].map((feature, index) => (
               <div key={index} className="flex flex-col items-center text-center group">
-                <div className="w-16 h-16 rounded-full border border-[#EBE6DD] bg-white flex items-center justify-center mb-6 group-hover:border-[#9C8464] group-hover:bg-[#FDFBF9] transition-all duration-300">
-                  <feature.icon className="w-6 h-6 text-[#9C8464]" />
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border border-[#EBE6DD] bg-white flex items-center justify-center mb-4 sm:mb-6 group-hover:border-[#9C8464] group-hover:bg-[#FDFBF9] transition-all duration-300">
+                  <feature.icon className="w-5 h-5 sm:w-6 sm:h-6 text-[#9C8464]" />
                 </div>
-                <h3 className="text-lg font-bold mb-3 text-gray-900">
+                <h3 className="text-base sm:text-lg font-bold mb-2 sm:mb-3 text-gray-900 line-clamp-1">
                   {feature.title}
                 </h3>
-                <p className="text-sm text-gray-500 leading-relaxed font-medium">
+                <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-medium line-clamp-3 sm:line-clamp-none">
                   {feature.description}
                 </p>
               </div>

@@ -133,18 +133,54 @@ export class AnalyticsService {
 
 export class InteractionService {
   static async toggleLike(contentId: string) {
-    // TODO: implémenter via l'API
-    console.warn("[InteractionService] toggleLike non implémenté en mode standalone");
-    return false;
+    try {
+      const resp = await fetch(`${API_BASE}/contents/${contentId}/like`, {
+        method: "POST",
+        headers: authHeaders(),
+      });
+      if (!resp.ok) return false;
+      const json = await resp.json();
+      return json.success ? json.is_liked : false;
+    } catch {
+      return false;
+    }
   }
 
   static async toggleBookmark(contentId: string) {
-    console.warn("[InteractionService] toggleBookmark non implémenté en mode standalone");
-    return false;
+    try {
+      const resp = await fetch(`${API_BASE}/contents/${contentId}/bookmark`, {
+        method: "POST",
+        headers: authHeaders(),
+      });
+      if (!resp.ok) return false;
+      const json = await resp.json();
+      return json.success ? json.is_bookmarked : false;
+    } catch {
+      return false;
+    }
   }
 
   static async getUserInteractions(userId: string, contentIds: string[]) {
-    return {};
+    try {
+      const results: Record<string, { liked: boolean; bookmarked: boolean }> = {};
+      for (const id of contentIds) {
+        const resp = await fetch(`${API_BASE}/contents/${id}/interactions`, {
+          headers: authHeaders(),
+        });
+        if (resp.ok) {
+          const json = await resp.json();
+          if (json.success && json.data) {
+            results[id] = {
+              liked: json.data.is_liked,
+              bookmarked: json.data.is_bookmarked,
+            };
+          }
+        }
+      }
+      return results;
+    } catch {
+      return {};
+    }
   }
 }
 
@@ -152,13 +188,27 @@ export class InteractionService {
 
 export class CommentService {
   static async createComment(contentId: string, comment: string, parentId?: string) {
-    // TODO: implémenter via l'API si nécessaire
-    console.warn("[CommentService] createComment non implémenté en mode standalone");
-    throw new Error("La création de commentaires n'est pas encore disponible");
+    const resp = await fetch(`${API_BASE}/contents/${contentId}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ comment, parent_id: parentId }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || "Erreur de création du commentaire");
+    }
+    return (await resp.json()).data;
   }
 
   static async getComments(contentId: string) {
-    return [];
+    try {
+      const resp = await fetch(`${API_BASE}/contents/${contentId}/comments`);
+      if (!resp.ok) return [];
+      const json = await resp.json();
+      return json.data || [];
+    } catch {
+      return [];
+    }
   }
 }
 

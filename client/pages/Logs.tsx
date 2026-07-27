@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
+import { getSessionToken } from "../services/authService";
+import { API_BASE_URL as API_BASE } from "../services/apiConfig";
 import {
   Database,
   Search,
@@ -27,6 +29,38 @@ export default function Logs() {
   const [filterLevel, setFilterLevel] = useState("all");
   const [filterService, setFilterService] = useState("all");
 
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const fetchLogs = async () => {
+    try {
+      setLoading(true);
+      const token = getSessionToken();
+      const res = await fetch(`${API_BASE}/admin/logs`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (!res.ok) throw new Error("Erreur de chargement des logs");
+      const json = await res.json();
+      if (json.success) {
+        setLogs(json.data);
+      } else {
+        throw new Error(json.error || "Erreur inconnue");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setFetchError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+  }, []);
+
   // Check permissions after all hooks
   if (!user || !hasPermission("access_logs")) {
     return (
@@ -51,96 +85,22 @@ export default function Logs() {
     );
   }
 
-  const logs = [
-    {
-      id: "1",
-      timestamp: "2024-01-15 14:30:25",
-      level: "error",
-      service: "api",
-      message: "BCEAO API connection failed: timeout after 30s",
-      details: "Failed to fetch exchange rates from https://api.bceao.int/v2/rates",
-      user: "system",
-      ip: "127.0.0.1",
-      userAgent: "Node.js/18.0.0",
-    },
-    {
-      id: "2",
-      timestamp: "2024-01-15 14:25:10",
-      level: "info",
-      service: "auth",
-      message: "User login successful",
-      details: "User fatou.diallo@amani.demo authenticated successfully",
-      user: "fatou.diallo@amani.demo",
-      ip: "192.168.1.100",
-      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    },
-    {
-      id: "3",
-      timestamp: "2024-01-15 14:20:45",
-      level: "warning",
-      service: "storage",
-      message: "Disk usage above 80%",
-      details: "Current disk usage: 85% (8.5GB of 10GB used)",
-      user: "system",
-      ip: "127.0.0.1",
-      userAgent: "System Monitor",
-    },
-    {
-      id: "4",
-      timestamp: "2024-01-15 14:15:30",
-      level: "info",
-      service: "content",
-      message: "Article published successfully",
-      details: "Article 'Évolution du FCFA face à l'Euro en 2024' published by fatou.diallo@amani.demo",
-      user: "fatou.diallo@amani.demo",
-      ip: "192.168.1.100",
-      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    },
-    {
-      id: "5",
-      timestamp: "2024-01-15 14:10:15",
-      level: "debug",
-      service: "cache",
-      message: "Cache cleared for user preferences",
-      details: "Cleared 245 cached items for user preference updates",
-      user: "system",
-      ip: "127.0.0.1",
-      userAgent: "Cache Manager",
-    },
-    {
-      id: "6",
-      timestamp: "2024-01-15 14:05:00",
-      level: "error",
-      service: "email",
-      message: "Failed to send newsletter",
-      details: "SMTP server connection failed: Authentication error",
-      user: "system",
-      ip: "127.0.0.1",
-      userAgent: "Email Service",
-    },
-    {
-      id: "7",
-      timestamp: "2024-01-15 14:00:45",
-      level: "info",
-      service: "backup",
-      message: "Database backup completed",
-      details: "Backup file: db_backup_20240115_140045.sql (2.3GB)",
-      user: "system",
-      ip: "127.0.0.1",
-      userAgent: "Backup Service",
-    },
-    {
-      id: "8",
-      timestamp: "2024-01-15 13:55:30",
-      level: "warning",
-      service: "security",
-      message: "Multiple failed login attempts detected",
-      details: "5 failed login attempts for user test@example.com from IP 203.0.113.42",
-      user: "test@example.com",
-      ip: "203.0.113.42",
-      userAgent: "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36",
-    },
-  ];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-amani-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="bg-red-50 text-red-600 p-6 rounded-2xl border border-red-100">
+        <h3 className="font-bold text-lg mb-2">Erreur de chargement</h3>
+        <p>{fetchError}</p>
+      </div>
+    );
+  }
 
   const levels = [
     { id: "all", label: "Tous les niveaux" },
@@ -155,6 +115,8 @@ export default function Logs() {
     { id: "api", label: "API" },
     { id: "auth", label: "Authentification" },
     { id: "content", label: "Contenu" },
+    { id: "pipeline", label: "Pipeline IA" },
+    { id: "scraper", label: "Scraper" },
     { id: "storage", label: "Stockage" },
     { id: "cache", label: "Cache" },
     { id: "email", label: "Email" },

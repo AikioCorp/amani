@@ -212,24 +212,52 @@ export function Navigation() {
             </Link>
           ))}
 
-          {/* Mobile Login Buttons */}
+          {/* Mobile Login / Account Buttons */}
           <div className="pt-4 space-y-2 border-t border-white/20 mt-4">
-            <Link
-              to="/login"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-2 px-4 py-3 text-base font-medium text-white border border-white/30 rounded-xl hover:bg-white/10 transition-all duration-200"
-            >
-              <LogIn className="w-4 h-4" />
-              Connexion
-            </Link>
-            <Link
-              to="/register"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-2 px-4 py-3 text-base font-medium text-amani-primary bg-white rounded-xl hover:bg-white/90 transition-all duration-200"
-            >
-              <User className="w-4 h-4" />
-              S'inscrire
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <div className="px-4 py-2 text-sm text-white/60 font-medium">
+                  Connecté : <span className="text-white font-bold">{user?.firstName} {user?.lastName}</span>
+                </div>
+                <Link
+                  to="/dashboard"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-4 py-3 text-base font-medium text-white border border-white/30 rounded-xl hover:bg-white/10 transition-all duration-200"
+                >
+                  <Settings className="w-4 h-4 text-white/80" />
+                  Tableau de bord
+                </Link>
+                <button
+                  onClick={() => {
+                    logout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-3 text-base font-medium text-red-400 border border-red-500/30 rounded-xl hover:bg-red-500/10 transition-all duration-200"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Déconnexion
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-4 py-3 text-base font-medium text-white border border-white/30 rounded-xl hover:bg-white/10 transition-all duration-200"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Connexion
+                </Link>
+                <Link
+                  to="/register"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-4 py-3 text-base font-medium text-amani-primary bg-white rounded-xl hover:bg-white/90 transition-all duration-200"
+                >
+                  <User className="w-4 h-4" />
+                  S'inscrire
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

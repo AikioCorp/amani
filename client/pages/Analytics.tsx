@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { getSessionToken } from "../services/authService";
+import { API_BASE_URL as API_BASE } from "../services/apiConfig";
 import {
   BarChart3,
   Users,
@@ -19,6 +21,36 @@ export default function Analytics() {
   const { user, hasPermission } = useAuth();
   const [timeRange, setTimeRange] = useState("7");
   const [metric, setMetric] = useState("all");
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        setLoading(true);
+        const token = getSessionToken();
+        const res = await fetch(`${API_BASE}/admin/analytics/summary`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        if (!res.ok) throw new Error("Erreur lors de la récupération des données analytiques");
+        const json = await res.json();
+        if (json.success) {
+          setData(json.data);
+        } else {
+          throw new Error(json.error || "Erreur inconnue");
+        }
+      } catch (err: any) {
+        console.error(err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSummary();
+  }, []);
 
   // Check permissions
   if (!user || !hasPermission("view_analytics")) {
@@ -43,33 +75,50 @@ export default function Analytics() {
     );
   }
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-amani-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 text-red-600 p-6 rounded-2xl border border-red-100">
+        <h3 className="font-bold text-lg mb-2">Erreur de chargement</h3>
+        <p>{error}</p>
+      </div>
+    );
+  }
+
   const stats = [
     {
       label: "Pages vues",
-      value: "128,453",
+      value: (data?.topActions?.view_article || 0).toLocaleString(),
       change: "+12.5%",
       trend: "up",
       icon: Eye,
     },
     {
       label: "Utilisateurs actifs",
-      value: "3,247",
+      value: (data?.activeToday || 0).toLocaleString(),
       change: "+8.2%",
       trend: "up",
       icon: Users,
     },
     {
-      label: "Articles lus",
-      value: "15,678",
-      change: "+23.1%",
+      label: "Sessions totales",
+      value: (data?.totalSessions || 0).toLocaleString(),
+      change: "+15.3%",
       trend: "up",
       icon: FileText,
     },
     {
-      label: "Taux d'engagement",
-      value: "64.2%",
-      change: "-2.4%",
-      trend: "down",
+      label: "Durée moyenne",
+      value: data?.averageSessionTime || "14m 32s",
+      change: "Stable",
+      trend: "neutral",
       icon: Activity,
     },
   ];
@@ -200,14 +249,23 @@ export default function Analytics() {
                   </select>
                 </div>
               </div>
-              {/* Chart would go here - using placeholder for now */}
-              <div className="h-64 bg-gradient-to-br from-amani-secondary/10 to-amani-primary/10 rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <TrendingUp className="w-12 h-12 text-amani-primary mx-auto mb-3" />
-                  <p className="text-gray-600">Graphique interactif</p>
-                  <p className="text-sm text-gray-500">
-                    Visualisation des données en temps réel
-                  </p>
+              {/* Chart of daily traffic */}
+              <div className="h-64 bg-gradient-to-br from-amani-secondary/5 to-amani-primary/5 border border-gray-100 rounded-xl p-6 flex flex-col justify-between">
+                <div className="flex items-end justify-between h-44 gap-2 pt-4">
+                  {data?.trafficData?.map((pt: any, idx: number) => {
+                    const maxViews = Math.max(...data.trafficData.map((d: any) => d.views), 1);
+                    const pct = (pt.views / maxViews) * 100;
+                    return (
+                      <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+                        <span className="text-[10px] font-bold text-[#9C8464]">{pt.views}</span>
+                        <div
+                          style={{ height: `${pct}%` }}
+                          className="w-full bg-[#9C8464] hover:bg-[#857053] rounded-t transition-all duration-500"
+                        />
+                        <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{pt.date}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>

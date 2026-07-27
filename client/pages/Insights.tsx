@@ -21,6 +21,7 @@ const Insights = () => {
   const featuredInsights = useMemo(() => {
     return (dbArticles || []).map((art: any) => ({
       id: art.id,
+      slug: art.slug || art.id,
       title: art.title,
       category: art.category_info?.name || 'Insights',
       author: art.author ? `${art.author.first_name} ${art.author.last_name}` : 'Amani Rédaction',

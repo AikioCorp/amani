@@ -152,24 +152,24 @@ export default function Actualites() {
           {article.excerpt}
         </p>
 
-        <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-wrap gap-y-2 items-center justify-between text-xs sm:text-sm text-gray-500 mb-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <div className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
+              <Calendar className="w-3.5 h-3.5" />
               <span>{new Date(article.date).toLocaleDateString("fr-FR")}</span>
             </div>
             <div className="flex items-center gap-1">
-              <User className="w-4 h-4" />
-              <span>{article.author}</span>
+              <User className="w-3.5 h-3.5" />
+              <span className="truncate max-w-[120px]">{article.author}</span>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
+              <Clock className="w-3.5 h-3.5" />
               <span>{article.readTime}</span>
             </div>
             <div className="flex items-center gap-1">
-              <Eye className="w-4 h-4" />
+              <Eye className="w-3.5 h-3.5" />
               <span>{article.views.toLocaleString()}</span>
             </div>
           </div>

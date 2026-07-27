@@ -213,6 +213,7 @@ export default function Marche() {
     });
     return sorted.slice(0, 10).map((art) => ({
       id: art.id,
+      slug: art.slug || art.id,
       title: art.title,
       excerpt: art.summary || "",
       category: art.category_info?.name || "Bourse",
@@ -255,18 +256,21 @@ export default function Marche() {
             <p className="text-xl md:text-2xl mb-8 text-white/90">
               Suivez en temps réel les performances des marchés financiers ouest-africains
             </p>
-            <div className="flex items-center justify-center gap-8 text-lg">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-6 h-6" />
-                <span>{marketSummary.gainers} En hausse</span>
+            <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
+              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/15 text-sm font-medium">
+                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                <span className="text-green-300 font-semibold">{marketSummary.gainers}</span>
+                <span className="text-white/95">En hausse</span>
               </div>
-              <div className="flex items-center gap-2">
-                <TrendingDown className="w-6 h-6" />
-                <span>{marketSummary.losers} En baisse</span>
+              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/15 text-sm font-medium">
+                <span className="w-2 h-2 rounded-full bg-red-400"></span>
+                <span className="text-red-300 font-semibold">{marketSummary.losers}</span>
+                <span className="text-white/95">En baisse</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Activity className="w-6 h-6" />
-                <span>Volume: {marketSummary.totalVolume}</span>
+              <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/15 text-sm font-medium">
+                <Activity className="w-4 h-4 text-blue-300" />
+                <span className="text-white/95">Volume :</span>
+                <span className="text-blue-200 font-bold">{marketSummary.totalVolume}</span>
               </div>
             </div>
           </div>
@@ -277,17 +281,17 @@ export default function Marche() {
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold text-amani-primary mb-4 lg:mb-0 flex items-center gap-3">
-              <BarChart3 className="w-8 h-8" />
+            <h2 className="text-2xl sm:text-3xl font-bold text-amani-primary mb-4 lg:mb-0 flex items-center gap-2 sm:gap-3">
+              <BarChart3 className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0" />
               Vue d'ensemble du marché
             </h2>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Filter className="w-5 h-5 text-gray-500" />
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 sm:gap-4 w-full lg:w-auto">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Filter className="w-5 h-5 text-gray-500 flex-shrink-0" />
                 <select
                   value={selectedMarket}
                   onChange={(e) => setSelectedMarket(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amani-primary focus:border-transparent"
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amani-primary focus:border-transparent text-sm bg-white flex-1 sm:w-48"
                 >
                   {categories.map((category) => (
                     <option key={category} value={category}>
@@ -296,96 +300,107 @@ export default function Marche() {
                   ))}
                 </select>
               </div>
-              <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg p-1">
-                {timeframes.map((timeframe) => (
-                  <button
-                    key={timeframe.value}
-                    onClick={() => {
-                      setSelectedTimeframe(timeframe.value);
-                    }}
-                    className={`px-3 py-1 text-sm rounded transition-colors ${
-                      selectedTimeframe === timeframe.value
-                        ? "bg-amani-primary text-white"
-                        : "text-gray-600 hover:bg-gray-100"
-                    }`}
-                  >
-                    {timeframe.label}
-                  </button>
-                ))}
+              <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
+                <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg p-1 flex-1 sm:flex-initial justify-between sm:justify-start">
+                  {timeframes.map((timeframe) => (
+                    <button
+                      key={timeframe.value}
+                      onClick={() => {
+                        setSelectedTimeframe(timeframe.value);
+                      }}
+                      className={`px-3 py-1 text-xs sm:text-sm rounded transition-colors flex-1 sm:flex-none text-center ${
+                        selectedTimeframe === timeframe.value
+                          ? "bg-amani-primary text-white"
+                          : "text-gray-600 hover:bg-gray-100"
+                      }`}
+                    >
+                      {timeframe.label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-amani-primary text-white rounded-lg hover:bg-amani-primary/90 transition-colors disabled:opacity-50 cursor-pointer text-sm whitespace-nowrap"
+                >
+                  <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+                  {refreshing ? "Actualisation..." : "Actualiser"}
+                </button>
               </div>
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="flex items-center gap-2 px-4 py-2 bg-amani-primary text-white rounded-lg hover:bg-amani-primary/90 transition-colors disabled:opacity-50 cursor-pointer"
-              >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-                {refreshing ? "Actualisation..." : "Actualiser"}
-              </button>
             </div>
           </div>
 
           {/* Market Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-white/50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">En hausse</p>
-                  <p className="text-3xl font-bold text-green-600">{marketSummary.gainers}</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-white/50 flex flex-col justify-between h-full">
+              <div className="flex items-start justify-between mb-4">
+                <span className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider">En hausse</span>
+                <div className="p-1.5 sm:p-2 bg-green-50 text-green-600 rounded-lg border border-green-100 flex-shrink-0">
+                  <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div className="p-3 bg-green-100 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-green-600" />
-                </div>
+              </div>
+              <div>
+                <p className="text-2xl sm:text-3xl font-black text-green-600 tracking-tight">{marketSummary.gainers}</p>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-white/50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">En baisse</p>
-                  <p className="text-3xl font-bold text-red-600">{marketSummary.losers}</p>
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-white/50 flex flex-col justify-between h-full">
+              <div className="flex items-start justify-between mb-4">
+                <span className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider">En baisse</span>
+                <div className="p-1.5 sm:p-2 bg-red-50 text-red-600 rounded-lg border border-red-100 flex-shrink-0">
+                  <TrendingDown className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div className="p-3 bg-red-100 rounded-lg">
-                  <TrendingDown className="w-6 h-6 text-red-600" />
-                </div>
+              </div>
+              <div>
+                <p className="text-2xl sm:text-3xl font-black text-red-600 tracking-tight">{marketSummary.losers}</p>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-white/50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Volume total</p>
-                  <p className="text-2xl font-bold text-amani-primary">{marketSummary.totalVolume}</p>
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-white/50 flex flex-col justify-between h-full">
+              <div className="flex items-start justify-between mb-4">
+                <span className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider">Volume total</span>
+                <div className="p-1.5 sm:p-2 bg-blue-50 text-blue-600 rounded-lg border border-blue-100 flex-shrink-0">
+                  <Activity className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <Activity className="w-6 h-6 text-blue-600" />
-                </div>
+              </div>
+              <div>
+                <p className="text-base sm:text-2xl font-black text-gray-900 tracking-tight leading-none">{marketSummary.totalVolume}</p>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-white/50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Capitalisation</p>
-                  <p className="text-2xl font-bold text-amani-primary">{marketSummary.marketCap}</p>
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-white/50 flex flex-col justify-between h-full">
+              <div className="flex items-start justify-between mb-4">
+                <span className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider">Capitalisation</span>
+                <div className="p-1.5 sm:p-2 bg-purple-50 text-purple-600 rounded-lg border border-purple-100 flex-shrink-0">
+                  <PieChart className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div className="p-3 bg-purple-100 rounded-lg">
-                  <PieChart className="w-6 h-6 text-purple-600" />
-                </div>
+              </div>
+              <div>
+                <p className="text-base sm:text-2xl font-black text-gray-900 tracking-tight leading-none">{marketSummary.marketCap}</p>
               </div>
             </div>
           </div>
 
           {/* Market Data Table */}
           <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-white/50">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-xl font-bold text-amani-primary">
-                Cotations en temps réel ({filteredData.length})
-              </h3>
-              <p className="text-gray-600 mt-1">Dernière mise à jour: {new Date().toLocaleTimeString("fr-FR")}</p>
+            <div className="p-4 sm:p-6 border-b border-gray-200">
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                </span>
+                <h3 className="text-lg sm:text-xl font-bold text-amani-primary">
+                  Cotations en temps réel ({filteredData.length})
+                </h3>
+              </div>
+              <p className="text-xs sm:text-sm text-gray-500 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-gray-400" />
+                Dernière mise à jour: {new Date().toLocaleTimeString("fr-FR")}
+              </p>
             </div>
             
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full min-w-[800px]">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -475,6 +490,85 @@ export default function Marche() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card Grid */}
+            <div className="md:hidden p-4 grid grid-cols-2 gap-3 bg-gray-50/50">
+              {filteredData.map((item, index) => {
+                const getCategoryStyle = (cat: string) => {
+                  switch (cat) {
+                    case "Indice": return "bg-blue-50 text-blue-700 border-blue-100";
+                    case "Action": return "bg-amber-50/70 text-amber-800 border-amber-100";
+                    case "Devise": return "bg-green-50 text-green-700 border-green-100";
+                    default: return "bg-gray-50 text-gray-700 border-gray-100";
+                  }
+                };
+
+                return (
+                  <div
+                    key={index}
+                    className="bg-white border border-[#EBE6DD] rounded-xl p-3 sm:p-4 flex flex-col justify-between hover:shadow-md transition-all duration-300 group"
+                  >
+                    <div>
+                      {/* Card Header (Category tag + Variation percentage) */}
+                      <div className="flex items-center justify-between gap-1 mb-2">
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${getCategoryStyle(item.category)}`}>
+                          {item.category}
+                        </span>
+                        <div
+                          className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
+                            item.isPositive
+                              ? "bg-green-50 text-green-700 border border-green-100"
+                              : "bg-red-50 text-red-700 border border-red-100"
+                          }`}
+                        >
+                          {item.isPositive ? (
+                            <TrendingUp className="w-2.5 h-2.5 text-green-600" />
+                          ) : (
+                            <TrendingDown className="w-2.5 h-2.5 text-red-600" />
+                          )}
+                          <span>{item.change}</span>
+                        </div>
+                      </div>
+
+                      {/* Instrument Name */}
+                      <h4 className="text-gray-900 font-bold text-xs sm:text-sm mb-1 truncate leading-tight group-hover:text-black">
+                        {item.name}
+                      </h4>
+                      
+                      {/* Price/Value */}
+                      <div className="text-sm sm:text-base font-black text-gray-900 tracking-tight mb-2">
+                        {item.value} <span className="text-[9px] text-gray-500 font-medium">FCFA</span>
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2 pt-2 border-t border-gray-100 mt-2">
+                      <button
+                        onClick={() => {
+                          setSelectedInstrument(item);
+                          setIsChartModalOpen(true);
+                        }}
+                        className="flex-1 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors flex items-center justify-center gap-1 text-[10px] font-semibold"
+                        title="Graphique"
+                      >
+                        <LineChart className="w-3 h-3" />
+                        <span>Chart</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedInstrument(item);
+                          setIsDetailModalOpen(true);
+                        }}
+                        className="p-1.5 rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-colors flex-shrink-0"
+                        title="Détails"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -592,7 +686,7 @@ export default function Marche() {
             </Link>
             {/* Modal Détails Instrument */}
       <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
-        <DialogContent className="max-w-md bg-white text-gray-900">
+        <DialogContent className="w-[calc(100%-32px)] sm:max-w-md bg-white text-gray-900">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">{selectedInstrument?.name}</DialogTitle>
           </DialogHeader>
@@ -628,7 +722,7 @@ export default function Marche() {
       </Dialog>
 
       <Dialog open={isChartModalOpen} onOpenChange={setIsChartModalOpen}>
-        <DialogContent className="max-w-3xl bg-white text-gray-900">
+        <DialogContent className="w-[calc(100%-32px)] sm:max-w-3xl bg-white text-gray-900">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               <LineChart className="w-5 h-5 text-amani-primary" />

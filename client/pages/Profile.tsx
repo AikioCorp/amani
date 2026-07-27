@@ -90,6 +90,17 @@ export default function Profile() {
               bio: String(data.bio ?? ""),
               avatarUrl: String(data.avatar_url ?? ""),
             });
+            if (data.preferences) {
+              const prefs = typeof data.preferences === 'string' ? JSON.parse(data.preferences) : data.preferences;
+              setPreferences(prefs);
+            } else {
+              const savedPreferences = localStorage.getItem(`user_preferences_${user.id}`);
+              if (savedPreferences) {
+                try {
+                  setPreferences(JSON.parse(savedPreferences));
+                } catch {}
+              }
+            }
           }
         } catch (err: any) {
           console.error("[Profile] Fetch error:", err);
@@ -99,22 +110,7 @@ export default function Profile() {
     };
 
     fetchProfile();
-
-    if (user?.id) {
-      const savedPreferences = localStorage.getItem(
-        `user_preferences_${user.id}`,
-      );
-      if (savedPreferences) {
-        try {
-          const parsedPreferences = JSON.parse(savedPreferences);
-          setPreferences(parsedPreferences);
-        } catch (err) {
-          console.error("Erreur lors du parsing des préférences:", err);
-        }
-      }
-    }
   }, [user?.id, user?.email]);
-
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
   };
@@ -293,8 +289,7 @@ export default function Profile() {
     try {
       setIsSaving(true);
 
-      // Sauvegarder les préférences en localStorage pour l'instant
-      // TODO: Ajouter une colonne preferences JSONB à la table profiles ou créer une table user_preferences
+      await AuthService.updateProfile(user.id, { preferences });
       localStorage.setItem(
         `user_preferences_${user.id}`,
         JSON.stringify(preferences),

@@ -8,11 +8,7 @@ export default function ScrollToTop() {
 
   // Remonter en haut à chaque changement de route
   useEffect(() => {
-    window.scrollTo({
-      top: 0,
-      left: 0,
-      behavior: "smooth",
-    });
+    window.scrollTo(0, 0);
   }, [pathname]);
 
   // Afficher le bouton après avoir défilé de 300px
