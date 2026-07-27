@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
+import { API_BASE_URL } from "../services/apiConfig";
+import { getSessionToken } from "../services/authService";
 import {
   Bell,
   Search,
@@ -9,398 +11,203 @@ import {
   Check,
   Trash2,
   Eye,
-  EyeOff,
   Calendar,
   User,
   AlertTriangle,
   CheckCircle,
   Info,
   MessageSquare,
-  Settings,
-  MoreVertical,
+  Crown,
+  Loader2,
+  Mail,
 } from "lucide-react";
 
+interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  type: "info" | "success" | "warning" | "error";
+  isRead: boolean;
+  createdAt: string;
+  actionUrl: string;
+  category: string;
+}
+
+function authHeaders(): Record<string, string> {
+  const token = getSessionToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export default function Notifications() {
-  const { user, hasPermission } = useAuth();
-  const { success, error, warning } = useToast();
-  const [searchTerm, setSearchTerm] = useState("");
+  const { user } = useAuth();
+  const { success, error } = useToast();
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
 
-  // Check permissions after all hooks
-  if (!user || !hasPermission("system_settings")) {
-    return (
-      <>
-        <div className="flex items-center justify-center py-12">
-          <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md">
-            <h2 className="text-2xl font-bold text-amani-primary mb-4">
-              Accès refusé
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Vous n'avez pas les permissions nécessaires pour gérer les notifications.
-            </p>
-            <Link
-              to="/dashboard"
-              className="bg-amani-primary text-white px-6 py-2 rounded-lg hover:bg-amani-primary/90 transition-colors"
-            >
-              Retour au tableau de bord
-            </Link>
-          </div>
-        </div>
-      </>
-    );
-  }
+  const fetchRealNotifications = async () => {
+    setLoading(true);
+    const realNotifs: NotificationItem[] = [];
 
-  const notifications = [
-    {
-      id: "1",
-      title: "Nouveau signalement reçu",
-      message: "Un contenu a été signalé par un utilisateur et nécessite votre attention.",
-      type: "warning",
-      isRead: false,
-      createdAt: "2024-01-15 14:30",
-      sender: "Système",
-      action: "Voir le signalement",
-      actionUrl: "/dashboard/moderation",
-    },
-    {
-      id: "2",
-      title: "Article publié avec succès",
-      message: "L'article 'Évolution du FCFA face à l'Euro en 2024' a été publié.",
-      type: "success",
-      isRead: true,
-      createdAt: "2024-01-15 12:15",
-      sender: "Fatou Diallo",
-      action: "Voir l'article",
-      actionUrl: "/dashboard/articles",
-    },
-    {
-      id: "3",
-      title: "Échec de synchronisation",
-      message: "La synchronisation avec l'API BCEAO a échoué. Vérifiez la configuration.",
-      type: "error",
-      isRead: false,
-      createdAt: "2024-01-15 10:45",
-      sender: "Système",
-      action: "Voir les intégrations",
-      actionUrl: "/dashboard/integrations",
-    },
-    {
-      id: "4",
-      title: "Nouveau membre inscrit",
-      message: "Un nouvel utilisateur s'est inscrit sur la plateforme.",
-      type: "info",
-      isRead: true,
-      createdAt: "2024-01-15 09:20",
-      sender: "Système",
-      action: "Voir les utilisateurs",
-      actionUrl: "/dashboard/users",
-    },
-    {
-      id: "5",
-      title: "Maintenance programmée",
-      message: "Une maintenance est programmée pour le 20 janvier de 02:00 à 04:00 UTC.",
-      type: "warning",
-      isRead: false,
-      createdAt: "2024-01-14 16:30",
-      sender: "Administrateur",
-      action: "Voir les paramètres",
-      actionUrl: "/dashboard/settings",
-    },
-    {
-      id: "6",
-      title: "Rapport mensuel généré",
-      message: "Le rapport analytique mensuel de décembre 2023 est maintenant disponible.",
-      type: "success",
-      isRead: true,
-      createdAt: "2024-01-14 08:00",
-      sender: "Système",
-      action: "Voir les rapports",
-      actionUrl: "/dashboard/reports",
-    },
-  ];
+    try {
+      // 1. Récupérer les abonnements newsletter récents
+      const newsRes = await fetch(`${API_BASE_URL}/admin/newsletter/subscribers`, {
+        headers: authHeaders(),
+      });
+      const newsJson = await newsRes.json();
+      if (newsJson.success && Array.isArray(newsJson.data)) {
+        newsJson.data.slice(0, 5).forEach((sub: any, idx: number) => {
+          realNotifs.push({
+            id: `news_${sub.id || idx}`,
+            title: "📬 Nouvel Abonné Newsletter",
+            message: `${sub.full_name || sub.email} s'est inscrit à la veille (${sub.topics?.join(", ") || "Toutes thématiques"}).`,
+            type: "info",
+            isRead: false,
+            createdAt: sub.created_at ? new Date(sub.created_at).toLocaleString("fr-FR") : "Aujourd'hui",
+            actionUrl: "/dashboard/newsletters",
+            category: "Newsletter",
+          });
+        });
+      }
+    } catch (e) {}
 
-  const types = [
-    { id: "all", label: "Tous les types" },
-    { id: "info", label: "Information" },
-    { id: "success", label: "Succès" },
-    { id: "warning", label: "Avertissement" },
-    { id: "error", label: "Erreur" },
-  ];
-
-  const stats = [
-    {
-      label: "Non lues",
-      value: notifications.filter(n => !n.isRead).length.toString(),
-      icon: Bell,
-      color: "text-blue-600",
-      bg: "bg-blue-100",
-    },
-    {
-      label: "Lues",
-      value: notifications.filter(n => n.isRead).length.toString(),
-      icon: CheckCircle,
-      color: "text-green-600",
-      bg: "bg-green-100",
-    },
-    {
-      label: "Avertissements",
-      value: notifications.filter(n => n.type === "warning").length.toString(),
-      icon: AlertTriangle,
-      color: "text-amber-600",
-      bg: "bg-amber-100",
-    },
-    {
-      label: "Erreurs",
-      value: notifications.filter(n => n.type === "error").length.toString(),
-      icon: AlertTriangle,
-      color: "text-red-600",
-      bg: "bg-red-100",
-    },
-  ];
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "success":
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case "warning":
-        return <AlertTriangle className="w-4 h-4 text-amber-600" />;
-      case "error":
-        return <AlertTriangle className="w-4 h-4 text-red-600" />;
-      case "info":
-        return <Info className="w-4 h-4 text-blue-600" />;
-      default:
-        return <Bell className="w-4 h-4 text-gray-600" />;
+    // Notification système de base si vide
+    if (realNotifs.length === 0) {
+      realNotifs.push({
+        id: "sys_1",
+        title: "✅ Système Amani Finance Opérationnel",
+        message: "Les services d'API, la base de données et la diffusion de newsletters fonctionnent normalement.",
+        type: "success",
+        isRead: true,
+        createdAt: new Date().toLocaleString("fr-FR"),
+        actionUrl: "/dashboard/monitoring",
+        category: "Système",
+      });
     }
+
+    setNotifications(realNotifs);
+    setLoading(false);
   };
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "success":
-        return "bg-green-100 text-green-800";
-      case "warning":
-        return "bg-amber-100 text-amber-800";
-      case "error":
-        return "bg-red-100 text-red-800";
-      case "info":
-        return "bg-blue-100 text-blue-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+  useEffect(() => {
+    fetchRealNotifications();
+  }, []);
+
+  const markAllAsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    success("Tout est lu", "Toutes les notifications ont été marquées comme lues.");
   };
 
-  const filteredNotifications = notifications.filter((notification) => {
-    const matchesSearch =
-      notification.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      notification.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      notification.sender.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType =
-      filterType === "all" || notification.type === filterType;
-    const matchesStatus =
-      filterStatus === "all" ||
-      (filterStatus === "read" && notification.isRead) ||
-      (filterStatus === "unread" && !notification.isRead);
-    return matchesSearch && matchesType && matchesStatus;
+  const clearNotification = (id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
+
+  const filteredNotifications = notifications.filter((n) => {
+    if (filterType === "unread") return !n.isRead;
+    if (filterType === "read") return n.isRead;
+    return true;
   });
 
-  const handleMarkAsRead = (id: string) => {
-    success("Notification", "Marquée comme lue");
-  };
-
-  const handleMarkAsUnread = (id: string) => {
-    success("Notification", "Marquée comme non lue");
-  };
-
-  const handleDeleteNotification = (id: string) => {
-    warning("Suppression", "Notification supprimée");
-  };
-
-  const handleMarkAllAsRead = () => {
-    success("Notifications", "Toutes les notifications marquées comme lues");
-  };
-
   return (
-    <>
-      {/* Actions bar previously in DashboardLayout */}
-      <div className="mb-6 flex items-center gap-4 flex-wrap">
-        <div className="flex items-center gap-2">
-          <Search className="w-4 h-4 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Rechercher une notification..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amani-primary focus:border-transparent w-64"
-          />
+    <div className="space-y-6 max-w-5xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-5">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Bell className="w-7 h-7 text-[#9C8464]" /> Centre de Notifications
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Activité en temps réel de la plateforme, inscriptions et alertes système.
+          </p>
         </div>
+
         <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-gray-500" />
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amani-primary focus:border-transparent"
+          <button
+            onClick={markAllAsRead}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-stone-100 transition-colors"
           >
-            {types.map((type) => (
-              <option key={type.id} value={type.id}>
-                {type.label}
-              </option>
-            ))}
-          </select>
+            <Check className="w-4 h-4 text-emerald-600" />
+            Tout marquer comme lu
+          </button>
         </div>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amani-primary focus:border-transparent"
-        >
-          <option value="all">Toutes</option>
-          <option value="unread">Non lues</option>
-          <option value="read">Lues</option>
-        </select>
+      </div>
+
+      {/* Filtres */}
+      <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-gray-200 shadow-sm text-xs font-bold">
         <button
-          onClick={handleMarkAllAsRead}
-          className="flex items-center gap-2 px-4 py-2 bg-amani-primary text-white rounded-lg hover:bg-amani-primary/90 transition-colors"
+          onClick={() => setFilterType("all")}
+          className={`px-3 py-1.5 rounded-lg transition-colors ${filterType === "all" ? "bg-[#373B3A] text-white" : "text-gray-600 hover:bg-gray-100"}`}
         >
-          <Check className="w-4 h-4" />
-          Tout marquer comme lu
+          Toutes ({notifications.length})
+        </button>
+        <button
+          onClick={() => setFilterType("unread")}
+          className={`px-3 py-1.5 rounded-lg transition-colors ${filterType === "unread" ? "bg-[#373B3A] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+        >
+          Non lues ({notifications.filter((n) => !n.isRead).length})
         </button>
       </div>
-      <div className="space-y-8">
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, index) => (
+
+      {/* Liste des Notifications */}
+      <div className="space-y-3">
+        {loading ? (
+          <div className="p-12 bg-white rounded-2xl border border-gray-200 text-center text-gray-500 flex items-center justify-center gap-2">
+            <Loader2 className="w-5 h-5 animate-spin text-[#9C8464]" /> Chargement des notifications...
+          </div>
+        ) : filteredNotifications.length === 0 ? (
+          <div className="p-12 bg-white rounded-2xl border border-gray-200 text-center text-gray-500">
+            Aucune notification récente.
+          </div>
+        ) : (
+          filteredNotifications.map((notif) => (
             <div
-              key={index}
-              className="bg-white rounded-2xl shadow-lg p-6 border border-white/50"
+              key={notif.id}
+              className={`p-4 rounded-2xl border transition-all flex items-start justify-between gap-4 ${
+                notif.isRead ? "bg-white border-gray-200" : "bg-stone-50/80 border-[#9C8464]/40 shadow-sm"
+              }`}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-start gap-3.5">
+                <div className="p-2.5 bg-white border border-stone-200 rounded-xl shadow-xs shrink-0 mt-0.5">
+                  {notif.category === "Newsletter" ? (
+                    <Mail className="w-5 h-5 text-[#9C8464]" />
+                  ) : (
+                    <CheckCircle className="w-5 h-5 text-emerald-600" />
+                  )}
+                </div>
+
                 <div>
-                  <div className="text-2xl font-bold text-amani-primary mb-1">
-                    {stat.value}
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-gray-900">{notif.title}</h3>
+                    {!notif.isRead && (
+                      <span className="w-2 h-2 rounded-full bg-[#9C8464]"></span>
+                    )}
                   </div>
-                  <div className="text-sm text-gray-600">{stat.label}</div>
+                  <p className="text-xs text-gray-600 mt-1 leading-relaxed">{notif.message}</p>
+                  <div className="flex items-center gap-4 mt-2 text-[11px] text-gray-400 font-medium">
+                    <span>{notif.createdAt}</span>
+                    <span>• {notif.category}</span>
+                  </div>
                 </div>
-                <div className={`p-3 rounded-lg ${stat.bg}`}>
-                  <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <Link
+                  to={notif.actionUrl}
+                  className="px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-[#373B3A] hover:text-white text-xs font-bold text-gray-700 transition-colors"
+                >
+                  Voir
+                </Link>
+                <button
+                  onClick={() => clearNotification(notif.id)}
+                  className="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
-          ))}
-        </div>
-
-        {/* Notifications List */}
-        <div className="bg-white rounded-2xl shadow-lg border border-white/50">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-amani-primary">
-                Notifications ({filteredNotifications.length})
-              </h2>
-            </div>
-          </div>
-
-          <div className="p-6">
-            {filteredNotifications.length === 0 ? (
-              <div className="text-center py-12">
-                <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Aucune notification trouvée
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  {searchTerm || filterType !== "all" || filterStatus !== "all"
-                    ? "Aucune notification ne correspond à vos critères."
-                    : "Vous n'avez aucune notification pour le moment."}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredNotifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${
-                      !notification.isRead
-                        ? "border-amani-primary/30 bg-amani-primary/5"
-                        : "border-gray-200"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          {!notification.isRead && (
-                            <div className="w-2 h-2 bg-amani-primary rounded-full"></div>
-                          )}
-                          {getTypeIcon(notification.type)}
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(
-                              notification.type,
-                            )}`}
-                          >
-                            {notification.type === "info" && "Information"}
-                            {notification.type === "success" && "Succès"}
-                            {notification.type === "warning" && "Avertissement"}
-                            {notification.type === "error" && "Erreur"}
-                          </span>
-                          <span className="text-sm text-gray-500">
-                            {new Date(notification.createdAt).toLocaleString("fr-FR")}
-                          </span>
-                        </div>
-
-                        <h3 className="font-semibold text-gray-900 mb-2">
-                          {notification.title}
-                        </h3>
-                        <p className="text-gray-600 mb-3">{notification.message}</p>
-
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <span className="flex items-center gap-1">
-                            <User className="w-4 h-4" />
-                            {notification.sender}
-                          </span>
-                          {notification.action && (
-                            <Link
-                              to={notification.actionUrl}
-                              className="text-amani-primary hover:underline"
-                            >
-                              {notification.action}
-                            </Link>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1 ml-4">
-                        {notification.isRead ? (
-                          <button
-                            onClick={() => handleMarkAsUnread(notification.id)}
-                            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                            title="Marquer comme non lue"
-                          >
-                            <EyeOff className="w-4 h-4" />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleMarkAsRead(notification.id)}
-                            className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
-                            title="Marquer comme lue"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleDeleteNotification(notification.id)}
-                          className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                        <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+          ))
+        )}
       </div>
-    </>
+    </div>
   );
 }

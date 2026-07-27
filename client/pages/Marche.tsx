@@ -20,6 +20,10 @@ import {
   Clock,
   Target,
   Zap,
+  Building2,
+  Search,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useArticles } from "../hooks/useArticles";
 import { useToast } from "../context/ToastContext";
@@ -36,7 +40,31 @@ export default function Marche() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [historyData, setHistoryData] = useState<BRVMHistoryData[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const { info, success, error } = useToast();
+  const [stockSearch, setStockSearch] = useState("");
+  const [stockSector, setStockSector] = useState("all");
+  const [showAllStocks, setShowAllStocks] = useState(false);
+  const { success, error } = useToast();
+
+  const filteredStocks = useMemo(() => {
+    if (!brvmData?.topStocks) return [];
+    return brvmData.topStocks.filter((s: any) => {
+      const matchesSearch =
+        !stockSearch ||
+        s.name.toLowerCase().includes(stockSearch.toLowerCase()) ||
+        s.symbol.toLowerCase().includes(stockSearch.toLowerCase());
+      const matchesSector =
+        stockSector === "all" ||
+        (s.sector && s.sector.toLowerCase().includes(stockSector.toLowerCase()));
+      return matchesSearch && matchesSector;
+    });
+  }, [brvmData, stockSearch, stockSector]);
+
+  const displayedStocks = useMemo(() => {
+    if (showAllStocks || stockSearch || stockSector !== "all") {
+      return filteredStocks;
+    }
+    return filteredStocks.slice(0, 9);
+  }, [filteredStocks, showAllStocks, stockSearch, stockSector]);
 
   // Fetch real published market articles
   const { articles: marketFinArticles, loading: loadingMarketFin } = useArticles({ status: 'published', limit: 10, category: 'marches-financiers' });
@@ -247,11 +275,12 @@ export default function Marche() {
   return (
     <div className="min-h-screen bg-[#E5DDD2]">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-amani-primary to-amani-primary/80 text-white">
+      <section className="bg-[#373B3A] text-white border-b border-stone-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              📈 Marchés Financiers
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 flex items-center justify-center gap-3">
+              <TrendingUp className="w-10 h-10 md:w-14 md:h-14 text-[#E5DDD2] shrink-0" />
+              <span>Marchés Financiers</span>
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-white/90">
               Suivez en temps réel les performances des marchés financiers ouest-africains
@@ -573,6 +602,114 @@ export default function Marche() {
           </div>
         </div>
       </section>
+
+      {/* Full BRVM Listed Stocks Table Section */}
+      {brvmData?.topStocks && brvmData.topStocks.length > 0 && (
+        <section className="py-12 bg-white border-t border-stone-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-[#373B3A] flex items-center gap-3">
+                  <Building2 className="w-8 h-8 text-[#9C8464] shrink-0" />
+                  <span>Toutes les Actions Cotées à la BRVM ({brvmData.topStocks.length} Sociétés)</span>
+                </h2>
+                <p className="text-stone-500 text-sm mt-1">
+                  Tableau officiel complet de toutes les entreprises cotées sur la Bourse Régionale des Valeurs Mobilières
+                </p>
+              </div>
+
+              {/* Search input */}
+              <div className="relative w-full md:w-80">
+                <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={stockSearch}
+                  onChange={(e) => setStockSearch(e.target.value)}
+                  placeholder="Rechercher par nom ou symbole..."
+                  className="w-full pl-9 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#9C8464]"
+                />
+              </div>
+            </div>
+
+            {/* Sector filter tabs */}
+            <div className="flex flex-wrap gap-2 mb-6">
+              {[
+                { id: "all", label: "Toutes les Sociétés" },
+                { id: "Services Financiers", label: "Services Financiers" },
+                { id: "Services Publics", label: "Services Publics" },
+                { id: "Agriculture", label: "Agriculture" },
+                { id: "Industriels", label: "Industriels" },
+                { id: "Énergie", label: "Énergie" },
+                { id: "Consommation", label: "Consommation" },
+              ].map((sec) => (
+                <button
+                  key={sec.id}
+                  onClick={() => setStockSector(sec.id)}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    stockSector === sec.id
+                      ? "bg-[#373B3A] text-white shadow-xs"
+                      : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                  }`}
+                >
+                  {sec.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Table */}
+            <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-[#F8F6F2] border-b border-stone-200 text-stone-700 text-xs font-extrabold uppercase tracking-wider">
+                      <th className="py-3.5 px-4">Symbole</th>
+                      <th className="py-3.5 px-4">Société Cotée</th>
+                      <th className="py-3.5 px-4 text-right">Volume (Titres)</th>
+                      <th className="py-3.5 px-4 text-right">Cours (FCFA)</th>
+                      <th className="py-3.5 px-4 text-right">Variation (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-150 text-xs sm:text-sm">
+                    {displayedStocks.map((stock: any, i: number) => (
+                      <tr key={stock.symbol || i} className="hover:bg-stone-50/80 transition-colors">
+                        <td className="py-3 px-4 font-mono font-bold text-[#9C8464]">{stock.symbol}</td>
+                        <td className="py-3 px-4 font-bold text-stone-900">{stock.name}</td>
+                        <td className="py-3 px-4 text-right text-stone-600 font-mono">{stock.volume || "—"}</td>
+                        <td className="py-3 px-4 text-right font-black text-stone-900 font-mono">{stock.price}</td>
+                        <td className="py-3 px-4 text-right font-bold">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-extrabold ${
+                              stock.isPositive
+                                ? "bg-green-50 text-green-700 border border-green-200"
+                                : "bg-red-50 text-red-700 border border-red-200"
+                            }`}
+                          >
+                            {stock.isPositive ? <TrendingUp className="w-3 h-3 text-green-600" /> : <TrendingDown className="w-3 h-3 text-red-600" />}
+                            {stock.changePercent}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Expand / Collapse Button */}
+            {filteredStocks.length > 9 && !stockSearch && stockSector === "all" && (
+              <div className="text-center mt-6">
+                <button
+                  onClick={() => setShowAllStocks(!showAllStocks)}
+                  className="inline-flex items-center gap-2 bg-[#373B3A] hover:bg-black text-white font-extrabold px-6 py-3 rounded-xl shadow-sm transition-all text-sm cursor-pointer"
+                >
+                  <span>{showAllStocks ? "Afficher moins" : `Voir toutes les sociétés (${filteredStocks.length})`}</span>
+                  {showAllStocks ? <ChevronUp className="w-4 h-4 text-[#9C8464]" /> : <ChevronDown className="w-4 h-4 text-[#9C8464]" />}
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Market News */}
       <section className="py-16 bg-white/50">

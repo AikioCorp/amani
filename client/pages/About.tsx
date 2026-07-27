@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { DynamicLegalPage } from "../components/DynamicLegalPage";
 import {
   Globe,
   Users,
@@ -68,40 +69,45 @@ export default function About() {
       {/* Mission Section */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl">
-            <h2 className="text-3xl lg:text-4xl font-bold text-amani-primary mb-6">
-              Notre mission
-            </h2>
-            <p className="text-lg text-gray-700 mb-6">
-              Amani démocratise l'accès à l'information économique en Afrique
-              de l'Ouest et au Tchad. Nous croyons que l'information de
-              qualité est un pilier essentiel du développement économique.
-            </p>
-            <p className="text-lg text-gray-700 mb-8">
-              Notre plateforme rassemble, analyse et diffuse les données
-              économiques les plus pertinentes pour aider les professionnels,
-              entrepreneurs et décideurs à prendre des décisions éclairées.
-            </p>
-            <div className="flex items-center gap-4">
-              <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
-              <span className="text-gray-700">
-                Information vérifiée et actualisée quotidiennement
-              </span>
-            </div>
-            <div className="flex items-center gap-4 mt-3">
-              <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
-              <span className="text-gray-700">
-                Analyses approfondies par des experts locaux
-              </span>
-            </div>
-            <div className="flex items-center gap-4 mt-3">
-              <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
-              <span className="text-gray-700">
-                Plateforme accessible en français et bientôt en langues
-                locales
-              </span>
-            </div>
-          </div>
+          <DynamicLegalPage
+            slug="about"
+            defaultContent={
+              <div className="max-w-3xl">
+                <h2 className="text-3xl lg:text-4xl font-bold text-amani-primary mb-6">
+                  Notre mission
+                </h2>
+                <p className="text-lg text-gray-700 mb-6">
+                  Amani démocratise l'accès à l'information économique en Afrique
+                  de l'Ouest et au Tchad. Nous croyons que l'information de
+                  qualité est un pilier essentiel du développement économique.
+                </p>
+                <p className="text-lg text-gray-700 mb-8">
+                  Notre plateforme rassemble, analyse et diffuse les données
+                  économiques les plus pertinentes pour aider les professionnels,
+                  entrepreneurs et décideurs à prendre des décisions éclairées.
+                </p>
+                <div className="flex items-center gap-4">
+                  <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
+                  <span className="text-gray-700">
+                    Information vérifiée et actualisée quotidiennement
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 mt-3">
+                  <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
+                  <span className="text-gray-700">
+                    Analyses approfondies par des experts locaux
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 mt-3">
+                  <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
+                  <span className="text-gray-700">
+                    Plateforme accessible en français et bientôt en langues
+                    locales
+                  </span>
+                </div>
+              </div>
+            }
+          />
         </div>
       </section>
 

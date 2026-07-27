@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Shield, ChevronRight, DollarSign, CheckCircle, Lock, Loader2, X, Send } from 'lucide-react';
+import { Search, Shield, ChevronRight, DollarSign, CheckCircle, Lock, Loader2, X, Send, Briefcase } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
@@ -252,24 +252,25 @@ const Investissement = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section - Amani Brand Palette */}
-      <section className="bg-[#373B3A] text-white py-20 border-b border-[#373B3A]/30">
+      <section className="bg-[#373B3A] text-white py-10 sm:py-16 md:py-20 border-b border-[#373B3A]/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-5xl font-bold mb-6 tracking-tight text-white">
-              Opportunités d'Investissement Régionales
+            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white mb-3 sm:mb-4 flex items-center justify-center gap-3">
+              <Briefcase className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-[#E5DDD2] shrink-0" />
+              <span>Opportunités d'Investissement Régionales</span>
             </h1>
-            <p className="text-xl max-w-3xl mx-auto leading-relaxed text-[#E5DDD5]/90">
+            <p className="text-sm sm:text-base md:text-xl max-w-3xl mx-auto leading-relaxed text-[#E5DDD5]/90 mb-6 sm:mb-8">
               Explorez des opportunités qualifiées d'investissement en Afrique de l'Ouest, 
               suivez l'avancement de vos souscriptions et échangez directement avec notre équipe.
             </p>
-            <div className="mt-8 flex justify-center gap-4">
-              <Button size="lg" className="bg-[#9C8464] hover:bg-[#867052] text-white font-extrabold rounded-xl shadow-lg transition-all" asChild>
+            <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+              <Button size="lg" className="bg-[#9C8464] hover:bg-[#867052] text-white font-extrabold rounded-xl shadow-lg transition-all w-full sm:w-auto" asChild>
                 <a href="#opportunites">
                   Voir les opportunités
                 </a>
               </Button>
               {!user && (
-                <Button size="lg" variant="outline" className="bg-[#FDFBF9] hover:bg-[#E5DDD5] text-[#373B3A] font-extrabold border border-[#9C8464]/30 rounded-xl transition-all" asChild>
+                <Button size="lg" variant="outline" className="bg-[#FDFBF9] hover:bg-[#E5DDD5] text-[#373B3A] font-extrabold border border-[#9C8464]/30 rounded-xl transition-all w-full sm:w-auto" asChild>
                   <Link to="/login">
                     Se connecter pour investir
                   </Link>
@@ -282,47 +283,47 @@ const Investissement = () => {
 
       {/* SECTION SUIVI EN TEMPS RÉEL DES DOSSIERS DE L'UTILISATEUR CONNECTÉ */}
       {user && (
-        <section className="py-12 bg-[#373B3A] border-b border-[#373B3A]/30 text-white">
+        <section className="py-8 sm:py-12 bg-[#373B3A] border-b border-[#373B3A]/30 text-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
-                <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-                  <Shield className="w-6 h-6 text-[#9C8464]" /> Mes Demandes & Suivi de Dossier
+                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                  <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-stone-300" /> Mes Demandes & Suivi de Dossier
                 </h2>
-                <p className="text-sm text-[#E5DDD5]/80">
+                <p className="text-xs sm:text-sm text-[#E5DDD5]/80">
                   Consultez l'état d’avancement de vos souscriptions d'investissement en temps réel.
                 </p>
               </div>
-              <span className="px-3.5 py-1.5 bg-[#9C8464]/20 text-[#E5DDD5] font-bold border border-[#9C8464]/40 rounded-full text-xs">
-                Connecté en tant que {user.first_name || user.email}
+              <span className="px-3 py-1 bg-[#9C8464]/20 text-[#E5DDD5] font-bold border border-[#9C8464]/40 rounded-full text-xs self-start sm:self-auto">
+                {user.first_name || user.email}
               </span>
             </div>
 
             {loadingMyRequests ? (
-              <div className="flex items-center gap-2 text-[#E5DDD5]/70 py-6">
+              <div className="flex items-center gap-2 text-[#E5DDD5]/70 py-6 text-xs sm:text-sm">
                 <Loader2 className="w-5 h-5 animate-spin" /> Chargement de vos souscriptions…
               </div>
             ) : myRequests.length === 0 ? (
-              <div className="bg-[#2B231A] border border-[#3E342B] rounded-2xl p-6 text-center shadow-lg">
-                <p className="text-white font-bold mb-2">Vous n'avez pas encore posé d'option d'investissement.</p>
+              <div className="bg-[#2B231A] border border-[#3E342B] rounded-2xl p-4 sm:p-6 text-center shadow-lg">
+                <p className="text-white font-bold text-sm sm:text-base mb-1.5">Vous n'avez pas encore posé d'option d'investissement.</p>
                 <p className="text-xs text-[#E5DDD5]/70">
                   Sélectionnez une opportunité ci-dessous et cliquez sur "Souscrire / Soumettre un intérêt" pour lancer votre dossier.
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 {myRequests.map((req) => (
-                  <div key={req.id} className="bg-[#2B231A] border border-[#3E342B] rounded-2xl p-5 shadow-xl space-y-4">
-                    <div className="flex items-start justify-between">
+                  <div key={req.id} className="bg-[#2B231A] border border-[#3E342B] rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+                    <div className="flex items-start justify-between gap-2">
                       <div>
-                        <h3 className="font-bold text-lg text-white">
+                        <h3 className="font-bold text-base sm:text-lg text-white leading-snug">
                           {req.opportunity?.title || 'Opportunité d\'investissement'}
                         </h3>
-                        <p className="text-xs text-[#E5DDD5]/70 font-medium">
-                          Montant souscrit : <span className="text-amber-400 font-bold">{req.amount}</span> · Profil: {req.investor_type}
+                        <p className="text-xs text-[#E5DDD5]/70 font-medium mt-1">
+                          Montant : <span className="text-amber-400 font-bold">{req.amount}</span> · {req.investor_type}
                         </p>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold shrink-0 ${
                         req.status === 'pending'
                           ? 'bg-amber-950 text-amber-300 border border-amber-800'
                           : req.status === 'contacted'
@@ -331,29 +332,29 @@ const Investissement = () => {
                           ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                           : 'bg-slate-800 text-slate-400'
                       }`}>
-                        {req.status === 'pending' && '⏳ En cours d\'analyse'}
-                        {req.status === 'contacted' && '📞 Équipe en contact'}
-                        {req.status === 'approved' && '✅ Dossier Approuvé'}
-                        {req.status === 'rejected' && '❌ Dossier Rejeté'}
+                        {req.status === 'pending' && '⏳ En cours'}
+                        {req.status === 'contacted' && '📞 En contact'}
+                        {req.status === 'approved' && '✅ Approuvé'}
+                        {req.status === 'rejected' && '❌ Rejeté'}
                       </span>
                     </div>
 
                     {/* Timeline d'avancement du dossier */}
-                    <div className="border-t border-[#3E342B] pt-4">
-                      <p className="text-xs text-[#E5DDD5]/60 font-bold mb-3 uppercase tracking-wider">Avancement du traitement :</p>
-                      <div className="flex items-center justify-between text-xs font-semibold">
+                    <div className="border-t border-[#3E342B] pt-3">
+                      <p className="text-[10px] sm:text-xs text-[#E5DDD5]/60 font-bold mb-2.5 uppercase tracking-wider">Traitement du dossier :</p>
+                      <div className="flex items-center justify-between text-[11px] sm:text-xs font-semibold">
                         <div className="flex flex-col items-center gap-1 text-emerald-400">
-                          <div className="w-7 h-7 rounded-full bg-emerald-950 border border-emerald-500 flex items-center justify-center font-bold">1</div>
+                          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-emerald-950 border border-emerald-500 flex items-center justify-center font-bold text-xs">1</div>
                           <span>Transmis</span>
                         </div>
-                        <div className={`h-0.5 flex-1 mx-2 ${req.status !== 'pending' ? 'bg-[#9C8464]' : 'bg-[#3E342B]'}`}></div>
+                        <div className={`h-0.5 flex-1 mx-1.5 ${req.status !== 'pending' ? 'bg-[#9C8464]' : 'bg-[#3E342B]'}`}></div>
                         <div className={`flex flex-col items-center gap-1 ${req.status !== 'pending' ? 'text-amber-400' : 'text-slate-500'}`}>
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold border ${req.status !== 'pending' ? 'bg-[#9C8464]/30 border-[#9C8464]' : 'bg-[#2B231A] border-[#3E342B]'}`}>2</div>
-                          <span>Prise de contact</span>
+                          <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center font-bold text-xs border ${req.status !== 'pending' ? 'bg-[#9C8464]/30 border-[#9C8464]' : 'bg-[#2B231A] border-[#3E342B]'}`}>2</div>
+                          <span>Contact</span>
                         </div>
-                        <div className={`h-0.5 flex-1 mx-2 ${req.status === 'approved' ? 'bg-emerald-500' : 'bg-[#3E342B]'}`}></div>
+                        <div className={`h-0.5 flex-1 mx-1.5 ${req.status === 'approved' ? 'bg-emerald-500' : 'bg-[#3E342B]'}`}></div>
                         <div className={`flex flex-col items-center gap-1 ${req.status === 'approved' ? 'text-emerald-400' : 'text-slate-500'}`}>
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold border ${req.status === 'approved' ? 'bg-emerald-950 border-emerald-500' : 'bg-[#2B231A] border-[#3E342B]'}`}>3</div>
+                          <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center font-bold text-xs border ${req.status === 'approved' ? 'bg-emerald-950 border-emerald-500' : 'bg-[#2B231A] border-[#3E342B]'}`}>3</div>
                           <span>Validation</span>
                         </div>
                       </div>
@@ -366,113 +367,141 @@ const Investissement = () => {
         </section>
       )}
 
-      {/* Investment Opportunities */}
-      <section id="opportunites" className="py-16 bg-white">
+      {/* Investment Opportunities Section */}
+      <section id="opportunites" className="py-8 sm:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12 text-[#373B3A]">
-            Opportunités d'Investissement
+          <h2 className="text-xl sm:text-3xl font-bold text-center mb-6 sm:mb-10 text-[#373B3A]">
+            Opportunités d'Investissement En Cours
           </h2>
 
-          {/* Search and Filters */}
-          <div className="flex flex-col md:flex-row gap-4 mb-8">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Rechercher des opportunités d'investissement..."
+          {/* Search and Horizontal Category Pills */}
+          <div className="bg-white rounded-2xl shadow-sm border border-stone-200/90 p-3.5 sm:p-5 mb-8 space-y-3.5">
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-stone-400 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Rechercher des opportunités d'investissement, obligations..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="w-full pl-10 pr-8 py-2.5 border border-stone-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#9C8464]/30 focus:border-[#9C8464] transition-all bg-stone-50/50 text-[#373B3A] placeholder-stone-400"
               />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400 hover:text-stone-700 bg-stone-200/60 rounded-full w-4 h-4 flex items-center justify-center"
+                >
+                  ✕
+                </button>
+              )}
             </div>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#373B3A] focus:border-transparent"
-            >
-              {investmentCategories.map(category => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+
+            {/* Category Filter Pills (Horizontal Scrollable Tabs) */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-2 border-t border-stone-100 no-scrollbar">
+              <span className="text-xs font-semibold text-stone-400 uppercase tracking-wider shrink-0 mr-1 hidden sm:inline-block">
+                Catégories :
+              </span>
+              {investmentCategories.map((category) => {
+                const isActive = selectedCategory === category.id;
+                return (
+                  <button
+                    key={category.id}
+                    onClick={() => setSelectedCategory(category.id)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 shrink-0 cursor-pointer ${
+                      isActive
+                        ? "bg-[#373B3A] text-white shadow-sm"
+                        : "bg-stone-100 text-stone-600 hover:bg-stone-200/80 hover:text-stone-900 border border-stone-200/60"
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Opportunities Grid */}
           {loadingOpportunities ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
               {[...Array(2)].map((_, i) => (
-                <div key={i} className="bg-gray-100 rounded-xl h-96 animate-pulse" />
+                <div key={i} className="bg-stone-100 rounded-xl h-80 animate-pulse border border-stone-200" />
               ))}
             </div>
           ) : filteredOpportunities.length === 0 ? (
-            <div className="text-center py-16 border border-dashed border-gray-300 rounded-xl">
-              <p className="text-gray-500 mb-2">
-                Aucune opportunité d'investissement publiée pour le moment.
+            <div className="text-center py-12 border border-dashed border-stone-300 rounded-2xl bg-stone-50/50">
+              <p className="text-stone-600 font-medium mb-1 text-sm sm:text-base">
+                Aucune opportunité d'investissement publiée dans cette catégorie.
               </p>
-              <p className="text-sm text-gray-400 mb-4">
+              <p className="text-xs sm:text-sm text-stone-400 mb-4">
                 Contactez-nous pour en savoir plus sur nos partenariats d'investissement.
               </p>
               <Link
                 to="/contact"
-                className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-800"
+                className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-[#9C8464] hover:text-[#373B3A]"
               >
                 Nous contacter <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
               {filteredOpportunities.map((opportunity) => (
-                <Card key={opportunity.id} className="hover:shadow-lg transition-shadow overflow-hidden">
-                  <div className="relative">
-                    <img
-                      src={opportunity.image || '/placeholder.svg'}
-                      alt={opportunity.title}
-                      className="w-full h-48 object-cover"
-                    />
-                    <div className="absolute top-3 left-3 flex gap-2">
-                      <Badge variant="secondary">{opportunity.category}</Badge>
-                      <Badge className={getStatusColor(opportunity.status)}>
-                        {statusLabel(opportunity.status)}
-                      </Badge>
+                <Card key={opportunity.id} className="hover:shadow-lg transition-all border border-stone-200/80 rounded-2xl overflow-hidden flex flex-col justify-between">
+                  <div>
+                    <div className="relative overflow-hidden h-44 sm:h-52">
+                      <img
+                        src={opportunity.image || '/placeholder.svg'}
+                        alt={opportunity.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-3 left-3 flex flex-wrap gap-2">
+                        <Badge variant="secondary" className="bg-white/90 backdrop-blur-sm text-stone-700 font-semibold text-xs">
+                          {opportunity.category}
+                        </Badge>
+                        <Badge className={`${getStatusColor(opportunity.status)} text-xs font-semibold`}>
+                          {statusLabel(opportunity.status)}
+                        </Badge>
+                      </div>
                     </div>
+
+                    <CardHeader className="p-4 sm:p-6 pb-2">
+                      <CardTitle className="text-lg sm:text-xl font-bold text-[#373B3A] leading-snug">{opportunity.title}</CardTitle>
+                      <CardDescription className="text-xs sm:text-sm text-stone-600 line-clamp-3 leading-relaxed mt-2">
+                        {opportunity.description}
+                      </CardDescription>
+                    </CardHeader>
                   </div>
-                  <CardHeader>
-                    <CardTitle className="text-xl mb-2">{opportunity.title}</CardTitle>
-                    <CardDescription className="text-gray-600">
-                      {opportunity.description}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-4 mb-4">
+
+                  <CardContent className="p-4 sm:p-6 pt-0">
+                    {/* Key Financial Metrics Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-stone-50 p-3 rounded-xl border border-stone-200/70 mb-4 text-xs">
                       <div>
-                        <p className="text-sm text-gray-500">Rendement Attendu</p>
-                        <p className="font-semibold text-green-600">{opportunity.expected_return}</p>
+                        <p className="text-[10px] sm:text-xs text-stone-400 font-medium">Rendement</p>
+                        <p className="font-bold text-emerald-600 sm:text-sm">{opportunity.expected_return}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Niveau de Risque</p>
-                        <Badge className={getRiskColor(opportunity.risk_level)}>
+                        <p className="text-[10px] sm:text-xs text-stone-400 font-medium">Risque</p>
+                        <Badge className={`${getRiskColor(opportunity.risk_level)} text-[10px] px-1.5 py-0`}>
                           {opportunity.risk_level}
                         </Badge>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Investissement Min.</p>
-                        <p className="font-semibold">{opportunity.min_investment}</p>
+                        <p className="text-[10px] sm:text-xs text-stone-400 font-medium">Min. Invest.</p>
+                        <p className="font-semibold text-stone-800 truncate">{opportunity.min_investment}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Horizon</p>
-                        <p className="font-semibold">{opportunity.time_horizon}</p>
+                        <p className="text-[10px] sm:text-xs text-stone-400 font-medium">Horizon</p>
+                        <p className="font-semibold text-stone-800 truncate">{opportunity.time_horizon}</p>
                       </div>
                     </div>
 
                     {/* Progress Bar */}
                     <div className="mb-4">
-                      <div className="flex justify-between text-sm text-gray-600 mb-2">
-                        <span>Financement</span>
-                        <span>{opportunity.funded_percent}%</span>
+                      <div className="flex justify-between text-xs text-stone-600 mb-1.5 font-medium">
+                        <span>Financement engagé</span>
+                        <span className="font-bold text-[#373B3A]">{opportunity.funded_percent}%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-stone-200/80 rounded-full h-2">
                         <div
-                          className="bg-[#373B3A] h-2 rounded-full transition-all duration-300"
+                          className="bg-[#373B3A] h-2 rounded-full transition-all duration-500"
                           style={{ width: `${opportunity.funded_percent}%` }}
                         ></div>
                       </div>
@@ -481,10 +510,10 @@ const Investissement = () => {
                     {/* Highlights */}
                     {opportunity.highlights.length > 0 && (
                       <div className="mb-4">
-                        <p className="text-sm font-medium text-gray-700 mb-2">Points Clés:</p>
-                        <div className="flex flex-wrap gap-2">
+                        <p className="text-xs font-semibold text-stone-500 mb-1.5">Points Clés:</p>
+                        <div className="flex flex-wrap gap-1.5">
                           {opportunity.highlights.map((highlight, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
+                            <Badge key={index} variant="outline" className="text-[10px] sm:text-xs bg-white text-stone-700 border-stone-200">
                               {highlight}
                             </Badge>
                           ))}
@@ -493,7 +522,7 @@ const Investissement = () => {
                     )}
 
                     <Button
-                      className="w-full bg-[#373B3A] hover:bg-black text-white font-semibold py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+                      className="w-full bg-[#373B3A] hover:bg-black text-white font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 text-xs sm:text-sm"
                       disabled={opportunity.status === 'closed'}
                       onClick={() => handleOpenPledgeModal(opportunity)}
                     >
@@ -516,55 +545,73 @@ const Investissement = () => {
         </div>
       </section>
 
-      {/* Investment Articles */}
-      <section className="py-16 bg-gray-50 border-t border-gray-100">
+      {/* Investment Articles Section - 2 COLUMNS ON MOBILE */}
+      <section className="py-10 sm:py-16 bg-stone-100/60 border-t border-stone-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12 text-[#373B3A]">
+          <h2 className="text-xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 text-[#373B3A]">
             Analyses & Actualités d'Investissement
           </h2>
 
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="bg-white rounded-xl shadow-lg h-80 animate-pulse" />
+                <div key={i} className="bg-white rounded-xl shadow-sm h-64 sm:h-80 animate-pulse border border-stone-200" />
               ))}
             </div>
           ) : investmentArticles.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-stone-500 text-sm">
               Aucun article d'investissement disponible pour le moment.
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            /* 2-COLUMN GRID ON MOBILE (grid-cols-2) */
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
               {investmentArticles.map((article) => (
                 <Link
                   key={article.id}
                   to={`/article/${article.id}`}
-                  className="bg-white rounded-xl shadow-lg overflow-hidden group hover:shadow-xl transition-all duration-300 flex flex-col"
+                  className="bg-white rounded-xl shadow-sm hover:shadow-md border border-stone-200/80 overflow-hidden transition-all duration-300 flex flex-col justify-between group"
                 >
-                  <div className="relative overflow-hidden h-48">
-                    <img
-                      src={article.image}
-                      alt={article.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-3 left-3">
-                      <Badge className="bg-[#373B3A] text-white">{article.category}</Badge>
+                  <div>
+                    <div className="relative overflow-hidden h-28 sm:h-44 md:h-48">
+                      <img
+                        src={article.image}
+                        alt={article.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute top-1.5 left-1.5 sm:top-3 sm:left-3">
+                        <span className="bg-[#373B3A]/90 backdrop-blur-sm text-white px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold">
+                          {article.category}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <CardContent className="p-6 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="font-bold text-lg mb-2 text-[#373B3A] group-hover:text-blue-600 transition-colors line-clamp-2">
+
+                    <div className="p-2.5 sm:p-5">
+                      <h3 className="text-xs sm:text-base md:text-lg font-bold text-[#373B3A] mb-1.5 sm:mb-2 leading-snug group-hover:text-[#9C8464] transition-colors">
                         {article.title}
                       </h3>
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                        {article.summary}
+
+                      <p
+                        className="text-stone-600 text-[11px] sm:text-sm mb-2 leading-relaxed"
+                        style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {article.summary.length > 130
+                          ? article.summary.substring(0, 130).trim() + "..."
+                          : article.summary}
                       </p>
                     </div>
-                    <div className="flex items-center justify-between text-xs text-gray-500 border-t pt-4">
-                      <span>{article.author}</span>
+                  </div>
+
+                  <div className="px-2.5 pb-2.5 sm:px-5 sm:pb-5 pt-0">
+                    <div className="flex items-center justify-between text-[10px] sm:text-xs text-stone-500 pt-2 border-t border-stone-100">
+                      <span>{new Date(article.date || Date.now()).toLocaleDateString("fr-FR")}</span>
                       <span>{article.readTime}</span>
                     </div>
-                  </CardContent>
+                  </div>
                 </Link>
               ))}
             </div>

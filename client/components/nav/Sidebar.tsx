@@ -75,6 +75,7 @@ const SECTIONS: Section[] = [
         ],
       },
       { label: "Vue unifiée", to: "/dashboard/content-management", icon: Layers, permission: "create_articles" },
+      { label: "Pages Légales", to: "/dashboard/legal-pages", icon: Shield, permission: "create_articles" },
     ],
   },
   {
@@ -113,8 +114,9 @@ const SECTIONS: Section[] = [
       { label: "Mon Profil", to: "/dashboard/profile", icon: UserIcon, permission: "view_dashboard" },
       { label: "Notifications", to: "/dashboard/notifications", icon: Bell, permission: "view_dashboard" },
       { label: "Permissions", to: "/dashboard/permissions", icon: ListChecks, permission: "manage_users" },
-      { label: "Intégrations", to: "/dashboard/integrations", icon: Plug, permission: "manage_settings" },
-      { label: "Paramètres Généraux", to: "/dashboard/settings", icon: Settings, permission: "manage_settings" },
+      { label: "Intégrations", to: "/dashboard/integrations", icon: Plug, permission: "create_articles" },
+      { label: "Pages Légales", to: "/dashboard/legal-pages", icon: Shield, permission: "create_articles" },
+      { label: "Paramètres Généraux", to: "/dashboard/settings", icon: Settings, permission: "create_articles" },
     ],
   },
 ];

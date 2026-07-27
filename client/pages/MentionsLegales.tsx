@@ -1,12 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Building2, Server, Shield, FileCheck, ArrowLeft } from 'lucide-react';
+import { DynamicLegalPage } from '../components/DynamicLegalPage';
 
 const MentionsLegales: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FDFBF9] text-[#373B3A]">
       {/* Header Banner */}
-      <section className="bg-[#373B3A] text-white py-16 px-4 sm:px-6 lg:px-8 border-b border-[#9C8464]/30">
+      <section className="bg-[#373B3A] text-white pt-28 pb-14 px-4 sm:px-6 lg:px-8 border-b border-[#9C8464]/30">
         <div className="max-w-4xl mx-auto">
           <Link
             to="/"
@@ -61,57 +62,64 @@ const MentionsLegales: React.FC = () => {
           </Link>
         </div>
 
-        {/* Section 1: Éditeur du site */}
-        <section className="space-y-4 bg-white p-6 sm:p-8 rounded-2xl border border-gray-100 shadow-xs">
-          <h2 className="text-xl font-bold text-[#373B3A] flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-[#9C8464]" /> 1. Éditeur de la Plateforme
-          </h2>
-          <p className="text-sm text-gray-600 leading-relaxed">
-            Le site internet <strong>Amani Finance</strong> (amani-finance.com) est édité par la société :
-          </p>
-          <div className="bg-[#FDFBF9] p-4 rounded-xl border border-[#E5DDD5]/80 space-y-2 text-xs text-[#373B3A]">
-            <p><strong>Dénomination sociale :</strong> Aikio Corp SAS</p>
-            <p><strong>Siège social :</strong> Faladié, Bamako, Mali</p>
-            <p><strong>Email de contact :</strong> contact@amani-finance.com / info@aikio.co</p>
-            <p><strong>Téléphone :</strong> +223 20 22 45 67</p>
-            <p><strong>Directeur de la Publication :</strong> Direction de la Rédaction Amani Finance</p>
-          </div>
-        </section>
+        <DynamicLegalPage
+          slug="mentions-legales"
+          defaultContent={
+            <>
+              {/* Section 1: Éditeur du site */}
+              <section className="space-y-4 bg-white p-6 sm:p-8 rounded-2xl border border-gray-100 shadow-xs">
+                <h2 className="text-xl font-bold text-[#373B3A] flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-[#9C8464]" /> 1. Éditeur de la Plateforme
+                </h2>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Le site internet <strong>Amani Finance</strong> (amani-finance.com) est édité par la société :
+                </p>
+                <div className="bg-[#FDFBF9] p-4 rounded-xl border border-[#E5DDD5]/80 space-y-2 text-xs text-[#373B3A]">
+                  <p><strong>Dénomination sociale :</strong> Aikio Corp SAS</p>
+                  <p><strong>Siège social :</strong> Faladié, Bamako, Mali</p>
+                  <p><strong>Email de contact :</strong> contact@amani-finance.com / info@aikio.co</p>
+                  <p><strong>Téléphone :</strong> +223 20 22 45 67</p>
+                  <p><strong>Directeur de la Publication :</strong> Direction de la Rédaction Amani Finance</p>
+                </div>
+              </section>
 
-        {/* Section 2: Hébergement du site */}
-        <section className="space-y-4 bg-white p-6 sm:p-8 rounded-2xl border border-gray-100 shadow-xs">
-          <h2 className="text-xl font-bold text-[#373B3A] flex items-center gap-2">
-            <Server className="w-5 h-5 text-[#9C8464]" /> 2. Hébergement & Infrastructure
-          </h2>
-          <p className="text-sm text-gray-600 leading-relaxed">
-            L'infrastructure applicative et la base de données d'Amani Finance sont hébergées de manière sécurisée auprès de prestataires de classe internationale :
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-[#FDFBF9] p-4 rounded-xl border border-[#E5DDD5]/80 text-xs text-[#373B3A] space-y-1">
-              <h4 className="font-bold uppercase tracking-wider text-[#9C8464]">Serveurs Web & API</h4>
-              <p><strong>Railway Corp.</strong></p>
-              <p className="text-gray-500">548 Market St, San Francisco, CA 94104, USA</p>
-            </div>
-            <div className="bg-[#FDFBF9] p-4 rounded-xl border border-[#E5DDD5]/80 text-xs text-[#373B3A] space-y-1">
-              <h4 className="font-bold uppercase tracking-wider text-[#9C8464]">Base de Données PostgreSQL</h4>
-              <p><strong>Neon Inc.</strong></p>
-              <p className="text-gray-500">Cloud Infrastructure (AWS US-East & EU-West)</p>
-            </div>
-          </div>
-        </section>
+              {/* Section 2: Hébergement du site */}
+              <section className="space-y-4 bg-white p-6 sm:p-8 rounded-2xl border border-gray-100 shadow-xs">
+                <h2 className="text-xl font-bold text-[#373B3A] flex items-center gap-2">
+                  <Server className="w-5 h-5 text-[#9C8464]" /> 2. Hébergement & Infrastructure
+                </h2>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  L'infrastructure applicative et la base de données d'Amani Finance sont hébergées de manière sécurisée auprès de prestataires de classe internationale :
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-[#FDFBF9] p-4 rounded-xl border border-[#E5DDD5]/80 text-xs text-[#373B3A] space-y-1">
+                    <h4 className="font-bold uppercase tracking-wider text-[#9C8464]">Serveurs Web & API</h4>
+                    <p><strong>Railway Corp.</strong></p>
+                    <p className="text-gray-500">548 Market St, San Francisco, CA 94104, USA</p>
+                  </div>
+                  <div className="bg-[#FDFBF9] p-4 rounded-xl border border-[#E5DDD5]/80 text-xs text-[#373B3A] space-y-1">
+                    <h4 className="font-bold uppercase tracking-wider text-[#9C8464]">Base de Données PostgreSQL</h4>
+                    <p><strong>Neon Inc.</strong></p>
+                    <p className="text-gray-500">Cloud Infrastructure (AWS US-East & EU-West)</p>
+                  </div>
+                </div>
+              </section>
 
-        {/* Section 3: Statut Réglementaire et Indépendance Média */}
-        <section className="space-y-4 bg-white p-6 sm:p-8 rounded-2xl border border-gray-100 shadow-xs">
-          <h2 className="text-xl font-bold text-[#373B3A] flex items-center gap-2">
-            <Shield className="w-5 h-5 text-[#9C8464]" /> 3. Statut Média et Avertissement Réglementaire
-          </h2>
-          <p className="text-sm text-gray-600 leading-relaxed">
-            Amani Finance est un média spécialisé d'analyse et d'information économique et financière. Amani Finance n'est ni un établissement de crédit, ni un prestataire de services d'investissement (PSI) agréé, ni une société de gestion de portefeuille au sens des règlements de l'UMOA et de l'AMF-UMOA (Autorité des Marchés Financiers).
-          </p>
-          <p className="text-sm text-gray-600 leading-relaxed">
-            Toutes les analyses et opportunités diffusées sont destinées à informer les investisseurs et à faciliter la découverte d'entreprises. Les transactions d'investissement effectives sont soumises à la réglementation applicable et à la signature d'accords contractuels définitifs entre les parties.
-          </p>
-        </section>
+              {/* Section 3: Statut Réglementaire et Indépendance Média */}
+              <section className="space-y-4 bg-white p-6 sm:p-8 rounded-2xl border border-gray-100 shadow-xs">
+                <h2 className="text-xl font-bold text-[#373B3A] flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-[#9C8464]" /> 3. Statut Média et Avertissement Réglementaire
+                </h2>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Amani Finance est un média spécialisé d'analyse et d'information économique et financière. Amani Finance n'est ni un établissement de crédit, ni un prestataire de services d'investissement (PSI) agréé, ni une société de gestion de portefeuille au sens des règlements de l'UMOA et de l'AMF-UMOA (Autorité des Marchés Financiers).
+                </p>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Toutes les analyses et opportunités diffusées sont destinées à informer les investisseurs et à faciliter la découverte d'entreprises. Les transactions d'investissement effectives sont soumises à la réglementation applicable et à la signature d'accords contractuels définitifs entre les parties.
+                </p>
+              </section>
+            </>
+          }
+        />
       </main>
     </div>
   );

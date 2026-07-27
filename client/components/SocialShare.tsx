@@ -32,10 +32,10 @@ const SocialShare: React.FC<SocialShareProps> = ({ title, url = window.location.
       url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`
     },
     {
-      name: 'X (Twitter)',
-      icon: '🐦',
+      name: 'X',
+      icon: '𝕏',
       color: 'bg-black hover:bg-gray-800',
-      url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(`${title} - ${url}`)}`
+      url: `https://x.com/intent/post?text=${encodeURIComponent(`${title} - ${url}`)}`
     },
     {
       name: 'LinkedIn',

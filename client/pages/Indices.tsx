@@ -18,6 +18,25 @@ import {
   Lightbulb,
   Calculator,
   Eye,
+  Coins,
+  Building2,
+  PieChart,
+  Landmark,
+  Droplet,
+  Flame,
+  Coffee,
+  Leaf,
+  Feather,
+  Wheat,
+  ArrowLeftRight,
+  Percent,
+  LineChart,
+  Truck,
+  Store,
+  Sparkles,
+  Crown,
+  Shield,
+  Factory,
 } from "lucide-react";
 import { fetchBRVMData, BRVMData } from "../services/brvmApi";
 import {
@@ -72,16 +91,55 @@ export default function Indices() {
     children: React.ReactNode;
     icon: any;
   }) => (
-    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+    <div className="bg-[#FDFBF9] border-l-4 border-[#9C8464] p-4 mb-6 rounded-r-xl shadow-xs">
       <div className="flex items-start">
-        <Icon className="w-5 h-5 text-blue-500 mt-0.5 mr-3 flex-shrink-0" />
+        <Icon className="w-5 h-5 text-[#9C8464] mt-0.5 mr-3 flex-shrink-0" />
         <div>
-          <h3 className="text-lg font-semibold text-blue-900 mb-2">{title}</h3>
-          <div className="text-blue-700 space-y-2">{children}</div>
+          <h3 className="text-lg font-semibold text-[#373B3A] mb-2">{title}</h3>
+          <div className="text-stone-700 space-y-2">{children}</div>
         </div>
       </div>
     </div>
   );
+
+  const renderMonochromeIcon = (iconStr?: string, nameStr?: string) => {
+    const n = (nameStr || "").toLowerCase();
+    let IconComp = BarChart3;
+
+    // 1. Métaux & Minéraux
+    if (n === "or" || n.includes("or ") || n.includes(" gold") || n.includes("xau")) IconComp = Coins;
+    else if (n.includes("argent") || n.includes("silver") || n.includes("xag")) IconComp = Sparkles;
+    else if (n.includes("platine") || n.includes("platinum")) IconComp = Crown;
+    else if (n.includes("cuivre") || n.includes("copper") || n.includes("métal")) IconComp = Shield;
+
+    // 2. Énergie & Hydrocarbures
+    else if (n.includes("pétrol") || n.includes("brent") || n.includes("wti") || n.includes(" crude")) IconComp = Droplet;
+    else if (n.includes("gaz") || n.includes("gas") || n.includes("energie") || n.includes("électricité")) IconComp = Flame;
+
+    // 3. Produit Agricoles & Commodités Alimentaires
+    else if (n.includes("café") || n.includes("coffee")) IconComp = Coffee;
+    else if (n.includes("cacao") || n.includes("cocoa")) IconComp = Leaf;
+    else if (n.includes("coton") || n.includes("cotton")) IconComp = Feather;
+    else if (n.includes("blé") || n.includes("maïs") || n.includes("riz") || n.includes("agri") || n.includes("cereale") || n.includes("sucre")) IconComp = Wheat;
+
+    // 4. Devises, Monnaies, Banques & Inflation
+    else if (n.includes("eur") || n.includes("cfa") || n.includes("devise") || n.includes("forex") || n.includes("usd") || n.includes("change")) IconComp = ArrowLeftRight;
+    else if (n.includes("bceao") || n.includes("directeur") || n.includes("banque") || n.includes("monétaire")) IconComp = Landmark;
+    else if (n.includes("inflation") || n.includes("prix")) IconComp = Percent;
+
+    // 5. Indices & Bourse BRVM
+    else if (n.includes("composite") || n.includes("brvm 10") || n.includes("brvm 30") || n.includes("prestige")) IconComp = LineChart;
+    else if (n.includes("industrie")) IconComp = Factory;
+    else if (n.includes("transport") || n.includes("logistique")) IconComp = Truck;
+    else if (n.includes("service") || n.includes("commer") || n.includes("distrib")) IconComp = Store;
+    else if (n.includes("action") || n.includes("société") || n.includes("sonatel") || n.includes("oragroup") || n.includes("ecobank") || n.includes("total")) IconComp = Building2;
+
+    return (
+      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#F4F0EB] border border-[#E5DDD5] flex items-center justify-center shrink-0 shadow-xs">
+        <IconComp className="w-5 h-5 text-[#373B3A]" />
+      </div>
+    );
+  };
 
   const MarketItem = ({
     name,
@@ -104,17 +162,24 @@ export default function Indices() {
     icon?: string;
     source?: string;
   }) => (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6 hover:shadow-xl transition-all duration-300">
+    <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-4 sm:p-6 hover:shadow-md transition-all duration-300">
       <div className="flex items-start justify-between mb-3 sm:mb-4">
         <div className="flex items-center gap-2 sm:gap-3">
-          {icon && <span className="text-xl sm:text-2xl">{icon}</span>}
+          {icon && (
+            <span
+              style={{ filter: "grayscale(100%) contrast(140%) brightness(35%)" }}
+              className="text-2xl sm:text-3xl select-none inline-block shrink-0 leading-none"
+            >
+              {icon}
+            </span>
+          )}
           <div>
-            <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 line-clamp-1">{name}</h3>
-            {unit && <p className="text-xs sm:text-sm text-gray-500">({unit})</p>}
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-[#373B3A] line-clamp-1">{name}</h3>
+            {unit && <p className="text-xs sm:text-sm text-stone-500">({unit})</p>}
           </div>
         </div>
         {source && !source.toLowerCase().includes("sikafinance") && !source.toLowerCase().includes("marché") && (
-          <span className="text-[10px] sm:text-xs px-2 py-0.5 sm:py-1 bg-gray-100 text-gray-600 rounded-full font-medium hidden sm:inline-block">
+          <span className="text-[10px] sm:text-xs px-2 py-0.5 sm:py-1 bg-stone-100 text-stone-600 rounded-full font-medium hidden sm:inline-block">
             {source}
           </span>
         )}
@@ -158,15 +223,16 @@ export default function Indices() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#FDFBF9]">
       {/* En-tête de la page */}
-      <section className="bg-slate-900 text-white py-16">
+      <section className="bg-[#373B3A] text-white border-b border-stone-800 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              Indices & Commodités
+            <h1 className="text-4xl md:text-5xl font-bold mb-6 flex items-center justify-center gap-3">
+              <BarChart3 className="w-10 h-10 md:w-12 md:h-12 text-[#E5DDD2] shrink-0" />
+              <span>Indices & Commodités</span>
             </h1>
-            <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
+            <p className="text-xl text-stone-300 mb-8 max-w-3xl mx-auto leading-relaxed">
               Suivez les marchés financiers, indices boursiers et prix des
               matières premières. Guide complet pour comprendre l'économie
               africaine et mondiale.
@@ -176,7 +242,7 @@ export default function Indices() {
               <button
                 onClick={loadAllData}
                 disabled={loading}
-                className="flex items-center gap-2 bg-white text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 bg-[#9C8464] hover:bg-[#867052] text-white px-6 py-3 rounded-xl font-bold shadow-md transition-all disabled:opacity-50"
               >
                 <RefreshCw
                   className={`w-5 h-5 ${loading ? "animate-spin" : ""}`}
@@ -185,8 +251,8 @@ export default function Indices() {
               </button>
 
               {lastUpdate && (
-                <p className="text-gray-300 text-sm flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
+                <p className="text-stone-300 text-sm flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#9C8464]" />
                   Dernière mise à jour: {lastUpdate.toLocaleTimeString("fr-FR")}
                 </p>
               )}
@@ -207,10 +273,10 @@ export default function Indices() {
               <button
                 key={id}
                 onClick={() => handleCategoryClick(id as any)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-bold transition-all ${
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${
                   selectedCategory === id
-                    ? "bg-gray-900 text-white shadow-md"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
+                    ? "bg-[#373B3A] text-white shadow-md"
+                    : "bg-white text-stone-700 hover:bg-stone-100 border border-stone-200"
                 }`}
               >
                 <Icon className="w-5 h-5" />
@@ -287,9 +353,9 @@ export default function Indices() {
             {/* Actions BRVM */}
             {brvmData?.topStocks && brvmData.topStocks.length > 0 && (
               <div className="mb-12">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <span>🏢</span>
-                  Sociétés & Actions Cotées (BRVM)
+                <h3 className="text-2xl font-bold text-[#373B3A] mb-6 flex items-center gap-3">
+                  <Building2 className="w-7 h-7 text-[#9C8464] shrink-0" />
+                  <span>Sociétés & Actions Cotées (BRVM)</span>
                 </h3>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {brvmData.topStocks.map((stock, i) => (
@@ -312,9 +378,9 @@ export default function Indices() {
             {/* Indices sectoriels */}
             {brvmData?.sectoriels && brvmData.sectoriels.length > 0 && (
               <div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <span>📊</span>
-                  Indices Sectoriels BRVM
+                <h3 className="text-2xl font-bold text-[#373B3A] mb-6 flex items-center gap-3">
+                  <PieChart className="w-7 h-7 text-[#9C8464] shrink-0" />
+                  <span>Indices Sectoriels BRVM</span>
                 </h3>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {brvmData.sectoriels.map((index, i) => (

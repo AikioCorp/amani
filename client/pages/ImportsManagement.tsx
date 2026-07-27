@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { API_BASE_URL } from "../services/apiConfig";
 import { 
   Globe, Plus, AlertCircle, CheckCircle2, Loader2, 
-  ArrowUpRight, RefreshCw, Check, X, Edit3, Trash2, Eye, ShieldCheck, Sparkles, AlertTriangle, Clock
+  ArrowUpRight, RefreshCw, Check, X, Edit3, Trash2, Eye, ShieldCheck, Sparkles, AlertTriangle, Clock, Search
 } from "lucide-react";
 import { useToast } from "../context/ToastContext";
 import { getSessionToken } from "../services/authService";
@@ -40,14 +40,14 @@ interface ArticleImport {
   imported_at: string;
   status: string;
   freshness_score: number;
+  extraction_method?: string;
   source?: Source;
   drafts: ArticleDraft[];
   raw_data?: {
     imageUrl?: string | null;
+    providerUsed?: string;
   };
 }
-
-
 
 export default function ImportsManagement() {
   const { success, error, warning } = useToast();
@@ -58,10 +58,17 @@ export default function ImportsManagement() {
   const [diagResults, setDiagResults] = useState<any[] | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null); // importId
   
-  const [activeTab, setActiveTab] = useState<'imports' | 'sources'>('imports');
+  const [activeTab, setActiveTab] = useState<'serper' | 'firecrawl' | 'sources'>('serper');
   const [sources, setSources] = useState<Source[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   
+  // Pagination et Recherche par mot-clé
+  const [limit, setLimit] = useState<number>(25);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [page, setPage] = useState<number>(1);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [totalCount, setTotalCount] = useState<number>(0);
+
   // Modal Edit state
   const [editingDraft, setEditingDraft] = useState<ArticleDraft | null>(null);
   const [editingImportId, setEditingImportId] = useState<string | null>(null);
@@ -77,23 +84,43 @@ export default function ImportsManagement() {
     importance_score: 50,
   });
 
-  const fetchImports = async (currentFilter = filterStatus) => {
-    setIsLoading(true);
+  const fetchImports = async (
+    currentFilter = filterStatus,
+    currentSearch = searchQuery,
+    currentLimit = limit,
+    pageNum = page,
+    append = false,
+    silent = false
+  ) => {
+    if (!silent) setIsLoading(true);
     try {
       const token = getSessionToken();
-      const response = await fetch(`${API_BASE_URL}/imports?status=${currentFilter}`, {
+      const queryParams = new URLSearchParams({
+        status: currentFilter,
+        limit: String(currentLimit),
+        page: String(pageNum),
+        search: currentSearch,
+      });
+      const response = await fetch(`${API_BASE_URL}/imports?${queryParams.toString()}`, {
         headers: { "Authorization": token ? `Bearer ${token}` : "" }
       });
       const result = await response.json();
       if (response.ok && result.success) {
-        setImports(result.data || []);
+        const newItems = result.data || [];
+        if (append) {
+          setImports((prev) => [...prev, ...newItems]);
+        } else {
+          setImports(newItems);
+        }
+        setTotalCount(result.pagination?.total || newItems.length);
+        setHasMore(pageNum < (result.pagination?.totalPages || 1));
       } else {
-        throw new Error(result.error || "Erreur de chargement des imports");
+        if (!silent) throw new Error(result.error || "Erreur de chargement des imports");
       }
     } catch (err: any) {
-      error("Erreur", err.message || "Erreur lors du chargement des imports");
+      if (!silent) error("Erreur", err.message || "Erreur lors du chargement des imports");
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -195,8 +222,12 @@ export default function ImportsManagement() {
   };
 
   useEffect(() => {
-    if (activeTab === "imports") {
-      fetchImports(filterStatus);
+    if (activeTab !== "sources") {
+      fetchImports(filterStatus, searchQuery, limit, 1, false, false);
+      const pollInterval = setInterval(() => {
+        fetchImports(filterStatus, searchQuery, limit, 1, false, true);
+      }, 25000);
+      return () => clearInterval(pollInterval);
     } else {
       fetchSources();
       fetchKeywords();
@@ -214,14 +245,38 @@ export default function ImportsManagement() {
       const result = await response.json();
       if (response.ok && result.success) {
         success("Scan terminé !", `${result.message}`);
-        fetchImports();
+        fetchImports(filterStatus, searchQuery, limit, 1, false);
       } else {
         throw new Error(result.error || "Échec du scan");
       }
     } catch (err: any) {
-      error("Erreur de scan", err.message);
+      error("Erreur Scan", err.message);
     } finally {
       setIsScanning(false);
+    }
+  };
+
+  const [isFirecrawlScanning, setIsFirecrawlScanning] = useState(false);
+
+  const handleFirecrawlScan = async () => {
+    setIsFirecrawlScanning(true);
+    try {
+      const token = getSessionToken();
+      const response = await fetch(`${API_BASE_URL}/imports/scan-firecrawl`, {
+        method: "POST",
+        headers: { "Authorization": token ? `Bearer ${token}` : "" }
+      });
+      const result = await response.json();
+      if (response.ok && result.success) {
+        success("Scan Firecrawl AI terminé !", `${result.message}`);
+        fetchImports(filterStatus, searchQuery, limit, 1, false);
+      } else {
+        throw new Error(result.error || "Échec du scan Firecrawl AI");
+      }
+    } catch (err: any) {
+      error("Erreur Scan Firecrawl", err.message);
+    } finally {
+      setIsFirecrawlScanning(false);
     }
   };
 
@@ -474,6 +529,14 @@ export default function ImportsManagement() {
     }
   };
 
+  const serperImports = imports.filter(
+    (item) => item.extraction_method !== "firecrawl_ai" && item.raw_data?.providerUsed !== "firecrawl_ai"
+  );
+  const firecrawlImports = imports.filter(
+    (item) => item.extraction_method === "firecrawl_ai" || item.raw_data?.providerUsed === "firecrawl_ai"
+  );
+  const activeImportsList = activeTab === "firecrawl" ? firecrawlImports : serperImports;
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Title & Scan Button */}
@@ -489,7 +552,7 @@ export default function ImportsManagement() {
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           <button
             onClick={handleDiagnostic}
-            disabled={isDiagLoading || isScanning}
+            disabled={isDiagLoading || isScanning || isFirecrawlScanning}
             className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-5 py-3 rounded-xl shadow-sm transition-all disabled:opacity-60 flex items-center gap-2 whitespace-nowrap justify-center flex-1 sm:flex-initial"
           >
             {isDiagLoading ? (
@@ -504,23 +567,44 @@ export default function ImportsManagement() {
               </>
             )}
           </button>
-          <button
-            onClick={handleScan}
-            disabled={isScanning || isDiagLoading}
-            className="bg-amani-primary hover:bg-amani-primary/95 text-white font-semibold px-6 py-3 rounded-xl shadow-sm transition-all disabled:opacity-60 flex items-center gap-2 whitespace-nowrap justify-center flex-1 sm:flex-initial"
-          >
-            {isScanning ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Recherche de veille...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="w-5 h-5" />
-                Lancer la veille automatique
-              </>
-            )}
-          </button>
+          
+          {activeTab === "firecrawl" ? (
+            <button
+              onClick={handleFirecrawlScan}
+              disabled={isScanning || isFirecrawlScanning || isDiagLoading}
+              className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-5 py-3 rounded-xl shadow-sm transition-all disabled:opacity-60 flex items-center gap-2 whitespace-nowrap justify-center flex-1 sm:flex-initial"
+            >
+              {isFirecrawlScanning ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Scan Firecrawl AI...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5 text-amber-200" />
+                  Lancer Veille Firecrawl AI
+                </>
+              )}
+            </button>
+          ) : (
+            <button
+              onClick={handleScan}
+              disabled={isScanning || isFirecrawlScanning || isDiagLoading}
+              className="bg-[#373B3A] hover:bg-black text-white font-semibold px-5 py-3 rounded-xl shadow-sm transition-all disabled:opacity-60 flex items-center gap-2 whitespace-nowrap justify-center flex-1 sm:flex-initial"
+            >
+              {isScanning ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin text-[#9C8464]" />
+                  Recherche Serper...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-5 h-5 text-[#9C8464]" />
+                  Lancer Veille Google (Serper)
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -559,26 +643,44 @@ export default function ImportsManagement() {
       )}
 
       {/* Tabs Menu */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-gray-200 overflow-x-auto">
         <button
-          onClick={() => setActiveTab("imports")}
-          className={`py-3 px-6 font-semibold text-sm border-b-2 transition-all ${
-            activeTab === "imports"
-              ? "border-amani-primary text-amani-primary"
+          onClick={() => setActiveTab("serper")}
+          className={`py-3 px-6 font-semibold text-sm border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
+            activeTab === "serper"
+              ? "border-amani-primary text-amani-primary font-bold"
               : "border-transparent text-gray-500 hover:text-gray-700"
           }`}
         >
-          📥 Brouillons en attente ({imports.length})
+          <span>🔍 Imports Google Serper</span>
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-stone-100 text-stone-700">
+            {serperImports.length}
+          </span>
         </button>
+
+        <button
+          onClick={() => setActiveTab("firecrawl")}
+          className={`py-3 px-6 font-semibold text-sm border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
+            activeTab === "firecrawl"
+              ? "border-orange-600 text-orange-600 font-bold"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          <span>🔥 Imports Firecrawl AI</span>
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-orange-800">
+            {firecrawlImports.length}
+          </span>
+        </button>
+
         <button
           onClick={() => setActiveTab("sources")}
-          className={`py-3 px-6 font-semibold text-sm border-b-2 transition-all ${
+          className={`py-3 px-6 font-semibold text-sm border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
             activeTab === "sources"
-              ? "border-amani-primary text-amani-primary"
+              ? "border-amani-primary text-amani-primary font-bold"
               : "border-transparent text-gray-500 hover:text-gray-700"
           }`}
         >
-          🌐 Sites Sources & Mots-clés ({sources.length})
+          <span>🌐 Sites Sources & Mots-clés ({sources.length})</span>
         </button>
       </div>
 
@@ -590,49 +692,122 @@ export default function ImportsManagement() {
       )}
 
       {/* Render tab content */}
-      {!isLoading && activeTab === "imports" && (
+      {!isLoading && activeTab !== "sources" && (
         <>
-          {/* Filters Bar */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 mb-6 flex flex-wrap gap-2 items-center">
-            <span className="text-xs font-bold text-gray-500 uppercase mr-2">Filtrer par récence :</span>
-            {[
-              { label: `Tous (${filterStatus === "all" ? imports.length : "..."})`, val: "all" },
-              { label: `Aujourd'hui (${filterStatus === "today" ? imports.length : "..."})`, val: "today" },
-              { label: `7 derniers jours (${filterStatus === "week" ? imports.length : "..."})`, val: "week" },
-              { label: `Date inconnue (${filterStatus === "needs_date_review" ? imports.length : "..."})`, val: "needs_date_review" },
-              { label: `Rejetés automatiquement (${filterStatus === "auto_rejected" ? imports.length : "..."})`, val: "auto_rejected" }
-            ].map((f) => (
-              <button
-                key={f.val}
-                onClick={() => setFilterStatus(f.val)}
-                className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all border ${
-                  filterStatus === f.val 
-                    ? "bg-amani-primary text-white border-amani-primary shadow-sm" 
-                    : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
+          {/* Filters & Search Bar */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 mb-6 space-y-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-1">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Rechercher une actualité par mot-clé (titre, sujet, domaine)..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        setPage(1);
+                        fetchImports(filterStatus, searchQuery, limit, 1, false);
+                      }
+                    }}
+                    className="w-full pl-10 pr-10 py-2 border border-gray-200 rounded-xl text-xs font-semibold text-gray-900 focus:ring-2 focus:ring-amani-primary focus:border-transparent"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => {
+                        setSearchQuery("");
+                        setPage(1);
+                        fetchImports(filterStatus, "", limit, 1, false);
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-bold"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPage(1);
+                    fetchImports(filterStatus, searchQuery, limit, 1, false);
+                  }}
+                  className="px-4 py-2 bg-[#373B3A] hover:bg-black text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all shrink-0 cursor-pointer"
+                >
+                  <Search className="w-3.5 h-3.5 text-[#9C8464]" />
+                  <span>Rechercher</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-gray-500 shrink-0">Afficher :</span>
+                <select
+                  value={limit}
+                  onChange={(e) => {
+                    const newLimit = parseInt(e.target.value, 10);
+                    setLimit(newLimit);
+                    setPage(1);
+                    fetchImports(filterStatus, searchQuery, newLimit, 1, false);
+                  }}
+                  className="text-xs font-bold border border-gray-200 rounded-xl px-3 py-2 bg-stone-50 text-gray-800 focus:outline-none"
+                >
+                  <option value="15">15 par chargement</option>
+                  <option value="25">25 par chargement</option>
+                  <option value="50">50 par chargement</option>
+                  <option value="100">100 par chargement</option>
+                  <option value="200">200 par chargement</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 items-center pt-2 border-t border-stone-100">
+              <span className="text-xs font-bold text-gray-500 uppercase mr-2">Filtrer par statut :</span>
+              {[
+                { label: `Tous (${filterStatus === "all" ? activeImportsList.length : "..."})`, val: "all" },
+                { label: `Aujourd'hui (${filterStatus === "today" ? activeImportsList.length : "..."})`, val: "today" },
+                { label: `7 derniers jours (${filterStatus === "week" ? activeImportsList.length : "..."})`, val: "week" },
+                { label: `Date inconnue (${filterStatus === "needs_date_review" ? activeImportsList.length : "..."})`, val: "needs_date_review" },
+                { label: `Rejetés automatiquement (${filterStatus === "auto_rejected" ? activeImportsList.length : "..."})`, val: "auto_rejected" }
+              ].map((f) => (
+                <button
+                  key={f.val}
+                  onClick={() => {
+                    setFilterStatus(f.val);
+                    setPage(1);
+                    fetchImports(f.val, searchQuery, limit, 1, false);
+                  }}
+                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all border ${
+                    filterStatus === f.val 
+                      ? "bg-amani-primary text-white border-amani-primary shadow-sm" 
+                      : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {imports.length === 0 ? (
+          {activeImportsList.length === 0 ? (
             <div className="bg-white p-16 rounded-2xl border border-gray-200 text-center max-w-xl mx-auto shadow-sm">
               <div className="w-16 h-16 bg-gray-50 text-gray-400 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-gray-100">
                 <ShieldCheck className="w-8 h-8 text-green-600" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Tout est en ordre !</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Aucun article dans cet onglet</h3>
               <p className="text-gray-600 text-sm mb-6">
-                Aucun article en attente de modération. Vous pouvez lancer un scan de veille manuellement pour actualiser les données.
+                {activeTab === "firecrawl" 
+                  ? "Aucune actualité récoltée par Firecrawl AI pour l'instant. Cliquez sur 'Lancer Veille Firecrawl AI'."
+                  : "Aucune actualité en attente pour Serper. Vous pouvez lancer une veille pour actualiser."}
               </p>
             </div>
           ) : (
             <div className="space-y-6">
               <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                📥 Actualités en attente de relecture
+                {activeTab === "firecrawl" ? "🔥 Actualités capturées par Firecrawl AI" : "📥 Actualités capturées par Google Serper"}
               </h2>
               <div className="grid grid-cols-1 gap-6">
-            {imports.map((item) => {
+            {activeImportsList.map((item) => {
               const draft = item.drafts[0];
               return (
                 <div key={item.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col lg:flex-row hover:shadow-md transition-shadow">
@@ -856,6 +1031,27 @@ export default function ImportsManagement() {
               );
             })}
           </div>
+
+          {hasMore && (
+            <div className="text-center pt-8 pb-4">
+              <button
+                onClick={() => {
+                  const nextPage = page + 1;
+                  setPage(nextPage);
+                  fetchImports(filterStatus, searchQuery, limit, nextPage, true);
+                }}
+                disabled={isLoading}
+                className="px-6 py-3 bg-[#373B3A] hover:bg-black text-white font-bold rounded-xl text-xs shadow-md transition-all inline-flex items-center gap-2 disabled:opacity-50"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-[#9C8464]" />
+                ) : (
+                  <Plus className="w-4 h-4 text-[#9C8464]" />
+                )}
+                <span>Charger d'avantage ({totalCount - activeImportsList.length > 0 ? `${totalCount - activeImportsList.length} restants` : "Suite"})</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
         </>

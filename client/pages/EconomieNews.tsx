@@ -116,8 +116,9 @@ export default function EconomieNews() {
             <ArrowLeft className="w-4 h-4" />
             Retour à Économie
           </Link>
-          <h1 className="text-4xl lg:text-5xl font-bold text-amani-primary mb-4">
-            Actualités Économiques
+          <h1 className="text-4xl lg:text-5xl font-bold text-amani-primary mb-4 flex items-center gap-3">
+            <TrendingUp className="w-8 h-8 sm:w-10 sm:h-10 text-[#373B3A] shrink-0" />
+            <span>Actualités Économiques</span>
           </h1>
           <p className="text-lg text-gray-600 max-w-4xl">
             Toutes les dernières actualités économiques du Sahel et du Tchad.
@@ -199,10 +200,6 @@ export default function EconomieNews() {
 
                   <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                     <div className="flex items-center gap-6 text-sm text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <User className="w-4 h-4" />
-                        {news.author}
-                      </span>
                       <span className="flex items-center gap-1">
                         <Eye className="w-4 h-4" />
                         {news.views} vues

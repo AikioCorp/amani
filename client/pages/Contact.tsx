@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Send, ArrowRight, Clock, Building } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, ArrowRight, Clock, Building, CheckCircle2, AlertCircle } from 'lucide-react';
+import { DynamicLegalPage } from '../components/DynamicLegalPage';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -16,8 +17,8 @@ const Contact = () => {
 
   const contactTypes = [
     { id: 'general', name: 'Question Générale' },
-    { id: 'partnership', name: 'Partenariat' },
-    { id: 'press', name: 'Presse & Média' },
+    { id: 'partnership', name: 'Partenariat & Investissement' },
+    { id: 'press', name: 'Presse & Médias' },
     { id: 'technical', name: 'Support Technique' }
   ];
 
@@ -34,7 +35,7 @@ const Contact = () => {
     setIsSubmitting(true);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
       setSubmitStatus('success');
       setFormData({
         name: '',
@@ -54,85 +55,96 @@ const Contact = () => {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-[#FDFBF9]">
       {/* Left Column: Dark Info Section */}
-      <div className="lg:w-2/5 bg-[#1C1E1D] text-white p-8 md:p-16 lg:p-20 flex flex-col justify-between relative overflow-hidden">
-        {/* Decorative circle */}
-        <div className="absolute top-0 right-0 -translate-y-1/3 translate-x-1/3 w-96 h-96 bg-[#9C8464] rounded-full blur-[120px] opacity-20 pointer-events-none"></div>
+      <div className="lg:w-2/5 bg-[#373B3A] text-white p-6 sm:p-12 lg:p-16 flex flex-col justify-between relative overflow-hidden">
+        {/* Subtle Decorative Circle */}
+        <div className="absolute top-0 right-0 -translate-y-1/3 translate-x-1/3 w-96 h-96 bg-[#9C8464] rounded-full blur-[120px] opacity-15 pointer-events-none"></div>
 
         <div className="relative z-10">
-          <h1 className="text-5xl lg:text-6xl font-black mb-6 tracking-tight text-white leading-tight">
-            Contactez-<br/>Nous.
+          <span className="inline-block bg-[#9C8464]/20 border border-[#9C8464]/40 text-[#E5DDD5] text-xs font-bold px-3 py-1 rounded-full mb-4 uppercase tracking-widest">
+            Contact & Support
+          </span>
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black mb-4 sm:mb-6 tracking-tight text-white leading-tight">
+            Contactez-<br className="hidden sm:block"/>Nous.
           </h1>
-          <p className="text-xl text-gray-400 font-light mb-16 max-w-md">
-            Une idée, un projet économique ou une question ? Notre équipe d'experts est prête à vous accompagner.
+          <p className="text-sm sm:text-lg text-stone-300 font-normal mb-8 sm:mb-12 max-w-md leading-relaxed">
+            Une idée, un projet d'investissement ou une question ? Notre équipe d'experts est prête à vous répondre.
           </p>
 
-          <div className="space-y-12">
-            <div className="group flex items-start space-x-5">
-              <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-[#9C8464] transition-colors duration-500">
-                <Mail className="h-5 w-5 text-[#9C8464] group-hover:text-white transition-colors duration-500" />
+          <div className="space-y-6 sm:space-y-8">
+            <div className="group flex items-start space-x-4 sm:space-x-5">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-stone-800/80 border border-stone-700/80 rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:bg-[#9C8464] transition-colors duration-300">
+                <Mail className="h-4 w-4 sm:h-5 sm:w-5 text-[#9C8464] group-hover:text-white transition-colors duration-300" />
               </div>
               <div>
-                <p className="text-sm text-gray-500 uppercase tracking-widest font-bold mb-1">Email</p>
-                <a href="mailto:info@amani-finance.com" className="text-lg text-white hover:text-[#9C8464] transition-colors">info@amani-finance.com</a>
-                <p className="text-sm text-gray-400 mt-1">Nous répondons sous 24h</p>
+                <p className="text-[10px] sm:text-xs text-stone-400 uppercase tracking-widest font-bold mb-0.5">Email</p>
+                <a href="mailto:info@amani-finance.com" className="text-sm sm:text-lg font-bold text-white hover:text-[#9C8464] transition-colors break-all sm:break-normal">
+                  info@amani-finance.com
+                </a>
+                <p className="text-xs text-stone-400 mt-0.5">Réponse garantie sous 24h</p>
               </div>
             </div>
 
-            <div className="group flex items-start space-x-5">
-              <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-[#9C8464] transition-colors duration-500">
-                <Phone className="h-5 w-5 text-[#9C8464] group-hover:text-white transition-colors duration-500" />
+            <div className="group flex items-start space-x-4 sm:space-x-5">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-stone-800/80 border border-stone-700/80 rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:bg-[#9C8464] transition-colors duration-300">
+                <Phone className="h-4 w-4 sm:h-5 sm:w-5 text-[#9C8464] group-hover:text-white transition-colors duration-300" />
               </div>
               <div>
-                <p className="text-sm text-gray-500 uppercase tracking-widest font-bold mb-1">Téléphone</p>
-                <a href="tel:+22320224567" className="text-lg text-white hover:text-[#9C8464] transition-colors">+223 20 22 45 67</a>
-                <p className="text-sm text-gray-400 mt-1">Lun-Ven, 9h-18h GMT</p>
+                <p className="text-[10px] sm:text-xs text-stone-400 uppercase tracking-widest font-bold mb-0.5">Téléphone</p>
+                <a href="tel:+22320224567" className="text-sm sm:text-lg font-bold text-white hover:text-[#9C8464] transition-colors">
+                  +223 20 22 45 67
+                </a>
+                <p className="text-xs text-stone-400 mt-0.5">Lun - Ven, 9h-18h GMT</p>
               </div>
             </div>
 
-            <div className="group flex items-start space-x-5">
-              <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-[#9C8464] transition-colors duration-500">
-                <MapPin className="h-5 w-5 text-[#9C8464] group-hover:text-white transition-colors duration-500" />
+            <div className="group flex items-start space-x-4 sm:space-x-5">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-stone-800/80 border border-stone-700/80 rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:bg-[#9C8464] transition-colors duration-300">
+                <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-[#9C8464] group-hover:text-white transition-colors duration-300" />
               </div>
               <div>
-                <p className="text-sm text-gray-500 uppercase tracking-widest font-bold mb-1">Siège Social</p>
-                <p className="text-lg text-white">Faladie, Bamako, Mali</p>
+                <p className="text-[10px] sm:text-xs text-stone-400 uppercase tracking-widest font-bold mb-0.5">Siège Social</p>
+                <p className="text-sm sm:text-lg font-bold text-white">Faladié, Bamako, Mali</p>
+                <p className="text-xs text-stone-400 mt-0.5">Espace UEMOA & Sahel</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="relative z-10 mt-20 pt-10 border-t border-white/10">
-          <p className="text-sm text-gray-500 uppercase tracking-widest font-bold mb-4">Notre Philosophie</p>
-          <p className="text-gray-400 font-light italic">
-            "Le développement économique durable commence par des partenariats solides et une communication transparente."
+        <div className="relative z-10 mt-10 sm:mt-16 pt-6 border-t border-stone-800">
+          <p className="text-[10px] sm:text-xs text-[#9C8464] uppercase tracking-widest font-bold mb-2">Notre Philosophie</p>
+          <p className="text-xs sm:text-sm text-stone-300 font-light italic leading-relaxed">
+            "Le développement économique commence par des partenariats solides et une communication transparente."
           </p>
         </div>
       </div>
 
-      {/* Right Column: Modern Form */}
-      <div className="lg:w-3/5 p-8 md:p-16 lg:p-24 flex items-center justify-center bg-white relative">
+      {/* Right Column: Modern Responsive Form */}
+      <div className="lg:w-3/5 p-5 sm:p-12 lg:p-16 flex items-center justify-center bg-white relative">
         <div className="w-full max-w-2xl">
-          <h2 className="text-3xl font-black text-gray-900 mb-2">Envoyez votre message</h2>
-          <p className="text-gray-500 mb-12">Remplissez le formulaire ci-dessous. Tous les champs marqués d'un * sont obligatoires.</p>
+          <h2 className="text-xl sm:text-3xl font-extrabold text-[#373B3A] mb-2">
+            Envoyez-nous un message
+          </h2>
+          <DynamicLegalPage slug="contact" defaultContent={null} />
 
           {submitStatus === 'success' && (
-            <div className="mb-10 p-5 bg-green-50 border-l-4 border-green-500 rounded-r-lg">
-              <p className="text-green-800 font-medium">
-                ✅ Votre message a été envoyé avec succès ! Notre équipe vous répondra très prochainement.
-              </p>
+            <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 text-emerald-800 text-xs sm:text-sm">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+              <span>Votre message a été envoyé avec succès ! Notre équipe vous répondra très prochainement.</span>
             </div>
           )}
           {submitStatus === 'error' && (
-            <div className="mb-10 p-5 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
-              <p className="text-red-800 font-medium">
-                ❌ Une erreur s'est produite lors de l'envoi. Veuillez réessayer.
-              </p>
+            <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-3 text-rose-800 text-xs sm:text-sm">
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+              <span>Une erreur s'est produite lors de l'envoi. Veuillez réessayer.</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              <div className="relative group">
+          <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+              <div>
+                <label htmlFor="name" className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">
+                  Nom complet *
+                </label>
                 <input
                   type="text"
                   id="name"
@@ -140,15 +152,15 @@ const Contact = () => {
                   required
                   value={formData.name}
                   onChange={handleInputChange}
-                  className="w-full bg-transparent border-b-2 border-gray-200 py-3 text-gray-900 focus:outline-none focus:border-[#9C8464] transition-colors peer placeholder-transparent"
-                  placeholder="Nom complet"
+                  placeholder="Ex: Amadou Diallo"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-xs sm:text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#9C8464]/30 focus:border-[#9C8464] transition-all placeholder-stone-400"
                 />
-                <label htmlFor="name" className="absolute left-0 -top-4 text-xs font-bold text-gray-500 uppercase tracking-widest peer-placeholder-shown:text-base peer-placeholder-shown:top-3 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#9C8464] transition-all">
-                  Nom complet *
-                </label>
               </div>
 
-              <div className="relative group">
+              <div>
+                <label htmlFor="email" className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">
+                  Adresse Email *
+                </label>
                 <input
                   type="email"
                   id="email"
@@ -156,51 +168,51 @@ const Contact = () => {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="w-full bg-transparent border-b-2 border-gray-200 py-3 text-gray-900 focus:outline-none focus:border-[#9C8464] transition-colors peer placeholder-transparent"
-                  placeholder="Email"
+                  placeholder="nom@exemple.com"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-xs sm:text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#9C8464]/30 focus:border-[#9C8464] transition-all placeholder-stone-400"
                 />
-                <label htmlFor="email" className="absolute left-0 -top-4 text-xs font-bold text-gray-500 uppercase tracking-widest peer-placeholder-shown:text-base peer-placeholder-shown:top-3 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#9C8464] transition-all">
-                  Adresse Email *
-                </label>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              <div className="relative group">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+              <div>
+                <label htmlFor="company" className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">
+                  Entreprise (Optionnel)
+                </label>
                 <input
                   type="text"
                   id="company"
                   name="company"
                   value={formData.company}
                   onChange={handleInputChange}
-                  className="w-full bg-transparent border-b-2 border-gray-200 py-3 text-gray-900 focus:outline-none focus:border-[#9C8464] transition-colors peer placeholder-transparent"
-                  placeholder="Entreprise"
+                  placeholder="Ex: Sahel Tech Corp"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-xs sm:text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#9C8464]/30 focus:border-[#9C8464] transition-all placeholder-stone-400"
                 />
-                <label htmlFor="company" className="absolute left-0 -top-4 text-xs font-bold text-gray-500 uppercase tracking-widest peer-placeholder-shown:text-base peer-placeholder-shown:top-3 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#9C8464] transition-all">
-                  Entreprise (Optionnel)
-                </label>
               </div>
 
-              <div className="relative group">
+              <div>
+                <label htmlFor="type" className="block text-xs font-bold text-[#9C8464] uppercase tracking-wider mb-2">
+                  Type de demande *
+                </label>
                 <select
                   id="type"
                   name="type"
                   required
                   value={formData.type}
                   onChange={handleInputChange}
-                  className="w-full bg-transparent border-b-2 border-gray-200 py-3 text-gray-900 focus:outline-none focus:border-[#9C8464] transition-colors appearance-none cursor-pointer"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-xs sm:text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#9C8464]/30 focus:border-[#9C8464] transition-all cursor-pointer"
                 >
                   {contactTypes.map(type => (
                     <option key={type.id} value={type.id}>{type.name}</option>
                   ))}
                 </select>
-                <label htmlFor="type" className="absolute left-0 -top-4 text-xs font-bold text-[#9C8464] uppercase tracking-widest">
-                  Type de demande *
-                </label>
               </div>
             </div>
 
-            <div className="relative group">
+            <div>
+              <label htmlFor="subject" className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">
+                Sujet de votre message *
+              </label>
               <input
                 type="text"
                 id="subject"
@@ -208,15 +220,15 @@ const Contact = () => {
                 required
                 value={formData.subject}
                 onChange={handleInputChange}
-                className="w-full bg-transparent border-b-2 border-gray-200 py-3 text-gray-900 focus:outline-none focus:border-[#9C8464] transition-colors peer placeholder-transparent"
-                placeholder="Sujet"
+                placeholder="Ex: Demande de due diligence pour projet agricole"
+                className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-xs sm:text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#9C8464]/30 focus:border-[#9C8464] transition-all placeholder-stone-400"
               />
-              <label htmlFor="subject" className="absolute left-0 -top-4 text-xs font-bold text-gray-500 uppercase tracking-widest peer-placeholder-shown:text-base peer-placeholder-shown:top-3 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#9C8464] transition-all">
-                Sujet de votre message *
-              </label>
             </div>
 
-            <div className="relative group">
+            <div>
+              <label htmlFor="message" className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">
+                Votre Message *
+              </label>
               <textarea
                 id="message"
                 name="message"
@@ -224,29 +236,26 @@ const Contact = () => {
                 required
                 value={formData.message}
                 onChange={handleInputChange}
-                className="w-full bg-transparent border-b-2 border-gray-200 py-3 text-gray-900 focus:outline-none focus:border-[#9C8464] transition-colors peer placeholder-transparent resize-none"
-                placeholder="Message"
+                placeholder="Décrivez précisément votre projet ou votre demande..."
+                className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-xs sm:text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#9C8464]/30 focus:border-[#9C8464] transition-all placeholder-stone-400 resize-none"
               />
-              <label htmlFor="message" className="absolute left-0 -top-4 text-xs font-bold text-gray-500 uppercase tracking-widest peer-placeholder-shown:text-base peer-placeholder-shown:top-3 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#9C8464] transition-all">
-                Votre Message *
-              </label>
             </div>
 
-            <div className="pt-4">
+            <div className="pt-2">
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="group relative inline-flex items-center justify-center px-8 py-4 font-bold text-white bg-[#1C1E1D] overflow-hidden rounded-full hover:bg-[#9C8464] transition-all duration-300 w-full sm:w-auto min-w-[200px]"
+                className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 font-bold text-white bg-[#373B3A] hover:bg-black rounded-xl transition-all duration-300 shadow-md text-xs sm:text-sm gap-2"
               >
                 {isSubmitting ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                    Envoi...
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    <span>Envoi en cours...</span>
                   </>
                 ) : (
                   <>
-                    <span className="mr-2 uppercase tracking-wider text-sm">Envoyer le message</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    <Send className="w-4 h-4 text-[#9C8464]" />
+                    <span className="uppercase tracking-wider">Envoyer le message</span>
                   </>
                 )}
               </button>

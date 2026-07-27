@@ -18,6 +18,8 @@ import {
   Clock,
   Star,
   ChevronRight,
+  Globe,
+  ChevronDown,
 } from "lucide-react";
 import { useArticles } from "../hooks/useArticles";
 
@@ -75,21 +77,51 @@ export default function Economie() {
     "Burkina Faso",
     "Niger",
     "Tchad",
-    "UEMOA",
-    "Sahel",
   ];
 
   const filteredArticles = useMemo(() => {
     return articles.filter((article) => {
+      const query = searchTerm.trim().toLowerCase();
       const matchesSearch =
-        article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        article.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
+        !query ||
+        article.title.toLowerCase().includes(query) ||
+        article.excerpt.toLowerCase().includes(query) ||
+        article.author.toLowerCase().includes(query);
+
+      const catLower = article.category.toLowerCase();
+      const selectedCatLower = selectedCategory.toLowerCase();
+
       const matchesCategory =
         selectedCategory === "all" ||
-        article.category.toLowerCase().includes(selectedCategory.toLowerCase());
+        catLower.includes(selectedCatLower) ||
+        (selectedCategory === "Macroéconomie" &&
+          (catLower.includes("écono") || catLower.includes("macro"))) ||
+        (selectedCategory === "Finance" &&
+          (catLower.includes("finan") ||
+            catLower.includes("banq") ||
+            catLower.includes("monna"))) ||
+        (selectedCategory === "Agriculture" &&
+          (catLower.includes("agri") ||
+            catLower.includes("cacao") ||
+            catLower.includes("coton"))) ||
+        (selectedCategory === "Secteur minier" &&
+          (catLower.includes("min") ||
+            catLower.includes("or") ||
+            catLower.includes("pétrol"))) ||
+        (selectedCategory === "Commerce" &&
+          (catLower.includes("commer") ||
+            catLower.includes("échang") ||
+            catLower.includes("export")));
+
+      const countryLower = article.country.toLowerCase();
+      const selectedCountryLower = selectedCountry.toLowerCase();
+
       const matchesCountry =
         selectedCountry === "all" ||
-        article.country.toLowerCase().includes(selectedCountry.toLowerCase());
+        countryLower.includes(selectedCountryLower) ||
+        article.title.toLowerCase().includes(selectedCountryLower) ||
+        article.excerpt.toLowerCase().includes(selectedCountryLower);
+
       return matchesSearch && matchesCategory && matchesCountry;
     });
   }, [articles, searchTerm, selectedCategory, selectedCountry]);
@@ -104,38 +136,46 @@ export default function Economie() {
       <section className="bg-[#373B3A] text-white border-b border-stone-800 py-10 sm:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8 sm:mb-12">
-            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-3 sm:mb-4">
-              📊 Économie Sahélienne & UEMOA
+            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-3 sm:mb-4 flex items-center justify-center gap-3">
+              <BarChart3 className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-[#E5DDD2] shrink-0" />
+              <span>Économie Sahélienne & UEMOA</span>
             </h1>
             <p className="text-sm sm:text-base md:text-xl text-stone-300 max-w-3xl mx-auto mb-6 sm:mb-8 leading-relaxed">
               Analyses, perspectives et données macroéconomiques officielles de la région
             </p>
 
-            {/* Key Metrics Badges - Fully Responsive Grid on Mobile */}
-            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-2.5 sm:gap-4 text-xs sm:text-sm">
-              <div className="flex items-center justify-center sm:justify-start gap-2 bg-[#2D302F] text-stone-200 px-3 py-2.5 rounded-xl border border-stone-700/60 shadow-sm">
-                <TrendingUp className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span className="truncate">
-                  Croissance: <strong className="text-white font-bold">+6,4%</strong>
-                </span>
+            {/* Key Metrics Badges - Responsive Grid */}
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm">
+              <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-0.5 sm:gap-2 bg-[#2D302F] text-stone-200 px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-xl border border-stone-700/60 shadow-sm">
+                <div className="flex items-center gap-1 shrink-0">
+                  <TrendingUp className="w-3.5 h-3.5 text-stone-300 shrink-0" />
+                  <span className="text-[10px] sm:text-xs text-stone-300 font-medium">Croissance</span>
+                </div>
+                <strong className="text-white font-bold text-xs sm:text-sm">+6,4%</strong>
               </div>
-              <div className="flex items-center justify-center sm:justify-start gap-2 bg-[#2D302F] text-stone-200 px-3 py-2.5 rounded-xl border border-stone-700/60 shadow-sm">
-                <Activity className="w-4 h-4 text-blue-400 shrink-0" />
-                <span className="truncate">
-                  BCEAO: <strong className="text-white font-bold">{brvmData?.taux_bceao?.value || "3,50%"}</strong>
-                </span>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-0.5 sm:gap-2 bg-[#2D302F] text-stone-200 px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-xl border border-stone-700/60 shadow-sm">
+                <div className="flex items-center gap-1 shrink-0">
+                  <Activity className="w-3.5 h-3.5 text-stone-300 shrink-0" />
+                  <span className="text-[10px] sm:text-xs text-stone-300 font-medium">Taux BCEAO</span>
+                </div>
+                <strong className="text-white font-bold text-xs sm:text-sm">{brvmData?.taux_bceao?.value || "3,50%"}</strong>
               </div>
-              <div className="flex items-center justify-center sm:justify-start gap-2 bg-[#2D302F] text-stone-200 px-3 py-2.5 rounded-xl border border-stone-700/60 shadow-sm">
-                <DollarSign className="w-4 h-4 text-amber-400 shrink-0" />
-                <span className="truncate">
-                  PIB: <strong className="text-white font-bold">145,8 Mds $</strong>
-                </span>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-0.5 sm:gap-2 bg-[#2D302F] text-stone-200 px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-xl border border-stone-700/60 shadow-sm">
+                <div className="flex items-center gap-1 shrink-0">
+                  <DollarSign className="w-3.5 h-3.5 text-stone-300 shrink-0" />
+                  <span className="text-[10px] sm:text-xs text-stone-300 font-medium">PIB Global</span>
+                </div>
+                <strong className="text-white font-bold text-xs sm:text-sm">145,8 Mds $</strong>
               </div>
-              <div className="flex items-center justify-center sm:justify-start gap-2 bg-[#2D302F] text-stone-200 px-3 py-2.5 rounded-xl border border-stone-700/60 shadow-sm">
-                <Users className="w-4 h-4 text-indigo-400 shrink-0" />
-                <span className="truncate">
-                  Pop: <strong className="text-white font-bold">137M hab.</strong>
-                </span>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-0.5 sm:gap-2 bg-[#2D302F] text-stone-200 px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-xl border border-stone-700/60 shadow-sm">
+                <div className="flex items-center gap-1 shrink-0">
+                  <Users className="w-3.5 h-3.5 text-stone-300 shrink-0" />
+                  <span className="text-[10px] sm:text-xs text-stone-300 font-medium">Population</span>
+                </div>
+                <strong className="text-white font-bold text-xs sm:text-sm">137M hab.</strong>
               </div>
             </div>
           </div>
@@ -147,7 +187,7 @@ export default function Economie() {
         <section className="py-8 sm:py-12 bg-stone-100/70 border-b border-stone-200/60">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-xl sm:text-2xl font-bold text-[#373B3A] mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
-              <Star className="w-6 h-6 text-[#9C8464]" />
+              <Star className="w-6 h-6 text-stone-700" />
               Article à la une
             </h2>
 
@@ -190,8 +230,8 @@ export default function Economie() {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-stone-100">
                     <div className="flex items-center gap-4 text-xs sm:text-sm text-stone-500">
                       <span className="flex items-center gap-1">
-                        <Users className="w-4 h-4 text-stone-400" />
-                        {featuredArticle.author}
+                        <Calendar className="w-4 h-4 text-stone-400" />
+                        {new Date(featuredArticle.publishedAt).toLocaleDateString("fr-FR")}
                       </span>
                       <span className="flex items-center gap-1">
                         <Eye className="w-4 h-4 text-stone-400" />
@@ -211,94 +251,126 @@ export default function Economie() {
         </section>
       )}
 
-      {/* Search and Filter Section */}
-      <section className="py-6 sm:py-8">
+      {/* Search and Filter Section - High End Financial Toolbar */}
+      <section className="py-4 sm:py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-4 sm:p-6">
-            <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
+          <div className="bg-white rounded-2xl shadow-sm border border-stone-200/90 p-4 sm:p-5 space-y-4">
+            {/* Top Bar: Search Bar + Country Dropdown + Grid/List Switcher */}
+            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+              {/* Search Bar */}
               <div className="flex-1 relative">
-                <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-stone-400 w-4 h-4 sm:w-5 sm:h-5" />
+                <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-stone-400 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Rechercher une analyse économique..."
+                  placeholder="Rechercher une analyse, un rapport, un secteur..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 sm:py-3 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#9C8464]/30 focus:border-[#9C8464] transition-all"
+                  className="w-full pl-10 pr-8 py-2.5 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#9C8464]/30 focus:border-[#9C8464] transition-all bg-stone-50/50 text-[#373B3A] placeholder-stone-400"
                 />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400 hover:text-stone-700 bg-stone-200/60 rounded-full w-5 h-5 flex items-center justify-center"
+                    aria-label="Effacer la recherche"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
 
-              <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full lg:w-auto">
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <Filter className="w-4 h-4 text-stone-500 shrink-0" />
+              {/* Controls: Country Filter + View Mode Switcher */}
+              <div className="flex items-center justify-between sm:justify-end gap-2.5">
+                {/* Country Selector Pill */}
+                <div className="relative flex-1 sm:flex-initial">
+                  <Globe className="w-4 h-4 text-[#9C8464] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full sm:w-auto px-3.5 py-2.5 border border-stone-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#9C8464]/30 focus:border-[#9C8464]"
+                    value={selectedCountry}
+                    onChange={(e) => setSelectedCountry(e.target.value)}
+                    className="w-full sm:w-auto appearance-none pl-9 pr-8 py-2.5 border border-stone-200 rounded-xl text-xs sm:text-sm bg-stone-50/50 font-medium text-stone-700 focus:outline-none focus:ring-2 focus:ring-[#9C8464]/30 focus:border-[#9C8464] cursor-pointer"
                   >
-                    {categories.map((category) => (
-                      <option key={category} value={category}>
-                        {category === "all" ? "Toutes catégories" : category}
+                    {countries.map((country) => (
+                      <option key={country} value={country}>
+                        {country === "all" ? "Tous les pays" : country}
                       </option>
                     ))}
                   </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-stone-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
 
-                <select
-                  value={selectedCountry}
-                  onChange={(e) => setSelectedCountry(e.target.value)}
-                  className="w-full sm:w-auto px-3.5 py-2.5 border border-stone-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#9C8464]/30 focus:border-[#9C8464]"
-                >
-                  {countries.map((country) => (
-                    <option key={country} value={country}>
-                      {country === "all" ? "Tous pays" : country}
-                    </option>
-                  ))}
-                </select>
-
-                <div className="flex items-center gap-1 bg-stone-100 rounded-lg p-1 justify-center sm:justify-start">
+                {/* View Mode Switcher */}
+                <div className="flex items-center gap-1 bg-stone-100/90 rounded-xl p-1 border border-stone-200/80 shrink-0">
                   <button
                     onClick={() => setViewMode("grid")}
-                    className={`p-2 rounded text-xs font-medium transition-colors ${
+                    className={`p-2 rounded-lg text-xs font-medium transition-all ${
                       viewMode === "grid"
-                        ? "bg-white shadow-sm text-[#373B3A]"
-                        : "text-stone-500 hover:text-stone-900"
+                        ? "bg-[#373B3A] text-white shadow-sm font-bold"
+                        : "text-stone-500 hover:text-stone-900 hover:bg-stone-200/50"
                     }`}
-                    title="Vue Grille"
+                    title="Vue Grille (2 colonnes sur mobile)"
+                    aria-label="Vue Grille"
                   >
                     <BarChart3 className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setViewMode("list")}
-                    className={`p-2 rounded text-xs font-medium transition-colors ${
+                    className={`p-2 rounded-lg text-xs font-medium transition-all ${
                       viewMode === "list"
-                        ? "bg-white shadow-sm text-[#373B3A]"
-                        : "text-stone-500 hover:text-stone-900"
+                        ? "bg-[#373B3A] text-white shadow-sm font-bold"
+                        : "text-stone-500 hover:text-stone-900 hover:bg-stone-200/50"
                     }`}
                     title="Vue Liste"
+                    aria-label="Vue Liste"
                   >
                     <BookOpen className="w-4 h-4" />
                   </button>
                 </div>
               </div>
             </div>
+
+            {/* Category Filter Pills (Horizontal Scrollable Tabs) */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-2 border-t border-stone-100 no-scrollbar">
+              <span className="text-xs font-semibold text-stone-400 uppercase tracking-wider shrink-0 mr-1 hidden sm:inline-block">
+                Catégories :
+              </span>
+              {categories.map((category) => {
+                const isActive = selectedCategory === category;
+                const label =
+                  category === "all" ? "Toutes les catégories" : category;
+                return (
+                  <button
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 shrink-0 cursor-pointer ${
+                      isActive
+                        ? "bg-[#373B3A] text-white shadow-sm"
+                        : "bg-stone-100 text-stone-600 hover:bg-stone-200/80 hover:text-stone-900 border border-stone-200/60"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>
 
       {/* Articles List / Grid */}
-      <section className="pb-16 pt-4">
+      <section className="pb-16 pt-2">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-xl sm:text-2xl font-bold text-[#373B3A] mb-6 flex items-center gap-2 sm:gap-3">
-            <BookOpen className="w-6 h-6 text-[#9C8464]" />
-            Dernières analyses ({filteredArticles.length})
-          </h2>
+          <div className="mb-6">
+            <h2 className="text-lg sm:text-2xl font-bold text-[#373B3A] flex items-center gap-2 sm:gap-3">
+              <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-[#9C8464]" />
+              Dernières analyses ({filteredArticles.length})
+            </h2>
+          </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
               {[...Array(6)].map((_, i) => (
                 <div
                   key={i}
-                  className="bg-white rounded-xl shadow-sm h-80 animate-pulse border border-stone-200"
+                  className="bg-white rounded-xl shadow-sm h-64 sm:h-80 animate-pulse border border-stone-200"
                 />
               ))}
             </div>
@@ -307,7 +379,8 @@ export default function Economie() {
               Aucun article trouvé pour cette recherche.
             </div>
           ) : viewMode === "grid" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            /* 2-COLUMN GRID ON MOBILE (grid-cols-2) */
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-6">
               {filteredArticles.map((article) => (
                 <Link
                   key={article.id}
@@ -315,69 +388,74 @@ export default function Economie() {
                   className="bg-white rounded-xl shadow-sm hover:shadow-md border border-stone-200/80 overflow-hidden transition-all duration-300 flex flex-col justify-between group"
                 >
                   <div>
-                    <div className="relative overflow-hidden h-44 sm:h-48">
+                    <div className="relative overflow-hidden h-28 sm:h-44 md:h-48">
                       <img
                         src={article.coverImage}
                         alt={article.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
-                      <div className="absolute top-3 left-3 flex flex-wrap items-center gap-2">
-                        <span className="bg-[#373B3A]/90 backdrop-blur-sm text-white px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                      <div className="absolute top-1.5 left-1.5 sm:top-3 sm:left-3 flex flex-wrap items-center gap-1 sm:gap-2">
+                        <span className="bg-[#373B3A]/90 backdrop-blur-sm text-white px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold">
                           {article.category}
                         </span>
-                        <span className="bg-white/90 backdrop-blur-sm text-stone-700 px-2.5 py-0.5 rounded-full text-xs font-medium">
+                        <span className="bg-white/90 backdrop-blur-sm text-stone-700 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium hidden xs:inline-block">
                           {article.country}
                         </span>
                       </div>
                     </div>
 
-                    <div className="p-5">
-                      <h3 className="text-base sm:text-lg font-bold text-[#373B3A] mb-2 leading-snug group-hover:text-[#9C8464] transition-colors">
+                    <div className="p-2.5 sm:p-5">
+                      <h3 className="text-xs sm:text-base md:text-lg font-bold text-[#373B3A] mb-1.5 sm:mb-2 leading-snug group-hover:text-[#9C8464] transition-colors">
                         {article.title}
                       </h3>
 
-                      <p className="text-stone-600 text-xs sm:text-sm mb-4 line-clamp-3 leading-relaxed">
-                        {article.excerpt}
+                      <p
+                        className="text-stone-600 text-[11px] sm:text-sm mb-2 leading-relaxed"
+                        style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {article.excerpt.length > 130
+                          ? article.excerpt.substring(0, 130).trim() + "..."
+                          : article.excerpt}
                       </p>
                     </div>
                   </div>
 
-                  <div className="px-5 pb-5 pt-0">
-                    <div className="flex items-center justify-between text-xs text-stone-500 pt-3 border-t border-stone-100">
-                      <div className="flex items-center gap-3">
-                        <span className="flex items-center gap-1">
-                          <Users className="w-3.5 h-3.5" />
-                          {article.author}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5" />
-                          {article.readTime} min
-                        </span>
-                      </div>
+                  <div className="px-2.5 pb-2.5 sm:px-5 sm:pb-5 pt-0">
+                    <div className="flex items-center justify-between text-[10px] sm:text-xs text-stone-500 pt-2 border-t border-stone-100">
                       <span className="flex items-center gap-1">
-                        <Eye className="w-3.5 h-3.5" />
-                        {article.views.toLocaleString()}
+                        <Calendar className="w-3 h-3 text-stone-400" />
+                        {new Date(article.publishedAt).toLocaleDateString("fr-FR")}
+                      </span>
+                      <span className="flex items-center gap-0.5 shrink-0">
+                        <Clock className="w-3 h-3 text-stone-400" />
+                        {article.readTime} m
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-[#9C8464] group-hover:text-[#373B3A] transition-colors mt-3">
-                      Lire l'analyse complète
-                      <ChevronRight className="w-3.5 h-3.5" />
+                    <div className="flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-[#9C8464] group-hover:text-[#373B3A] transition-colors mt-2">
+                      Lire
+                      <ChevronRight className="w-3 h-3" />
                     </div>
                   </div>
                 </Link>
               ))}
             </div>
           ) : (
-            <div className="space-y-4 sm:space-y-6">
+            /* LIST VIEW MODE */
+            <div className="space-y-3 sm:space-y-4">
               {filteredArticles.map((article) => (
                 <Link
                   key={article.id}
                   to={`/article/${article.slug || article.id}`}
-                  className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-stone-200 hover:shadow-md transition-all block group"
+                  className="bg-white rounded-xl shadow-sm p-3.5 sm:p-5 border border-stone-200 hover:shadow-md transition-all block group"
                 >
-                  <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
-                    <div className="w-full sm:w-48 h-40 sm:h-32 overflow-hidden rounded-lg shrink-0">
+                  <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-5">
+                    <div className="w-full sm:w-44 h-36 sm:h-32 overflow-hidden rounded-lg shrink-0">
                       <img
                         src={article.coverImage}
                         alt={article.title}
@@ -386,29 +464,25 @@ export default function Economie() {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="bg-[#373B3A] text-white px-2.5 py-0.5 rounded-full text-xs font-medium">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="bg-[#373B3A] text-white px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium">
                           {article.category}
                         </span>
-                        <span className="bg-stone-100 text-stone-700 px-2.5 py-0.5 rounded-full text-xs font-medium border border-stone-200">
+                        <span className="bg-stone-100 text-stone-700 px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium border border-stone-200">
                           {article.country}
                         </span>
                       </div>
 
-                      <h3 className="text-base sm:text-xl font-bold text-[#373B3A] mb-2 group-hover:text-[#9C8464] transition-colors leading-snug">
+                      <h3 className="text-sm sm:text-lg font-bold text-[#373B3A] mb-1.5 group-hover:text-[#9C8464] transition-colors leading-snug">
                         {article.title}
                       </h3>
 
-                      <p className="text-stone-600 text-xs sm:text-sm mb-4 line-clamp-2 leading-relaxed">
+                      <p className="text-stone-600 text-xs sm:text-sm mb-3 line-clamp-2 leading-relaxed">
                         {article.excerpt}
                       </p>
 
-                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-stone-100">
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-stone-500">
-                          <span className="flex items-center gap-1">
-                            <Users className="w-3.5 h-3.5" />
-                            {article.author}
-                          </span>
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-100">
+                        <div className="flex flex-wrap items-center gap-3 text-[11px] sm:text-xs text-stone-500">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3.5 h-3.5" />
                             {new Date(article.publishedAt).toLocaleDateString("fr-FR")}
@@ -417,13 +491,9 @@ export default function Economie() {
                             <Clock className="w-3.5 h-3.5" />
                             {article.readTime} min
                           </span>
-                          <span className="flex items-center gap-1">
-                            <Eye className="w-3.5 h-3.5" />
-                            {article.views.toLocaleString()}
-                          </span>
                         </div>
 
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#373B3A] text-white rounded-lg group-hover:bg-[#9C8464] transition-colors font-medium text-xs">
+                        <div className="flex items-center gap-1 px-3 py-1.5 bg-[#373B3A] text-white rounded-lg group-hover:bg-[#9C8464] transition-colors font-medium text-xs">
                           Lire
                           <ArrowRight className="w-3.5 h-3.5" />
                         </div>

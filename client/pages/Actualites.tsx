@@ -95,15 +95,7 @@ export default function Actualites() {
   const regularArticles = filteredActualites.filter((a) => !a.featured);
 
   const getCategoryColor = (category: string): string => {
-    const colors: { [key: string]: string } = {
-      Économie: "bg-blue-500",
-      Finance: "bg-green-500",
-      Marché: "bg-purple-500",
-      Agriculture: "bg-emerald-500",
-      Tech: "bg-orange-500",
-      Commerce: "bg-indigo-500",
-    };
-    return colors[category] || "bg-gray-500";
+    return "bg-[#373B3A]";
   };
 
   const ArticleCard = ({
@@ -132,8 +124,8 @@ export default function Actualites() {
         </div>
         {featured && (
           <div className="absolute top-4 right-4">
-            <span className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-              🔥 À LA UNE
+            <span className="bg-stone-900 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+              À LA UNE
             </span>
           </div>
         )}
@@ -157,10 +149,6 @@ export default function Actualites() {
             <div className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5" />
               <span>{new Date(article.date).toLocaleDateString("fr-FR")}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <User className="w-3.5 h-3.5" />
-              <span className="truncate max-w-[120px]">{article.author}</span>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -235,7 +223,7 @@ export default function Actualites() {
                   onClick={() => setSelectedCategory(category.id)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
                     selectedCategory === category.id
-                      ? "bg-blue-600 text-white"
+                      ? "bg-[#373B3A] text-white"
                       : "bg-white text-gray-700 hover:bg-gray-100"
                   }`}
                 >

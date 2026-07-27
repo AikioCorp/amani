@@ -929,22 +929,13 @@ export default function Index() {
             {(insightsArticles || []).slice(0, 2).map((item, index) => (
               <div key={index} className="bg-white border border-[#EBE6DD] rounded-xl p-8 relative shadow-sm hover:shadow-md transition-shadow">
                 <div className="absolute top-6 right-8 text-6xl text-[#EADFC9] font-serif select-none leading-none">”</div>
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100">
-                    <img
-                      src={item.author?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80'}
-                      alt={item.author?.first_name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-extrabold text-gray-900">
-                      {item.author ? `${item.author.first_name} ${item.author.last_name}` : 'Dr. Karim Traoré'}
-                    </h4>
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                      {item.author?.bio || 'Économiste Principal, CDAO'}
-                    </span>
-                  </div>
+                <div className="flex items-center gap-3 mb-6">
+                  <span className="px-3 py-1 bg-stone-100 border border-stone-200 text-stone-700 text-xs font-semibold rounded-full uppercase tracking-wider">
+                    {item.category_info?.name || "Analyse Spéciale"}
+                  </span>
+                  <span className="text-xs text-gray-400 font-medium">
+                    {new Date(item.created_at || Date.now()).toLocaleDateString("fr-FR")}
+                  </span>
                 </div>
 
                 <blockquote className="text-sm font-bold text-gray-900 mb-4 italic leading-relaxed">

@@ -12,6 +12,31 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 import { AudioProvider } from "./context/AudioContext";
 
+// Correctif de sécurité DOM pour éviter les crashs React dus aux extensions navigateur / Google Translate (insertBefore/removeChild)
+if (typeof window !== "undefined") {
+  const originalInsertBefore = Node.prototype.insertBefore;
+  Node.prototype.insertBefore = function <T extends Node>(node: T, child: Node | null): T {
+    if (child && child.parentNode !== this) {
+      if (child.parentNode) {
+        return child.parentNode.insertBefore(node, child);
+      }
+      return this.appendChild(node) as T;
+    }
+    return originalInsertBefore.call(this, node, child) as T;
+  };
+
+  const originalRemoveChild = Node.prototype.removeChild;
+  Node.prototype.removeChild = function <T extends Node>(child: T): T {
+    if (child.parentNode !== this) {
+      if (child.parentNode) {
+        return child.parentNode.removeChild(child) as T;
+      }
+      return child;
+    }
+    return originalRemoveChild.call(this, child) as T;
+  };
+}
+
 // Components
 import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -96,6 +121,8 @@ import NewUserAdvanced from "./pages/NewUserAdvanced";
 import Integrations from "./pages/Integrations";
 import Pricing from "./pages/Pricing";
 import SubscriptionsManagement from "./pages/SubscriptionsManagement";
+import NewsletterManagement from "./pages/NewsletterManagement";
+import LegalPagesManagement from "./pages/LegalPagesManagement";
 
 // Create a single instance of QueryClient with aggressive caching (5 min staleTime)
 const queryClient = new QueryClient({
@@ -240,6 +267,7 @@ const AppContent = () => {
           <Route path="users/new" element={<NewUser />} />
           <Route path="users/new-advanced" element={<NewUserAdvanced />} />
           <Route path="subscriptions" element={<SubscriptionsManagement />} />
+          <Route path="newsletters" element={<NewsletterManagement />} />
           <Route path="users/edit/:userId" element={<EditUser />} />
           <Route path="user-activity" element={<UserActivity />} />
           <Route path="reports" element={<ReportsManager />} />
@@ -247,6 +275,7 @@ const AppContent = () => {
           <Route path="notifications" element={<Notifications />} />
           <Route path="logs" element={<Logs />} />
           <Route path="integrations" element={<Integrations />} />
+          <Route path="legal-pages" element={<LegalPagesManagement />} />
           <Route path="serper" element={<SerperIntegration />} />
           <Route path="imports" element={<ImportsManagement />} />
           <Route path="monitoring" element={<PipelineMonitoring />} />
