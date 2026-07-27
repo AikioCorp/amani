@@ -3,10 +3,8 @@ import { Link } from "react-router-dom";
 import { fetchBRVMData, BRVMData } from "../services/brvmApi";
 import {
   TrendingUp,
-  TrendingDown,
   BarChart3,
   DollarSign,
-  Globe,
   ArrowRight,
   Calendar,
   Eye,
@@ -14,11 +12,8 @@ import {
   Search,
   BookOpen,
   Users,
-  Building,
   Target,
   Zap,
-  PieChart,
-  LineChart,
   Activity,
   Clock,
   Star,
@@ -39,9 +34,9 @@ export default function Economie() {
 
   // Fetch real published economy articles
   const { articles: dbArticles, loading } = useArticles({
-    status: 'published',
-    category: 'economie',
-    limit: 30
+    status: "published",
+    category: "economie",
+    limit: 30,
   });
 
   const articles = useMemo(() => {
@@ -49,128 +44,164 @@ export default function Economie() {
       id: art.id,
       slug: art.slug || art.id,
       title: art.title,
-      excerpt: art.summary || art.excerpt || '',
-      content: art.content || '',
-      author: art.author ? `${art.author.first_name} ${art.author.last_name}` : 'Amani Rédaction',
-      category: art.category_info?.name || 'Macroéconomie',
-      country: art.country || 'UEMOA',
+      excerpt: art.summary || art.excerpt || "",
+      content: art.content || "",
+      author: art.author
+        ? `${art.author.first_name} ${art.author.last_name}`
+        : "Rédaction Amani",
+      category: art.category_info?.name || "Macroéconomie",
+      country: art.country || "UEMOA",
       publishedAt: art.published_at || art.created_at,
-      readTime: art.read_time || 6,
+      readTime: art.read_time || 5,
       views: art.views || 0,
-      coverImage: art.featured_image || 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800',
+      coverImage:
+        art.featured_image ||
+        "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=800&q=80",
       featured: (art.views || 0) > 100,
     }));
   }, [dbArticles]);
 
-  const categories = ["all", "Macroéconomie", "Secteur minier", "Agriculture", "Commerce", "Finance"];
-  const countries = ["all", "Mali", "Burkina Faso", "Niger", "Tchad", "UEMOA", "Sahel"];
+  const categories = [
+    "all",
+    "Macroéconomie",
+    "Secteur minier",
+    "Agriculture",
+    "Commerce",
+    "Finance",
+  ];
+  const countries = [
+    "all",
+    "Mali",
+    "Burkina Faso",
+    "Niger",
+    "Tchad",
+    "UEMOA",
+    "Sahel",
+  ];
 
   const filteredArticles = useMemo(() => {
     return articles.filter((article) => {
-      const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           article.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === "all" || article.category.toLowerCase().includes(selectedCategory.toLowerCase());
-      const matchesCountry = selectedCountry === "all" || article.country.toLowerCase().includes(selectedCountry.toLowerCase());
+      const matchesSearch =
+        article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        article.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory =
+        selectedCategory === "all" ||
+        article.category.toLowerCase().includes(selectedCategory.toLowerCase());
+      const matchesCountry =
+        selectedCountry === "all" ||
+        article.country.toLowerCase().includes(selectedCountry.toLowerCase());
       return matchesSearch && matchesCategory && matchesCountry;
     });
   }, [articles, searchTerm, selectedCategory, selectedCountry]);
 
   const featuredArticle = useMemo(() => {
-    return articles.find(article => article.featured) || articles[0];
+    return articles.find((article) => article.featured) || articles[0];
   }, [articles]);
 
   return (
-    <div className="min-h-screen bg-[#E5DDD2]">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-amani-primary to-amani-primary/80 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
+    <div className="min-h-screen bg-[#FDFBF9]">
+      {/* Hero Section - Solid Charcoal Background */}
+      <section className="bg-[#373B3A] text-white border-b border-stone-800 py-10 sm:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8 sm:mb-12">
+            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-3 sm:mb-4">
               📊 Économie Sahélienne & UEMOA
             </h1>
-            <p className="text-xl md:text-2xl mb-8 text-white/90">
+            <p className="text-sm sm:text-base md:text-xl text-stone-300 max-w-3xl mx-auto mb-6 sm:mb-8 leading-relaxed">
               Analyses, perspectives et données macroéconomiques officielles de la région
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-6 text-sm sm:text-base">
-              <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/20">
-                <TrendingUp className="w-5 h-5 text-green-400" />
-                <span>Croissance UEMOA: <strong className="text-white font-bold">+6,4%</strong></span>
+
+            {/* Key Metrics Badges - Fully Responsive Grid on Mobile */}
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-2.5 sm:gap-4 text-xs sm:text-sm">
+              <div className="flex items-center justify-center sm:justify-start gap-2 bg-[#2D302F] text-stone-200 px-3 py-2.5 rounded-xl border border-stone-700/60 shadow-sm">
+                <TrendingUp className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="truncate">
+                  Croissance: <strong className="text-white font-bold">+6,4%</strong>
+                </span>
               </div>
-              <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/20">
-                <Activity className="w-5 h-5 text-blue-300" />
-                <span>Taux BCEAO: <strong className="text-white font-bold">{brvmData?.taux_bceao?.value || "3,50%"}</strong></span>
+              <div className="flex items-center justify-center sm:justify-start gap-2 bg-[#2D302F] text-stone-200 px-3 py-2.5 rounded-xl border border-stone-700/60 shadow-sm">
+                <Activity className="w-4 h-4 text-blue-400 shrink-0" />
+                <span className="truncate">
+                  BCEAO: <strong className="text-white font-bold">{brvmData?.taux_bceao?.value || "3,50%"}</strong>
+                </span>
               </div>
-              <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/20">
-                <DollarSign className="w-5 h-5 text-yellow-300" />
-                <span>PIB Régional: <strong className="text-white font-bold">145,8 Mds USD</strong></span>
+              <div className="flex items-center justify-center sm:justify-start gap-2 bg-[#2D302F] text-stone-200 px-3 py-2.5 rounded-xl border border-stone-700/60 shadow-sm">
+                <DollarSign className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="truncate">
+                  PIB: <strong className="text-white font-bold">145,8 Mds $</strong>
+                </span>
               </div>
-              <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/20">
-                <Users className="w-5 h-5 text-indigo-300" />
-                <span>Population: <strong className="text-white font-bold">137M hab.</strong></span>
+              <div className="flex items-center justify-center sm:justify-start gap-2 bg-[#2D302F] text-stone-200 px-3 py-2.5 rounded-xl border border-stone-700/60 shadow-sm">
+                <Users className="w-4 h-4 text-indigo-400 shrink-0" />
+                <span className="truncate">
+                  Pop: <strong className="text-white font-bold">137M hab.</strong>
+                </span>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Featured Article */}
+      {/* Featured Article Section */}
       {featuredArticle && (
-        <section className="py-16 bg-white/50">
+        <section className="py-8 sm:py-12 bg-stone-100/70 border-b border-stone-200/60">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl font-bold text-amani-primary mb-8 flex items-center gap-3">
-              <Star className="w-8 h-8" />
+            <h2 className="text-xl sm:text-2xl font-bold text-[#373B3A] mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
+              <Star className="w-6 h-6 text-[#9C8464]" />
               Article à la une
             </h2>
-            
+
             <Link
               to={`/article/${featuredArticle.slug || featuredArticle.id}`}
-              className="bg-white rounded-2xl shadow-xl overflow-hidden block group hover:shadow-2xl transition-all duration-300"
+              className="bg-white rounded-2xl shadow-md border border-stone-200/80 overflow-hidden block group hover:shadow-xl transition-all duration-300"
             >
-              <div className="md:flex">
-                <div className="md:w-1/2 overflow-hidden">
+              <div className="flex flex-col md:flex-row">
+                <div className="md:w-1/2 overflow-hidden h-56 sm:h-72 md:h-auto">
                   <img
                     src={featuredArticle.coverImage}
                     alt={featuredArticle.title}
-                    className="w-full h-64 md:h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 </div>
-                <div className="md:w-1/2 p-8">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="bg-amani-primary text-white px-3 py-1 rounded-full text-sm font-medium">
-                      {featuredArticle.category}
-                    </span>
-                    <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-                      {featuredArticle.country}
-                    </span>
-                    <span className="flex items-center gap-1 text-sm text-gray-600">
-                      <Clock className="w-4 h-4" />
-                      {featuredArticle.readTime} min
-                    </span>
+                <div className="md:w-1/2 p-5 sm:p-8 flex flex-col justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
+                      <span className="bg-[#373B3A] text-white px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
+                        {featuredArticle.category}
+                      </span>
+                      <span className="bg-stone-100 text-stone-700 px-2.5 py-1 rounded-full text-xs font-medium border border-stone-200">
+                        {featuredArticle.country}
+                      </span>
+                      <span className="flex items-center gap-1 text-xs text-stone-500 ml-auto sm:ml-0">
+                        <Clock className="w-3.5 h-3.5" />
+                        {featuredArticle.readTime} min
+                      </span>
+                    </div>
+
+                    <h3 className="text-xl sm:text-2xl font-bold text-[#373B3A] mb-3 leading-snug group-hover:text-[#9C8464] transition-colors">
+                      {featuredArticle.title}
+                    </h3>
+
+                    <p className="text-stone-600 text-sm sm:text-base mb-6 leading-relaxed line-clamp-3">
+                      {featuredArticle.excerpt}
+                    </p>
                   </div>
-                  
-                  <h3 className="text-2xl font-bold text-amani-primary mb-4 leading-tight group-hover:text-black transition-colors">
-                    {featuredArticle.title}
-                  </h3>
-                  
-                  <p className="text-gray-600 mb-6 leading-relaxed">
-                    {featuredArticle.excerpt}
-                  </p>
-                  
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
+
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-stone-100">
+                    <div className="flex items-center gap-4 text-xs sm:text-sm text-stone-500">
                       <span className="flex items-center gap-1">
-                        <Users className="w-4 h-4" />
+                        <Users className="w-4 h-4 text-stone-400" />
                         {featuredArticle.author}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Eye className="w-4 h-4" />
+                        <Eye className="w-4 h-4 text-stone-400" />
                         {featuredArticle.views.toLocaleString()}
                       </span>
                     </div>
-                    
-                    <span className="flex items-center justify-center gap-2 px-6 py-3 bg-amani-primary text-white rounded-lg group-hover:bg-black transition-colors font-medium">
+
+                    <span className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#373B3A] text-white text-sm font-medium rounded-lg group-hover:bg-[#9C8464] transition-colors w-full sm:w-auto">
                       Lire l'article
-                      <ArrowRight className="w-5 h-5" />
+                      <ArrowRight className="w-4 h-4" />
                     </span>
                   </div>
                 </div>
@@ -180,29 +211,29 @@ export default function Economie() {
         </section>
       )}
 
-      {/* Search and Filter */}
-      <section className="py-8">
+      {/* Search and Filter Section */}
+      <section className="py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-white/50">
-            <div className="flex flex-col lg:flex-row gap-4">
+          <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-4 sm:p-6">
+            <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-stone-400 w-4 h-4 sm:w-5 sm:h-5" />
                 <input
                   type="text"
-                  placeholder="Rechercher un article..."
+                  placeholder="Rechercher une analyse économique..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amani-primary focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2.5 sm:py-3 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#9C8464]/30 focus:border-[#9C8464] transition-all"
                 />
               </div>
-              
-              <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                <div className="flex items-center gap-2">
-                  <Filter className="w-5 h-5 text-gray-500" />
+
+              <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Filter className="w-4 h-4 text-stone-500 shrink-0" />
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amani-primary focus:border-transparent"
+                    className="w-full sm:w-auto px-3.5 py-2.5 border border-stone-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#9C8464]/30 focus:border-[#9C8464]"
                   >
                     {categories.map((category) => (
                       <option key={category} value={category}>
@@ -211,11 +242,11 @@ export default function Economie() {
                     ))}
                   </select>
                 </div>
-                
+
                 <select
                   value={selectedCountry}
                   onChange={(e) => setSelectedCountry(e.target.value)}
-                  className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amani-primary focus:border-transparent"
+                  className="w-full sm:w-auto px-3.5 py-2.5 border border-stone-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#9C8464]/30 focus:border-[#9C8464]"
                 >
                   {countries.map((country) => (
                     <option key={country} value={country}>
@@ -223,21 +254,27 @@ export default function Economie() {
                     </option>
                   ))}
                 </select>
-                
-                <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+
+                <div className="flex items-center gap-1 bg-stone-100 rounded-lg p-1 justify-center sm:justify-start">
                   <button
                     onClick={() => setViewMode("grid")}
-                    className={`p-2 rounded transition-colors ${
-                      viewMode === "grid" ? "bg-white shadow-sm" : "text-gray-600"
+                    className={`p-2 rounded text-xs font-medium transition-colors ${
+                      viewMode === "grid"
+                        ? "bg-white shadow-sm text-[#373B3A]"
+                        : "text-stone-500 hover:text-stone-900"
                     }`}
+                    title="Vue Grille"
                   >
                     <BarChart3 className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setViewMode("list")}
-                    className={`p-2 rounded transition-colors ${
-                      viewMode === "list" ? "bg-white shadow-sm" : "text-gray-600"
+                    className={`p-2 rounded text-xs font-medium transition-colors ${
+                      viewMode === "list"
+                        ? "bg-white shadow-sm text-[#373B3A]"
+                        : "text-stone-500 hover:text-stone-900"
                     }`}
+                    title="Vue Liste"
                   >
                     <BookOpen className="w-4 h-4" />
                   </button>
@@ -248,119 +285,126 @@ export default function Economie() {
         </div>
       </section>
 
-      {/* Articles List */}
-      <section className="py-16">
+      {/* Articles List / Grid */}
+      <section className="pb-16 pt-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-amani-primary mb-8 flex items-center gap-3">
-            <BookOpen className="w-8 h-8" />
+          <h2 className="text-xl sm:text-2xl font-bold text-[#373B3A] mb-6 flex items-center gap-2 sm:gap-3">
+            <BookOpen className="w-6 h-6 text-[#9C8464]" />
             Dernières analyses ({filteredArticles.length})
           </h2>
-          
+
           {loading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-white rounded-xl shadow-lg h-96 animate-pulse" />
+                <div
+                  key={i}
+                  className="bg-white rounded-xl shadow-sm h-80 animate-pulse border border-stone-200"
+                />
               ))}
             </div>
           ) : filteredArticles.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-16 bg-white rounded-xl border border-stone-200 text-stone-500 text-sm sm:text-base">
               Aucun article trouvé pour cette recherche.
             </div>
           ) : viewMode === "grid" ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {filteredArticles.map((article) => (
                 <Link
                   key={article.id}
                   to={`/article/${article.slug || article.id}`}
-                  className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 block group"
+                  className="bg-white rounded-xl shadow-sm hover:shadow-md border border-stone-200/80 overflow-hidden transition-all duration-300 flex flex-col justify-between group"
                 >
-                  <div className="relative overflow-hidden">
-                    <img
-                      src={article.coverImage}
-                      alt={article.title}
-                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-4 left-4 flex items-center gap-2">
-                      <span className="bg-amani-primary text-white px-3 py-1 rounded-full text-sm font-medium">
-                        {article.category}
-                      </span>
-                      <span className="bg-white/90 text-gray-700 px-3 py-1 rounded-full text-sm">
-                        {article.country}
-                      </span>
+                  <div>
+                    <div className="relative overflow-hidden h-44 sm:h-48">
+                      <img
+                        src={article.coverImage}
+                        alt={article.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute top-3 left-3 flex flex-wrap items-center gap-2">
+                        <span className="bg-[#373B3A]/90 backdrop-blur-sm text-white px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                          {article.category}
+                        </span>
+                        <span className="bg-white/90 backdrop-blur-sm text-stone-700 px-2.5 py-0.5 rounded-full text-xs font-medium">
+                          {article.country}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-5">
+                      <h3 className="text-base sm:text-lg font-bold text-[#373B3A] mb-2 leading-snug group-hover:text-[#9C8464] transition-colors">
+                        {article.title}
+                      </h3>
+
+                      <p className="text-stone-600 text-xs sm:text-sm mb-4 line-clamp-3 leading-relaxed">
+                        {article.excerpt}
+                      </p>
                     </div>
                   </div>
-                  
-                  <div className="p-6">
-                    <h3 className="text-lg font-bold text-amani-primary mb-3 leading-tight group-hover:text-black transition-colors">
-                      {article.title}
-                    </h3>
-                    
-                    <p className="text-gray-600 mb-4 leading-relaxed line-clamp-3">
-                      {article.excerpt}
-                    </p>
-                    
-                    <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                      <div className="flex items-center gap-4">
+
+                  <div className="px-5 pb-5 pt-0">
+                    <div className="flex items-center justify-between text-xs text-stone-500 pt-3 border-t border-stone-100">
+                      <div className="flex items-center gap-3">
                         <span className="flex items-center gap-1">
-                          <Users className="w-4 h-4" />
+                          <Users className="w-3.5 h-3.5" />
                           {article.author}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
+                          <Clock className="w-3.5 h-3.5" />
                           {article.readTime} min
                         </span>
                       </div>
                       <span className="flex items-center gap-1">
-                        <Eye className="w-4 h-4" />
+                        <Eye className="w-3.5 h-3.5" />
                         {article.views.toLocaleString()}
                       </span>
                     </div>
-                    
-                    <div className="flex items-center gap-2 text-amani-primary group-hover:text-black font-medium transition-colors">
+
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-[#9C8464] group-hover:text-[#373B3A] transition-colors mt-3">
                       Lire l'analyse complète
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className="w-3.5 h-3.5" />
                     </div>
                   </div>
                 </Link>
               ))}
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {filteredArticles.map((article) => (
                 <Link
                   key={article.id}
                   to={`/article/${article.slug || article.id}`}
-                  className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 block group"
+                  className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-stone-200 hover:shadow-md transition-all block group"
                 >
-                  <div className="flex flex-col sm:flex-row items-start gap-6">
-                    <div className="w-full sm:w-48 h-32 overflow-hidden rounded-lg flex-shrink-0">
+                  <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
+                    <div className="w-full sm:w-48 h-40 sm:h-32 overflow-hidden rounded-lg shrink-0">
                       <img
                         src={article.coverImage}
                         alt={article.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
-                    
+
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="bg-amani-primary text-white px-3 py-1 rounded-full text-xs font-medium">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="bg-[#373B3A] text-white px-2.5 py-0.5 rounded-full text-xs font-medium">
                           {article.category}
                         </span>
-                        <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs">
+                        <span className="bg-stone-100 text-stone-700 px-2.5 py-0.5 rounded-full text-xs font-medium border border-stone-200">
                           {article.country}
                         </span>
                       </div>
-                      
-                      <h3 className="text-xl font-bold text-amani-primary mb-2 group-hover:text-black transition-colors">
+
+                      <h3 className="text-base sm:text-xl font-bold text-[#373B3A] mb-2 group-hover:text-[#9C8464] transition-colors leading-snug">
                         {article.title}
                       </h3>
-                      
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+
+                      <p className="text-stone-600 text-xs sm:text-sm mb-4 line-clamp-2 leading-relaxed">
                         {article.excerpt}
                       </p>
-                      
-                      <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
+
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-stone-100">
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-stone-500">
                           <span className="flex items-center gap-1">
                             <Users className="w-3.5 h-3.5" />
                             {article.author}
@@ -370,18 +414,18 @@ export default function Economie() {
                             {new Date(article.publishedAt).toLocaleDateString("fr-FR")}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
+                            <Clock className="w-3.5 h-3.5" />
                             {article.readTime} min
                           </span>
                           <span className="flex items-center gap-1">
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-3.5 h-3.5" />
                             {article.views.toLocaleString()}
                           </span>
                         </div>
-                        
-                        <div className="flex items-center gap-2 px-4 py-2 bg-amani-primary text-white rounded-lg group-hover:bg-black transition-colors font-medium text-xs">
+
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#373B3A] text-white rounded-lg group-hover:bg-[#9C8464] transition-colors font-medium text-xs">
                           Lire
-                          <ArrowRight className="w-4 h-4" />
+                          <ArrowRight className="w-3.5 h-3.5" />
                         </div>
                       </div>
                     </div>
@@ -393,28 +437,28 @@ export default function Economie() {
         </div>
       </section>
 
-      {/* Call to Action */}
-      <section className="py-16 bg-gradient-to-r from-amani-primary/10 to-amani-secondary/10">
+      {/* Call to Action - Solid Charcoal Section (No Gradient) */}
+      <section className="py-12 sm:py-16 bg-[#373B3A] text-white border-t border-stone-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-amani-primary mb-6">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-3 sm:mb-4">
             Restez informé de l'actualité économique
           </h2>
-          <p className="text-xl text-gray-600 mb-8">
+          <p className="text-sm sm:text-base text-stone-300 mb-6 sm:mb-8 max-w-2xl mx-auto leading-relaxed">
             Recevez nos analyses exclusives et nos prévisions économiques directement dans votre boîte mail.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             <Link
               to="/newsletter"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-amani-primary text-white rounded-lg hover:bg-amani-primary/90 transition-colors font-medium"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#9C8464] text-white rounded-lg hover:bg-[#8B7455] transition-colors font-medium text-sm sm:text-base shadow-sm"
             >
-              <Target className="w-5 h-5" />
+              <Target className="w-4 h-4 sm:w-5 sm:h-5" />
               S'abonner à la newsletter
             </Link>
             <Link
               to="/insights"
-              className="inline-flex items-center gap-2 px-6 py-3 border border-amani-primary text-amani-primary rounded-lg hover:bg-amani-primary/5 transition-colors font-medium"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-stone-600 text-stone-200 rounded-lg hover:bg-white/10 transition-colors font-medium text-sm sm:text-base"
             >
-              <Zap className="w-5 h-5" />
+              <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
               Voir toutes les analyses
             </Link>
           </div>
