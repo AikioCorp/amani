@@ -66,6 +66,16 @@ export default function Marche() {
     return filteredStocks.slice(0, 9);
   }, [filteredStocks, showAllStocks, stockSearch, stockSector]);
 
+  const formatValueWithThousands = (val: string | number) => {
+    if (!val && val !== 0) return "";
+    const str = String(val);
+    return str.replace(/\b\d+(\.\d+)?\b/g, (match) => {
+      const parts = match.split(".");
+      const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+      return parts.length > 1 ? `${integerPart}.${parts[1]}` : integerPart;
+    });
+  };
+
   // Fetch real published market articles
   const { articles: marketFinArticles, loading: loadingMarketFin } = useArticles({ status: 'published', limit: 10, category: 'marches-financiers' });
   const { articles: marketBoursArticles, loading: loadingMarketBours } = useArticles({ status: 'published', limit: 10, category: 'marches-boursiers' });
@@ -464,7 +474,7 @@ export default function Marche() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <div className="text-sm font-bold text-gray-900">{item.value}</div>
+                        <div className="text-sm font-bold text-gray-900">{formatValueWithThousands(item.value)}</div>
                         <div className="text-xs text-gray-500">FCFA</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -567,7 +577,7 @@ export default function Marche() {
                       
                       {/* Price/Value */}
                       <div className="text-sm sm:text-base font-black text-gray-900 tracking-tight mb-2">
-                        {item.value} <span className="text-[9px] text-gray-500 font-medium">FCFA</span>
+                        {formatValueWithThousands(item.value)} <span className="text-[9px] text-gray-500 font-medium">FCFA</span>
                       </div>
                     </div>
 

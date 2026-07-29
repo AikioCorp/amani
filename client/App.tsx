@@ -70,6 +70,7 @@ import Indices from "./pages/Indices";
 import BrvmLatest from "./pages/BrvmLatest";
 import Calculateur from "./pages/Calculateur";
 import GuideDebutant from "./pages/GuideDebutant";
+import ConvertisseurDevises from "./pages/ConvertisseurDevises";
 import Actualites from "./pages/Actualites";
 import Newsletter from "./pages/Newsletter";
 import Marche from "./pages/Marche";
@@ -88,6 +89,7 @@ import Terms from "./pages/Terms";
 import Confidentialite from "./pages/Confidentialite";
 import MentionsLegales from "./pages/MentionsLegales";
 import CookiesPage from "./pages/Cookies";
+import PlanDuSite from "./pages/PlanDuSite";
 
 // Dashboard Pages
 import DashboardMain from "./pages/DashboardMain";
@@ -152,7 +154,17 @@ const AppContent = () => {
       return url;
     };
 
-    // Patch sur le prototype HTMLImageElement
+    // 1. Patch setAttribute ('src') pour intercepter React 18 DOM mutations
+    const originalSetAttribute = HTMLImageElement.prototype.setAttribute;
+    HTMLImageElement.prototype.setAttribute = function (name: string, value: string) {
+      if (name && name.toLowerCase() === "src") {
+        originalSetAttribute.call(this, name, sanitizeSrc(value));
+      } else {
+        originalSetAttribute.call(this, name, value);
+      }
+    };
+
+    // 2. Patch le setter de propriété HTMLImageElement.src
     const descriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "src");
     if (descriptor && descriptor.set) {
       const originalSet = descriptor.set;
@@ -177,8 +189,11 @@ const AppContent = () => {
         }
       }
     };
-    document.addEventListener("error", onImgError, true);
-    return () => document.removeEventListener("error", onImgError, true);
+    window.addEventListener("error", onImgError, true);
+    return () => {
+      HTMLImageElement.prototype.setAttribute = originalSetAttribute;
+      window.removeEventListener("error", onImgError, true);
+    };
   }, []);
 
   if (isLoading) {
@@ -210,6 +225,11 @@ const AppContent = () => {
         <Route path="/brvm-latest" element={<BrvmLatest />} />
         <Route path="/calculateur" element={<Calculateur />} />
         <Route path="/guide-debutant" element={<GuideDebutant />} />
+        <Route path="/guides/debutant" element={<GuideDebutant />} />
+        <Route path="/guide/debutant" element={<GuideDebutant />} />
+        <Route path="/convertisseur-devises" element={<ConvertisseurDevises />} />
+        <Route path="/convertisseur-devise" element={<ConvertisseurDevises />} />
+        <Route path="/convertisseur-cfa" element={<ConvertisseurDevises />} />
         <Route path="/actualites" element={<Actualites />} />
         <Route path="/newsletter" element={<Newsletter />} />
         <Route path="/marche" element={<Marche />} />
@@ -231,6 +251,8 @@ const AppContent = () => {
         <Route path="/legal" element={<MentionsLegales />} />
         <Route path="/cookies" element={<CookiesPage />} />
         <Route path="/politique-cookies" element={<CookiesPage />} />
+        <Route path="/plan-du-site" element={<PlanDuSite />} />
+        <Route path="/sitemap" element={<PlanDuSite />} />
 
         {/* Protected Dashboard Routes (persistent layout with nested routes) */}
         <Route

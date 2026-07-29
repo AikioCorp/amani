@@ -1,7 +1,7 @@
 import React from "react";
 import { API_BASE_URL as API_BASE } from "../services/apiConfig";
 import { useParams, Link } from "react-router-dom";
-import { Calendar, ArrowLeft, Share2, Mail, Send, Crown, Lock, Sparkles, Heart, Bookmark, MessageSquare } from "lucide-react";
+import { Calendar, ArrowLeft, Share2, Mail, Send, Crown, Lock, Sparkles, Heart, Bookmark, MessageSquare, ChevronDown, ChevronUp, ChevronRight, TrendingUp, BarChart3, Building2, Layers, Globe, Tag } from "lucide-react";
 import { useArticles } from "../hooks/useArticles";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
@@ -9,6 +9,8 @@ import { getSessionToken } from "../services/authService";
 import { ArticleDetailSkeleton } from "../components/ui/SkeletonLoaders";
 import { apiCache } from "../lib/apiCache";
 import { CommentService, InteractionService } from "../services/supabase";
+import { ArticleSEO } from "../components/SEOHead";
+import { sanitizeHtml } from "../lib/sanitize";
 
 export default function Article() {
   const { id } = useParams();
@@ -20,6 +22,7 @@ export default function Article() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [showSticky, setShowSticky] = React.useState(false);
+  const [isExpanded, setIsExpanded] = React.useState(false);
 
   const [isLiked, setIsLiked] = React.useState(false);
   const [likesCount, setLikesCount] = React.useState(0);
@@ -140,10 +143,10 @@ export default function Article() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <Link
           to="/"
-          className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors font-medium text-sm mb-8"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full text-stone-600 hover:text-stone-900 border border-stone-200 shadow-2xs hover:shadow-xs transition-all font-bold text-xs mb-8 group cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" />
-          Retour à l'accueil
+          <ArrowLeft className="w-4 h-4 text-[#9C8464] group-hover:-translate-x-1 transition-transform" />
+          <span>Retour à l'accueil</span>
         </Link>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
@@ -155,18 +158,30 @@ export default function Article() {
               <div className="bg-white rounded-lg shadow-md p-8 text-red-600">{error}</div>
             )}
             {!loading && !error && article && (
-              <article className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-8 md:p-10 pb-6">
-                  {/* Meta info */}
+              <article className="bg-white rounded-3xl shadow-sm border border-stone-200/80 overflow-hidden">
+                <ArticleSEO
+                  title={article.title || "Article"}
+                  description={article.summary || article.description || article.meta_description || "Analyse financière Amani Platform."}
+                  image={article.featured_image || "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800"}
+                  author={article.author ? `${article.author.first_name} ${article.author.last_name}` : "Amani Rédaction"}
+                  publishedTime={article.published_at || article.created_at || new Date().toISOString()}
+                  category={article.category_info?.name || "Économie"}
+                />
+                <div className="p-8 sm:p-12 pb-8">
+                  {/* Meta info & Badges */}
                   <div className="flex flex-wrap items-center gap-3 mb-6">
-                    <span className="bg-[#9C8464] text-white px-4 py-1.5 rounded-full text-[11px] font-bold tracking-widest uppercase shadow-sm">
+                    <span className="font-mono font-black text-xs text-[#9C8464] px-3.5 py-1.5 bg-stone-100 rounded-md border border-stone-200 uppercase tracking-wide">
                       {article.category_info?.name || 'Actualités'}
                     </span>
-                    <span className="flex items-center gap-1.5 text-[13px] font-medium text-gray-500 bg-gray-50 px-3 py-1.5 rounded-full">
-                      <Calendar className="w-3.5 h-3.5" />
+                    <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-stone-600 bg-stone-50 px-3.5 py-1.5 rounded-md border border-stone-200">
+                      <Calendar className="w-3.5 h-3.5 text-[#9C8464]" />
                       {article.published_at
                         ? new Date(article.published_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
                         : (article.created_at ? new Date(article.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '')}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-stone-600 bg-stone-50 px-3.5 py-1.5 rounded-md border border-stone-200">
+                      <Sparkles className="w-3.5 h-3.5 text-[#9C8464]" />
+                      Lecture ~ 4 min
                     </span>
                     <button 
                       onClick={() => {
@@ -184,7 +199,7 @@ export default function Article() {
                           }
                         }
                       }}
-                      className="flex items-center gap-1.5 text-[13px] font-bold text-gray-500 hover:text-[#9C8464] ml-auto transition-colors bg-gray-50 px-3 py-1.5 rounded-full"
+                      className="inline-flex items-center gap-1.5 text-xs font-extrabold text-stone-700 hover:text-white bg-stone-100 hover:bg-[#373B3A] px-4 py-1.5 rounded-md border border-stone-200 transition-all ml-auto cursor-pointer shadow-2xs"
                     >
                       <Share2 className="w-3.5 h-3.5" />
                       Partager
@@ -192,22 +207,27 @@ export default function Article() {
                   </div>
 
                   {/* Title */}
-                  <h1 className="text-3xl md:text-5xl font-black text-gray-900 mb-8 leading-[1.1] tracking-tight">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#373B3A] mb-6 leading-[1.25] tracking-tight">
                     {article.title}
                   </h1>
 
-                  {/* Summary */}
+                  {/* Executive Briefing Summary Box */}
                   {article.summary && (
-                    <div className="bg-[#FDFBF9] border-l-4 border-[#9C8464] p-6 rounded-r-xl mb-10 shadow-sm">
-                      <h2 className="font-bold text-gray-900 mb-2 flex items-center gap-2 text-sm uppercase tracking-widest">
-                        Ce qu'il faut retenir
-                      </h2>
-                      <p className="text-gray-700 text-lg leading-relaxed font-medium">{article.summary}</p>
+                    <div className="bg-[#FDFBF9] border-l-4 border-[#9C8464] p-6 sm:p-8 rounded-2xl border border-stone-200/80 shadow-2xs mb-10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Sparkles className="w-4 h-4 text-[#9C8464]" />
+                        <h2 className="font-mono text-xs font-black tracking-widest text-[#9C8464] uppercase">
+                          CE QU'IL FAUT RETENIR
+                        </h2>
+                      </div>
+                      <p className="text-stone-800 text-base sm:text-lg leading-relaxed font-semibold">
+                        {article.summary}
+                      </p>
                     </div>
                   )}
                 </div>
 
-                <div className="px-4 md:px-10">
+                <div className="px-6 md:px-10">
                   <img
                     src={(() => {
                       const img = article.featured_image;
@@ -223,7 +243,7 @@ export default function Article() {
                       return img;
                     })()}
                     alt={article.title}
-                    className="w-full h-[400px] md:h-[500px] object-cover rounded-xl shadow-inner"
+                    className="w-full h-[380px] sm:h-[480px] md:h-[540px] object-cover rounded-2xl border border-stone-200/60 shadow-md"
                     loading="lazy"
                     decoding="async"
                     onError={(e) => {
@@ -295,8 +315,39 @@ export default function Article() {
                       </div>
                     </div>
                   ) : article.content && article.content.trim().length > 10 ? (
-                    <div className="prose prose-lg prose-gray max-w-none text-gray-800 leading-[1.8] mb-12 font-serif">
-                      <div dangerouslySetInnerHTML={{ __html: article.content }} />
+                    <div className="relative mb-12">
+                      <div
+                        className={`prose prose-lg prose-stone max-w-none text-stone-800 leading-[1.85] font-serif transition-all duration-500 ${
+                          !isExpanded ? "max-h-[380px] overflow-hidden relative" : ""
+                        }`}
+                      >
+                        <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.content) }} />
+                      </div>
+
+                      {!isExpanded ? (
+                        <div className="absolute inset-x-0 bottom-0 pt-28 pb-6 bg-white/90 backdrop-blur-xs border-t border-stone-200/80 flex flex-col items-center justify-end rounded-b-3xl">
+                          <button
+                            onClick={() => setIsExpanded(true)}
+                            className="inline-flex items-center gap-2.5 px-7 py-3.5 bg-[#373B3A] hover:bg-black text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg hover:shadow-xl transition-all cursor-pointer group hover:-translate-y-0.5"
+                          >
+                            <span>Lire l'article complet</span>
+                            <ChevronDown className="w-4 h-4 text-[#9C8464] group-hover:translate-y-0.5 transition-transform" />
+                          </button>
+                          <span className="text-[11px] font-bold text-stone-500 mt-2">
+                            Cliquez pour dérouler l'intégralité du contenu
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="mt-8 pt-6 border-t border-stone-200 flex justify-center">
+                          <button
+                            onClick={() => setIsExpanded(false)}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-extrabold text-xs rounded-xl border border-stone-200 transition-colors cursor-pointer"
+                          >
+                            <span>Réduire l'article</span>
+                            <ChevronUp className="w-4 h-4 text-[#9C8464]" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 mb-8 text-center">
@@ -553,35 +604,77 @@ function CategoriesSidebar() {
     'investissement': '/investissement',
   };
 
+  const getCategoryIcon = (slug: string) => {
+    switch (slug) {
+      case 'economie':
+        return TrendingUp;
+      case 'marches-financiers':
+        return BarChart3;
+      case 'politique-monetaire':
+        return Building2;
+      case 'industrie-miniere':
+        return Layers;
+      case 'agriculture':
+        return Globe;
+      case 'technologie':
+        return Sparkles;
+      default:
+        return Tag;
+    }
+  };
+
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-      <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest mb-6">Catégories</h3>
+    <div className="bg-white rounded-3xl shadow-sm border border-stone-200/80 p-6 sm:p-7">
+      <div className="flex items-center justify-between pb-4 mb-5 border-b border-stone-100">
+        <h3 className="font-mono text-xs font-black tracking-widest text-[#373B3A] uppercase flex items-center gap-2">
+          <Tag className="w-4 h-4 text-[#9C8464]" />
+          <span>CATÉGORIES</span>
+        </h3>
+        <span className="text-[10px] font-extrabold text-[#9C8464] bg-stone-100 px-2 py-0.5 rounded-full border border-stone-200">
+          EXPLORER
+        </span>
+      </div>
+
       {loading && (
-        <div className="space-y-4">
+        <div className="space-y-2.5">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-6 bg-gray-100 rounded-md animate-pulse" />
+            <div key={i} className="h-10 bg-stone-100 rounded-xl animate-pulse" />
           ))}
         </div>
       )}
+
       {err && !loading && (
-        <div className="text-sm text-red-500 font-medium">Impossible de charger les catégories.</div>
+        <div className="text-xs text-red-500 font-medium p-3 bg-red-50 rounded-xl border border-red-100">
+          Impossible de charger les catégories.
+        </div>
       )}
+
       {!loading && !err && (
-        <ul className="space-y-3">
+        <div className="space-y-1.5">
           {categories.map((c) => {
             const href = slugToRoute[c.slug] || '/actualites';
+            const Icon = getCategoryIcon(c.slug);
+
             return (
-              <li key={c.id}>
-                <Link
-                  to={href}
-                  className="flex items-center text-gray-600 font-medium hover:text-[#9C8464] transition-colors py-1 border-b border-transparent hover:border-[#9C8464]/30"
-                >
-                  {c.name}
-                </Link>
-              </li>
+              <Link
+                key={c.id}
+                to={href}
+                className="group flex items-center justify-between p-3 rounded-xl hover:bg-stone-50 border border-transparent hover:border-stone-200 transition-all cursor-pointer"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2 rounded-lg bg-stone-100 group-hover:bg-[#373B3A] text-stone-600 group-hover:text-[#9C8464] transition-colors shrink-0">
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs sm:text-sm font-bold text-stone-700 group-hover:text-[#373B3A] transition-colors truncate">
+                    {c.name}
+                  </span>
+                </div>
+
+                <ChevronRight className="w-4 h-4 text-stone-300 group-hover:text-[#9C8464] group-hover:translate-x-0.5 transition-all shrink-0" />
+              </Link>
             );
           })}
-        </ul>
+        </div>
       )}
     </div>
   );

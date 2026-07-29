@@ -1,5 +1,5 @@
 # Robots.txt for Amani Finance
-# https://amani-finance.vercel.app
+# https://www.amani-finance.com
 
 User-agent: *
 Allow: /
@@ -11,7 +11,7 @@ Disallow: /*.json$
 Crawl-delay: 1
 
 # Sitemap location
-Sitemap: https://amani-finance.vercel.app/sitemap.xml
+Sitemap: https://www.amani-finance.com/sitemap.xml
 
 # Specific bot rules
 User-agent: Googlebot

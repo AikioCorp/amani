@@ -55,11 +55,16 @@ export default function Analytics() {
         const newsJson = await newsRes.json();
         const subscribers = Array.isArray(newsJson.data) ? newsJson.data : [];
 
+        const totalArticles = articles.length;
+        const totalSubscribers = subscribers.length;
+        const activeWhatsapp = subscribers.filter((s: any) => s.whatsapp_alerts).length;
+        const totalViews = articles.reduce((acc: number, a: any) => acc + (a.views || a.views_count || 0), 0);
+
         setMetricsData({
-          totalArticles: articles.length || 18,
-          totalSubscribers: subscribers.length || 14,
-          activeWhatsapp: subscribers.filter((s: any) => s.whatsapp_alerts).length || 6,
-          viewsCount: articles.reduce((acc: number, a: any) => acc + (a.views_count || 12), 120),
+          totalArticles,
+          totalSubscribers,
+          activeWhatsapp,
+          viewsCount: totalViews,
           recentArticles: articles.slice(0, 5),
         });
       } catch (err) {

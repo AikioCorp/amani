@@ -51,7 +51,7 @@ interface ArticleSEOProps {
 }
 
 export function ArticleSEO(props: ArticleSEOProps) {
-  const currentUrl = `https://amani-finance.vercel.app${window.location.pathname}`;
+  const currentUrl = `https://www.amani-finance.com${window.location.pathname}`;
   
   const structuredData = generateArticleStructuredData({
     title: props.title,
@@ -91,13 +91,13 @@ export function CategorySEO(props: CategorySEOProps) {
     '@type': 'CollectionPage',
     name: props.category,
     description: props.description,
-    url: `https://amani-finance.vercel.app${window.location.pathname}`,
+    url: `https://www.amani-finance.com${window.location.pathname}`,
     publisher: {
       '@type': 'Organization',
       name: 'Amani Finance',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://amani-finance.vercel.app/logo.png',
+        url: 'https://www.amani-finance.com/logo.png',
       },
     },
   };

@@ -99,6 +99,12 @@ export const useArticles = ({
         comment_count: c.comment_count?.[0]?.count || 0,
       }));
 
+      // Pré-remplissage instantané 0ms du cache pour chaque article individuel par ID et par Slug
+      formatted.forEach((art) => {
+        if (art.id) apiCache.set(`article_id_${art.id}`, art);
+        if (art.slug) apiCache.set(`article_slug_${art.slug}`, art);
+      });
+
       apiCache.set(cacheKey, { articles: formatted, count: result.count });
       setArticles(formatted);
       setCount(result.count);

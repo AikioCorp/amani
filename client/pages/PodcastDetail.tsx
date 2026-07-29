@@ -119,7 +119,8 @@ export default function PodcastDetail() {
   }
 
   const isPremium = Boolean(podcast.is_premium);
-  const canAccess = !isPremium || isAuthenticated;
+  const isPremiumUser = Boolean(user && (user.is_premium || ["admin", "editor", "analyst"].includes((user as any).role)));
+  const canAccess = !isPremium || isPremiumUser;
 
   let coverImage = podcast.podcast_data?.cover_image || podcast.featured_image;
   const isDeadUrl = coverImage && coverImage.includes("rrhcctylbczzahgiqoub.supabase.co");

@@ -1,10 +1,9 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Mail, Phone, MapPin, Heart, ArrowUpRight } from 'lucide-react';
-import { FaLinkedin, FaFacebook, FaWhatsapp, FaYoutube } from 'react-icons/fa';
+import React from "react";
+import { Link } from "react-router-dom";
+import { FaLinkedin, FaFacebook, FaWhatsapp, FaYoutube } from "react-icons/fa";
 
 const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" className={props.className || "w-5 h-5"} {...props}>
+  <svg viewBox="0 0 24 24" fill="currentColor" className={props.className || "w-4 h-4"} {...props}>
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
   </svg>
 );
@@ -13,179 +12,180 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   const quickLinks = [
-    { name: 'Accueil', path: '/' },
-    { name: 'Marché', path: '/marche' },
-    { name: 'Économie', path: '/economie' },
-    { name: 'Industrie', path: '/industrie' },
-    { name: 'Investissement', path: '/investissement' },
-    { name: 'Insights', path: '/insights' },
-    { name: 'Tech', path: '/tech' },
-    { name: 'Podcast', path: '/podcast' }
+    { name: "Accueil", path: "/" },
+    { name: "Marché & BRVM", path: "/marche" },
+    { name: "Économie", path: "/economie" },
+    { name: "Industrie", path: "/industrie" },
+    { name: "Investissement", path: "/investissement" },
+    { name: "Tech & Innovation", path: "/tech" },
+    { name: "Guides & Formations", path: "/guide-debutant" },
+    { name: "Convertisseur Devises", path: "/convertisseur-devises" },
   ];
 
-  const contactInfo = [
-    {
-      icon: Mail,
-      label: 'Email',
-      value: 'info@amani-finance.com',
-      link: 'mailto:info@amani-finance.com'
-    },
-    {
-      icon: Phone,
-      label: 'Téléphone',
-      value: '+223 20 22 45 67',
-      link: 'tel:+22320224567'
-    },
-    {
-      icon: MapPin,
-      label: 'Adresse',
-      value: 'Faladie, Bamako, Mali',
-      link: '#'
-    }
+  const legalLinks = [
+    { name: "À propos", path: "/about" },
+    { name: "Contact", path: "/contact" },
+    { name: "CGU", path: "/terms" },
+    { name: "Confidentialité", path: "/confidentialite" },
+    { name: "Mentions légales", path: "/mentions-legales" },
+    { name: "Cookies", path: "/cookies" },
+    { name: "Plan du site", path: "/plan-du-site" },
   ];
 
   const socialLinks = [
-    { name: 'LinkedIn', url: '#', icon: FaLinkedin },
-    { name: 'X', url: 'https://x.com', icon: XIcon },
-    { name: 'YouTube', url: 'https://youtube.com', icon: FaYoutube },
-    { name: 'Facebook', url: '#', icon: FaFacebook },
-    { name: 'WhatsApp', url: '#', icon: FaWhatsapp }
+    { name: "LinkedIn", url: "https://linkedin.com", icon: FaLinkedin },
+    { name: "X", url: "https://x.com", icon: XIcon },
+    { name: "YouTube", url: "https://youtube.com", icon: FaYoutube },
+    { name: "Facebook", url: "https://facebook.com", icon: FaFacebook },
+    { name: "WhatsApp", url: "https://whatsapp.com", icon: FaWhatsapp },
   ];
 
   return (
-    <footer className="bg-[#373B3A] text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Logo and Description */}
-          <div className="col-span-2">
-            <div className="mb-6">
+    <footer className="bg-[#2D3130] text-stone-300 font-sans border-t border-stone-800">
+      {/* Banner Newsletter Haute Définition */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-4">
+        <div className="bg-[#232625] rounded-3xl p-8 sm:p-10 border border-[#9C8464]/30 shadow-xl flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+          <div className="max-w-xl">
+            <span className="font-mono text-xs font-black text-[#9C8464] uppercase tracking-widest block mb-2">
+              RESTEZ INFORMÉ EN CONTINU
+            </span>
+            <h4 className="text-xl sm:text-2xl font-extrabold text-white mb-2 leading-tight">
+              Abonnez-vous aux analyses exclusives Amani
+            </h4>
+            <p className="text-stone-400 text-xs sm:text-sm leading-relaxed font-medium">
+              Recevez les synthèses financières, le récapitulatif quotidien de la BRVM et les tendances économiques ouest-africaines.
+            </p>
+          </div>
+
+          <form
+            onSubmit={(e) => e.preventDefault()}
+            className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto"
+          >
+            <input
+              type="email"
+              placeholder="Votre adresse email..."
+              className="px-4 py-3 bg-[#1A1C1B] text-white placeholder-stone-500 rounded-xl text-xs sm:text-sm border border-stone-700 focus:outline-none focus:border-[#9C8464] min-w-0 sm:w-72 font-medium"
+            />
+            <button
+              type="submit"
+              className="px-6 py-3 bg-[#9C8464] hover:bg-[#857053] text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all cursor-pointer shadow-md shrink-0 uppercase tracking-wider"
+            >
+              S'abonner
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {/* Section Principale du Footer */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-12">
+          {/* Colonne 1: Marque & Présentation */}
+          <div className="lg:col-span-5 space-y-6">
+            <Link to="/" className="inline-block">
               <img
                 src="https://cdn.builder.io/api/v1/image/assets%2Fa7441c9084eb43e6855cf7e960c5c609%2F6ebebc1a91e8447db48a68aa5b391a28?format=webp&width=800"
-                alt="Amani Finance"
-                className="h-10 w-auto"
+                alt="Amani Media & Financial Platform"
+                className="h-10 w-auto brightness-110"
               />
-            </div>
-            <p className="text-gray-300 leading-relaxed mb-6 max-w-md">
-              Votre plateforme de référence pour l'information économique et financière en Afrique. 
-              Nous rendons l'information digestible et accessible à tous.
+            </Link>
+
+            <p className="text-stone-400 text-xs sm:text-sm leading-relaxed max-w-md font-medium">
+              Amani est la plateforme de référence dédiée à l'information économique, financière et boursière en Afrique de l'Ouest. Nous décryptons l'actualité des marchés pour éclairer les investisseurs et décideurs.
             </p>
-            
-            {/* Social Links */}
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-400">Suivez-nous:</span>
-              {socialLinks.map((social) => {
-                const Icon = social.icon;
-                return (
-                <a
-                  key={social.name}
-                  href={social.url}
-                  className="w-10 h-10 flex items-center justify-center text-[#857053] hover:text-white transition-colors"
-                  aria-label={social.name}
-                >
-                  <Icon className="w-5 h-5" />
-                </a>
-              )})}
+
+            {/* Réseaux Sociaux Épurés */}
+            <div className="pt-2">
+              <span className="text-xs font-mono font-bold text-stone-400 uppercase tracking-wider block mb-3">
+                NOUS SUIVRE
+              </span>
+              <div className="flex items-center gap-2.5">
+                {socialLinks.map((social) => {
+                  const Icon = social.icon;
+                  return (
+                    <a
+                      key={social.name}
+                      href={social.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-9 h-9 rounded-xl bg-[#232625] hover:bg-[#9C8464] text-stone-300 hover:text-white border border-stone-700/60 hover:border-[#9C8464] flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                      aria-label={social.name}
+                      title={social.name}
+                    >
+                      <Icon className="w-4 h-4" />
+                    </a>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h3 className="text-lg font-semibold mb-6 text-white">Navigation</h3>
-            <ul className="space-y-3">
+          {/* Colonne 2: Navigation rapide */}
+          <div className="lg:col-span-4 space-y-4">
+            <h3 className="font-mono text-xs font-black text-[#9C8464] uppercase tracking-widest">
+              NAVIGATION
+            </h3>
+            <ul className="grid grid-cols-2 gap-y-2.5 gap-x-4">
               {quickLinks.map((link) => (
                 <li key={link.path}>
                   <Link
                     to={link.path}
-                    className="text-gray-300 hover:text-white transition-colors flex items-center gap-2 group"
+                    className="text-xs sm:text-sm font-semibold text-stone-400 hover:text-white transition-colors block py-0.5"
                   >
                     {link.name}
-                    <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Contact Info */}
-          <div>
-            <h3 className="text-lg font-semibold mb-6 text-white">Contact</h3>
-            <ul className="space-y-4">
-              {contactInfo.map((contact) => (
-                <li key={contact.label}>
-                  <a
-                    href={contact.link}
-                    className="flex items-start gap-3 text-gray-300 hover:text-white transition-colors group"
-                  >
-                    <contact.icon className="w-5 h-5 mt-0.5 text-[#E5DDD5] group-hover:text-white transition-colors" />
-                    <div>
-                      <div className="text-sm text-gray-400">{contact.label}</div>
-                      <div className="font-medium">{contact.value}</div>
-                    </div>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* Newsletter Signup Banner */}
-        <div className="mt-12 p-6 bg-gray-700 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h4 className="text-base font-bold text-white mb-1">Newsletter</h4>
-            <p className="text-xs sm:text-sm text-gray-300">
-              Recevez nos analyses directement dans votre boîte mail.
-            </p>
-          </div>
-          <div className="flex gap-2 w-full md:w-auto max-w-md">
-            <input
-              type="email"
-              placeholder="Votre email"
-              className="flex-1 px-4 py-2.5 bg-gray-600 text-white placeholder-gray-400 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E5DDD5] min-w-0"
-            />
-            <button className="px-5 py-2.5 bg-[#E5DDD5] text-[#373B3A] rounded-lg text-sm font-semibold hover:bg-[#E5DDD2] transition-colors whitespace-nowrap">
-              S'abonner
-            </button>
-          </div>
-        </div>
-
-        {/* Bottom Bar */}
-        <div className="border-t border-gray-600 mt-12 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-4 text-sm text-gray-400 text-center">
-              <div>© {currentYear} Amani Finance. Tous droits réservés.</div>
-              <div className="flex items-center justify-center gap-1">
-                Créé avec <Heart className="w-4 h-4 text-red-500 fill-current" /> par 
-                <a 
-                  href="https://www.aikio.co" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-[#E5DDD5] hover:text-white font-medium ml-1 transition-colors"
-                >
-                  Aikio Corp SAS
+          {/* Colonne 3: Coordonnées & Siège */}
+          <div className="lg:col-span-3 space-y-4">
+            <h3 className="font-mono text-xs font-black text-[#9C8464] uppercase tracking-widest">
+              CONTACT & SIÈGE
+            </h3>
+            <div className="space-y-3 text-xs sm:text-sm font-medium text-stone-400">
+              <div>
+                <span className="block text-[11px] font-mono text-stone-500 uppercase">COURRIEL</span>
+                <a href="mailto:info@amani-finance.com" className="text-stone-300 hover:text-[#9C8464] font-semibold transition-colors">
+                  info@amani-finance.com
                 </a>
               </div>
+
+              <div>
+                <span className="block text-[11px] font-mono text-stone-500 uppercase">TÉLÉPHONE</span>
+                <a href="tel:+22320224567" className="text-stone-300 hover:text-[#9C8464] font-semibold transition-colors">
+                  +223 20 22 45 67
+                </a>
+              </div>
+
+              <div>
+                <span className="block text-[11px] font-mono text-stone-500 uppercase">ADRESSE</span>
+                <span className="text-stone-300 font-semibold">Faladie, Bamako, Mali</span>
+              </div>
             </div>
-            
-            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-center">
-              <Link to="/about" className="text-gray-400 hover:text-white transition-colors">
-                À propos
+          </div>
+        </div>
+
+        {/* Bar Basse & Mentions Légales */}
+        <div className="border-t border-stone-800/80 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-medium text-stone-400">
+          <div>
+            © {currentYear} <strong>Amani Finance</strong>. Tous droits réservés. Développé par{" "}
+            <a
+              href="https://www.aikio.co"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#9C8464] hover:text-white font-bold transition-colors"
+            >
+              Aikio Corp SAS
+            </a>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            {legalLinks.map((l) => (
+              <Link key={l.path} to={l.path} className="hover:text-[#9C8464] transition-colors">
+                {l.name}
               </Link>
-              <Link to="/contact" className="text-gray-400 hover:text-white transition-colors">
-                Contact
-              </Link>
-              <Link to="/terms" className="text-gray-400 hover:text-white transition-colors">
-                Conditions (CGU)
-              </Link>
-              <Link to="/confidentialite" className="text-gray-400 hover:text-white transition-colors">
-                Confidentialité
-              </Link>
-              <Link to="/mentions-legales" className="text-gray-400 hover:text-white transition-colors">
-                Mentions légales
-              </Link>
-              <Link to="/cookies" className="text-gray-400 hover:text-white transition-colors">
-                Cookies
-              </Link>
-            </div>
+            ))}
           </div>
         </div>
       </div>

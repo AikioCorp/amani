@@ -17,7 +17,7 @@ interface SEOConfig {
 const DEFAULT_SEO = {
   title: 'Amani Finance - Actualités Économiques et Marchés Africains',
   description: "Plateforme d'information financière pour l'Afrique. Suivez les indices BRVM, taux de change, analyses économiques et actualités des marchés africains.",
-  image: 'https://amani-finance.vercel.app/og-image.jpg',
+  image: 'https://www.amani-finance.com/og-image.jpg',
   type: 'website' as const,
 };
 
@@ -26,7 +26,7 @@ export function useSEO(config: Partial<SEOConfig> = {}) {
   
   useEffect(() => {
     const seoConfig = { ...DEFAULT_SEO, ...config };
-    const baseUrl = 'https://amani-finance.vercel.app';
+    const baseUrl = 'https://www.amani-finance.com';
     const currentUrl = `${baseUrl}${location.pathname}`;
     
     // Update title

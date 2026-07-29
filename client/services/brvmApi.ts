@@ -14,6 +14,8 @@ export interface BRVMIndex {
 
 export interface BRVMData {
   composite: BRVMIndex;
+  brvm30?: BRVMIndex;
+  brvmPrestige?: BRVMIndex;
   fcfa_eur: BRVMIndex;
   inflation: BRVMIndex;
   taux_bceao: BRVMIndex;
@@ -27,6 +29,16 @@ export interface BRVMData {
     volume: string;
     isPositive: boolean;
     lastUpdate: string;
+  }>;
+  currencies?: Array<{
+    pair: string;
+    name: string;
+    rate: string;
+    inverse: string;
+    change: string;
+    changePercent: string;
+    isPositive: boolean;
+    type: string;
   }>;
   activity?: {
     transactionValue: string;
@@ -70,11 +82,30 @@ export const fetchBRVMData = async (): Promise<BRVMData> => {
     return {
       composite: {
         name: "BRVM Composite",
-        value: (185.42 + baseVariation).toFixed(2),
-        change: (4.28 + baseVariation * 0.5).toFixed(2),
-        changePercent: `${(2.3 + baseVariation * 0.3).toFixed(1)}%`,
-        isPositive: baseVariation > -1,
+        value: (218.42 + baseVariation).toFixed(2),
+        change: (1.21 + baseVariation * 0.2).toFixed(2),
+        changePercent: `+${(0.65 + baseVariation * 0.1).toFixed(2)}%`,
+        isPositive: true,
         lastUpdate: now.toISOString(),
+        source: "BRVM",
+      },
+      brvm30: {
+        name: "BRVM 30",
+        value: (109.85 + baseVariation * 0.8).toFixed(2),
+        change: (0.85 + baseVariation * 0.15).toFixed(2),
+        changePercent: `+${(0.78 + baseVariation * 0.1).toFixed(2)}%`,
+        isPositive: true,
+        lastUpdate: now.toISOString(),
+        source: "BRVM",
+      },
+      brvmPrestige: {
+        name: "BRVM Prestige",
+        value: (104.12 + baseVariation * 0.5).toFixed(2),
+        change: (0.42 + baseVariation * 0.1).toFixed(2),
+        changePercent: `+${(0.40 + baseVariation * 0.05).toFixed(2)}%`,
+        isPositive: true,
+        lastUpdate: now.toISOString(),
+        source: "BRVM",
       },
       fcfa_eur: {
         name: "FCFA/EUR",
@@ -100,6 +131,16 @@ export const fetchBRVMData = async (): Promise<BRVMData> => {
         isPositive: true,
         lastUpdate: now.toISOString(),
       },
+      currencies: [
+        { pair: "EUR/FCFA", name: "Euro / Franc CFA", rate: "655.957 FCFA", inverse: "0.00152 EUR", change: "0.00", changePercent: "0.00%", isPositive: true, type: "Parité Fixe UEMOA" },
+        { pair: "USD/FCFA", name: "Dollar US / Franc CFA", rate: "598.40 FCFA", inverse: "0.00167 USD", change: "+0.90", changePercent: "+0.15%", isPositive: true, type: "Taux Flottant International" },
+        { pair: "GBP/FCFA", name: "Livre Sterling / Franc CFA", rate: "768.10 FCFA", inverse: "0.00130 GBP", change: "-0.60", changePercent: "-0.08%", isPositive: false, type: "Taux Flottant International" },
+        { pair: "CAD/FCFA", name: "Dollar Canadien / Franc CFA", rate: "432.50 FCFA", inverse: "0.00231 CAD", change: "+0.20", changePercent: "+0.04%", isPositive: true, type: "Taux Flottant International" },
+        { pair: "CNY/FCFA", name: "Yuan Chinois / Franc CFA", rate: "83.20 FCFA", inverse: "0.01202 CNY", change: "+0.02", changePercent: "+0.02%", isPositive: true, type: "Taux Flottant International" },
+        { pair: "NGN/FCFA", name: "Naira Nigérian / Franc CFA", rate: "0.41 FCFA", inverse: "2.4390 NGN", change: "-0.001", changePercent: "-0.24%", isPositive: false, type: "Marché Régional CEDEAO" },
+        { pair: "CHF/FCFA", name: "Franc Suisse / Franc CFA", rate: "682.10 FCFA", inverse: "0.00146 CHF", change: "+0.70", changePercent: "+0.10%", isPositive: true, type: "Taux Flottant International" },
+        { pair: "MAD/FCFA", name: "Dirham Marocain / Franc CFA", rate: "60.50 FCFA", inverse: "0.0165 MAD", change: "+0.03", changePercent: "+0.05%", isPositive: true, type: "Marché Régional Afrique" },
+      ],
     };
   }
 };
