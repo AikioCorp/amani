@@ -447,57 +447,62 @@ export default function Index() {
   const otherArticles = React.useMemo(() => (articles || []).slice(1, 4), [articles]);
 
   return (
-    <div className="min-h-screen bg-[#FDFBF9] font-sans antialiased text-gray-900">
+    <div className="min-h-screen bg-[#FDFBF9] font-sans antialiased text-gray-900 flex flex-col">
       <SEOHead
         title="Amani Finance - Actualités Économiques, BRVM & Analyses Financières en Afrique"
         description="Plateforme d'information et d'analyse financière de référence en Afrique et au Sahel. Suivez la BRVM, les cours de l'or et des devises FCFA, les opportunités d'investissement et les actualités économiques."
         keywords="Amani Finance, Amani, amani-finance.com, BRVM, actualités économiques Afrique, finance Sahel, UEMOA, BCEAO, bourse africaine, économie Mali, économie Sénégal, Côte d'Ivoire, investissement Afrique, Forex FCFA, convertisseur devises, opportunités investissement, actualités financières"
       />
       
-      {/* Hero Section – utilise le dernier article publié s'il existe */}
-      <section className="bg-[#373B3A] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {loadingContent ? (
-              <>
-                <div className="space-y-6">
-                  <Skeleton className="h-14 w-48 bg-white/10 rounded-lg" />
-                  <Skeleton className="h-20 w-full bg-white/10 rounded-lg" />
-                </div>
-                <div className="relative">
-                  <Skeleton className="w-full h-80 rounded-2xl bg-white/10" />
-                </div>
-              </>
-            ) : (
-              <>
-                <div>
-                  <h1 className="text-4xl lg:text-5xl font-extrabold mb-6 tracking-tight">À la une</h1>
-                  <h2 className="text-2xl lg:text-3xl font-bold mb-4 leading-snug">
-                    <Link
-                      to={heroArticle ? `/article/${heroArticle.slug || heroArticle.id}` : "#"}
-                      className="hover:text-[#EADFC9] transition-colors"
-                    >
-                      {heroArticle?.title}
-                    </Link>
-                  </h2>
-                </div>
-                <div className="relative">
-                  {heroArticle?.featured_image && (
-                    <img
-                      src={heroArticle.featured_image}
-                      alt={heroArticle.title}
-                      className="w-full h-80 object-cover rounded-2xl shadow-2xl"
-                      loading="eager"
-                      fetchPriority="high"
-                      decoding="async"
-                    />
-                  )}
-                </div>
-              </>
-            )}
+      <main id="main-content" className="flex-1">
+        {/* Hero Section – utilise le dernier article publié s'il existe */}
+        <section className="bg-[#373B3A] text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              {loadingContent ? (
+                <>
+                  <div className="space-y-6">
+                    <Skeleton className="h-14 w-48 bg-white/10 rounded-lg" />
+                    <Skeleton className="h-20 w-full bg-white/10 rounded-lg" />
+                  </div>
+                  <div className="relative">
+                    <Skeleton className="w-full h-80 rounded-2xl bg-white/10" />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-6">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-[#EADFC9] text-xs font-semibold uppercase tracking-wider">
+                      À la une
+                    </div>
+                    <h2 className="text-3xl sm:text-4xl font-extrabold leading-tight font-serif text-white">
+                      <Link
+                        to={heroArticle ? `/article/${heroArticle.slug || heroArticle.id}` : "#"}
+                        className="hover:text-[#EADFC9] transition-colors"
+                      >
+                        {heroArticle?.title}
+                      </Link>
+                    </h2>
+                  </div>
+                  <div className="relative">
+                    {heroArticle?.featured_image && (
+                      <img
+                        src={heroArticle.featured_image}
+                        alt={heroArticle.title || "Article de une Amani Finance"}
+                        width={800}
+                        height={450}
+                        className="w-full h-80 object-cover rounded-2xl shadow-2xl"
+                        loading="eager"
+                        fetchPriority="high"
+                        decoding="async"
+                      />
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
       {/* 3. Marchés & Indices BRVM (Clean dynamic flex row with vertical separators) */}
       <section className="py-8 bg-white border-b border-[#F0EAE1]">
@@ -1503,7 +1508,7 @@ export default function Index() {
           </div>
         </div>
       </section>
-
+      </main>
     </div>
   );
 }

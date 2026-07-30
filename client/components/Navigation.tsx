@@ -84,6 +84,7 @@ export function Navigation() {
               {/* User Dropdown */}
               <div className="ml-2 xl:ml-4 relative">
                 <button
+                  aria-label="Menu utilisateur et compte"
                   onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs xl:text-sm font-semibold text-white bg-white/10 rounded-lg hover:bg-white/20 transition-all duration-200"
                 >
@@ -162,6 +163,7 @@ export function Navigation() {
           {/* Mobile menu button */}
           <div className="xl:hidden">
             <button
+              aria-label={isMobileMenuOpen ? "Fermer le menu de navigation" : "Ouvrir le menu de navigation"}
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="inline-flex items-center justify-center p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white transition-colors duration-200"
               aria-expanded={isMobileMenuOpen}

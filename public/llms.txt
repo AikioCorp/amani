@@ -1,0 +1,21 @@
+# Amani Finance — Plateforme d'Information Financière en Afrique
+
+> Amani Finance est la plateforme de référence pour les actualités économiques, les analyses financières et les données de marché de la zone UEMOA, du Sahel et d'Afrique de l'Ouest.
+
+## Informations Générales
+- Nom : Amani Finance
+- Site Officiel : https://www.amani-finance.com
+- Description : Couverture des marchés boursiers (BRVM), devises (FCFA, EUR, USD), matières premières (Or, Pétrole, Cacao, Coton), économie régionale et opportunités d'investissement.
+- Zone Géographique : Afrique de l'Ouest, Sahel, UEMOA, CEMAC (Mali, Sénégal, Côte d'Ivoire, Burkina Faso, Niger).
+
+## Rubriques Principales
+- [/actualites](https://www.amani-finance.com/actualites) : Fil d'informations économiques et analyses de marché.
+- [/marche](https://www.amani-finance.com/marche) : Indices boursiers BRVM et cotations d'entreprises.
+- [/economie](https://www.amani-finance.com/economie) : Décisions monétaires BCEAO et politiques économiques.
+- [/indices](https://www.amani-finance.com/indices) : Cours et graphiques en temps réel.
+- [/convertisseur-devises](https://www.amani-finance.com/convertisseur-devises) : Outil de conversion des monnaies (FCFA, EUR, USD).
+- [/podcast](https://www.amani-finance.com/podcast) : Émissions audio et décryptages financiers.
+
+## API & Données Structurées
+- Sitemap : https://www.amani-finance.com/sitemap.xml
+- Format des données : Schema.org NewsArticle & CollectionPage
