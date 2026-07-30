@@ -58,7 +58,7 @@ export default function Economie() {
       views: art.views || 0,
       coverImage:
         art.featured_image ||
-        "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=800&q=80",
+        "https://www.amani-finance.com/financeafrique.avif",
       featured: (art.views || 0) > 100,
     }));
   }, [dbArticles]);

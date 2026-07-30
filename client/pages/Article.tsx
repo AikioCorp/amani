@@ -314,14 +314,22 @@ export default function Article() {
                         </div>
                       </div>
                     </div>
-                  ) : article.content && article.content.trim().length > 10 ? (
+                  ) : (article.content && article.content.trim().length > 10) || (article.summary && article.summary.trim().length > 10) ? (
                     <div className="relative mb-12">
                       <div
                         className={`prose prose-lg prose-stone max-w-none text-stone-800 leading-[1.85] font-serif transition-all duration-500 ${
-                          !isExpanded ? "max-h-[380px] overflow-hidden relative" : ""
+                          !isExpanded ? "max-h-[420px] overflow-hidden relative" : ""
                         }`}
                       >
-                        <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.content) }} />
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html: sanitizeHtml(
+                              (article.content && article.content.trim().length > 10)
+                                ? article.content
+                                : `<p className="lead font-medium text-lg text-stone-800 leading-relaxed mb-6">${article.summary}</p><div className="bg-stone-50 border border-stone-200/80 rounded-2xl p-6 my-6 text-stone-700 font-sans text-sm space-y-3"><h4 className="font-bold text-stone-900 uppercase tracking-wider text-xs">Synthèse Rédactionnelle Amani Finance</h4><p>${article.summary}</p></div>`
+                            ),
+                          }}
+                        />
                       </div>
 
                       {!isExpanded ? (
@@ -349,23 +357,7 @@ export default function Article() {
                         </div>
                       )}
                     </div>
-                  ) : (
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 mb-8 text-center">
-                      <p className="text-slate-600 mb-4">
-                        Cet article est actuellement présenté en format extrait synthétique.
-                      </p>
-                      {article.article_data?.original_link && (
-                        <a
-                          href={article.article_data.original_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 font-medium transition-colors"
-                        >
-                          Lire la source complète d'origine ↗
-                        </a>
-                      )}
-                    </div>
-                  )}
+                  ) : null}
 
                   {/* Tags */}
                   {Array.isArray(article.tags) && article.tags.length > 0 && (

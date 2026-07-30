@@ -20,6 +20,7 @@ import {
   IndiceData,
 } from "../types/database";
 import ImageUpload from "./ImageUpload";
+import { apiCache } from "../lib/apiCache";
 import {
   Save,
   Eye,
@@ -482,7 +483,7 @@ export default function UnifiedContentForm({
 
     try {
       // Upload de l'image si un fichier local a été sélectionné
-      let imageUrl = formData.featured_image;
+      let imageUrl = currentImageUrl || formData.featured_image;
       if (featuredImage) {
         try {
           const base64Data = await new Promise<string>((resolve, reject) => {
@@ -508,6 +509,7 @@ export default function UnifiedContentForm({
           const uploadData = await uploadRes.json();
           if (uploadRes.ok && uploadData.success && uploadData.data?.url) {
             imageUrl = uploadData.data.url;
+            setCurrentImageUrl(imageUrl);
           } else {
             throw new Error(uploadData.error || "Impossible d'uploader l'image.");
           }
@@ -543,6 +545,7 @@ export default function UnifiedContentForm({
       };
 
       await onSave(finalData);
+      apiCache.clear();
     } catch (err) {
       error("Erreur", "Une erreur est survenue lors de la sauvegarde.");
       console.error(err);
@@ -1154,7 +1157,14 @@ export default function UnifiedContentForm({
             <ImageUpload
               onImageSelect={(file) => {
                 setFeaturedImage(file);
-                if (file) setCurrentImageUrl(URL.createObjectURL(file));
+                if (file) {
+                  const blobUrl = URL.createObjectURL(file);
+                  setCurrentImageUrl(blobUrl);
+                  setFormData((prev: any) => ({ ...prev, featured_image: blobUrl }));
+                } else {
+                  setCurrentImageUrl("");
+                  setFormData((prev: any) => ({ ...prev, featured_image: "" }));
+                }
               }}
               currentImage={currentImageUrl}
             />
