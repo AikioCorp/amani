@@ -42,6 +42,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import InteractiveMap from "../components/InteractiveMap";
 import { Skeleton } from "../components/ui/skeleton";
+import { SEOHead } from "../components/SEOHead";
 import { fetchBRVMData, BRVMData } from "../services/brvmApi";
 import {
   fetchCommoditiesData,
@@ -447,6 +448,11 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-[#FDFBF9] font-sans antialiased text-gray-900">
+      <SEOHead
+        title="Amani Finance - Actualités Économiques, BRVM & Analyses Financières en Afrique"
+        description="Plateforme d'information et d'analyse financière de référence en Afrique et au Sahel. Suivez la BRVM, les cours de l'or et des devises FCFA, les opportunités d'investissement et les actualités économiques."
+        keywords="Amani Finance, Amani, amani-finance.com, BRVM, actualités économiques Afrique, finance Sahel, UEMOA, BCEAO, bourse africaine, économie Mali, économie Sénégal, Côte d'Ivoire, investissement Afrique, Forex FCFA, convertisseur devises, opportunités investissement, actualités financières"
+      />
       
       {/* Hero Section – utilise le dernier article publié s'il existe */}
       <section className="bg-[#373B3A] text-white">
@@ -481,7 +487,8 @@ export default function Index() {
                       src={heroArticle.featured_image}
                       alt={heroArticle.title}
                       className="w-full h-80 object-cover rounded-2xl shadow-2xl"
-                      loading="lazy"
+                      loading="eager"
+                      fetchPriority="high"
                       decoding="async"
                     />
                   )}

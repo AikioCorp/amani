@@ -15,9 +15,18 @@ interface SEOConfig {
 }
 
 const DEFAULT_SEO = {
-  title: 'Amani Finance - Actualités Économiques et Marchés Africains',
-  description: "Plateforme d'information financière pour l'Afrique. Suivez les indices BRVM, taux de change, analyses économiques et actualités des marchés africains.",
-  image: 'https://www.amani-finance.com/og-image.jpg',
+  title: 'Amani Finance - Actualités Économiques, BRVM, Forex & Analyses Financières en Afrique',
+  description: "Plateforme d'information et d'analyse financière de référence en Afrique et au Sahel. Suivez les cours de la BRVM, le taux du Franc CFA (FCFA), l'or, le pétrole, les titres publics UEMOA et les opportunités d'investissement.",
+  keywords: [
+    'Amani Finance', 'Amani', 'amani-finance.com',
+    'BRVM', 'BRVM Composite', 'BRVM 30', 'actions BRVM', 'cours BRVM', 'dividendes BRVM', 'titres publics', 'bons du trésor UEMOA', 'obligations TPCI',
+    'BCEAO', 'UEMOA', 'CEMAC', 'BAD', 'BOAD', 'FMI', 'Banque Mondiale',
+    'actualités économiques Afrique', 'finance Sahel', 'économie Mali', 'économie Sénégal', 'économie Côte d\'Ivoire', 'économie Burkina Faso', 'économie Niger',
+    'Franc CFA', 'FCFA', 'EUR XOF', 'USD XOF', 'taux de change FCFA', 'convertisseur devises FCFA', 'forex Afrique', 'parité Euro CFA',
+    'cours de l\'or', 'or Sahel', 'cours du coton', 'cours du cacao', 'matières premières Afrique', 'pétrole Brent',
+    'investissement Afrique', 'diaspora investissement', 'capital risque Afrique', 'private equity UEMOA', 'fintech Afrique', 'mobile money', 'microfinance', 'analyses financières'
+  ].join(', '),
+  image: 'https://www.amani-finance.com/financeafrique.avif',
   type: 'website' as const,
 };
 
@@ -131,7 +140,7 @@ export function generateArticleStructuredData(article: {
       name: 'Amani Finance',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://amani-finance.vercel.app/logo.png',
+        url: 'https://www.amani-finance.com/Fav%20Icon.png',
       },
     },
     mainEntityOfPage: {

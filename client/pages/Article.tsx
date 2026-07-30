@@ -162,10 +162,11 @@ export default function Article() {
                 <ArticleSEO
                   title={article.title || "Article"}
                   description={article.summary || article.description || article.meta_description || "Analyse financière Amani Platform."}
-                  image={article.featured_image || "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800"}
+                  image={article.featured_image || "https://www.amani-finance.com/financeafrique.avif"}
                   author={article.author ? `${article.author.first_name} ${article.author.last_name}` : "Amani Rédaction"}
                   publishedTime={article.published_at || article.created_at || new Date().toISOString()}
                   category={article.category_info?.name || "Économie"}
+                  keywords={`${article.title}, Amani Finance, Amani, amani-finance.com, actualités économiques, ${article.category_info?.name || 'Économie'}, Afrique, Sahel`}
                 />
                 <div className="p-8 sm:p-12 pb-8">
                   {/* Meta info & Badges */}

@@ -5,7 +5,7 @@ import * as path from 'path';
 // Utilise l'API backend pour récupérer les slugs des contenus publiés
 
 const API_BASE = process.env.VITE_API_URL || 'http://localhost:5000/api';
-const BASE_URL = 'https://amani-finance.vercel.app';
+const BASE_URL = process.env.SITE_URL || 'https://www.amani-finance.com';
 
 interface SitemapUrl {
   loc: string;

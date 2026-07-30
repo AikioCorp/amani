@@ -57,74 +57,74 @@ const GlobalFooter = () => {
   return <Footer />;
 };
 
-// Public Pages
+// Public Pages (Direct import for Home, Lazy import for secondary routes to optimize bundle size)
 import Index from "./pages/Index";
-import Article from "./pages/Article";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import About from "./pages/About";
-import Contact from "./pages/Contact";
-import Podcast from "./pages/Podcast";
-import PodcastDetail from "./pages/PodcastDetail";
-import Indices from "./pages/Indices";
-import BrvmLatest from "./pages/BrvmLatest";
-import Calculateur from "./pages/Calculateur";
-import GuideDebutant from "./pages/GuideDebutant";
-import ConvertisseurDevises from "./pages/ConvertisseurDevises";
-import Actualites from "./pages/Actualites";
-import Newsletter from "./pages/Newsletter";
-import Marche from "./pages/Marche";
-import Economie from "./pages/Economie";
-import EconomieNews from "./pages/EconomieNews";
-import Industrie from "./pages/Industrie";
-import Investissement from "./pages/Investissement";
-import Insights from "./pages/Insights";
-import Tech from "./pages/Tech";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import SerperIntegration from "./pages/SerperIntegration";
-import PipelineMonitoring from "./pages/PipelineMonitoring";
-import ImportsManagement from "./pages/ImportsManagement";
-import Terms from "./pages/Terms";
-import Confidentialite from "./pages/Confidentialite";
-import MentionsLegales from "./pages/MentionsLegales";
-import CookiesPage from "./pages/Cookies";
-import PlanDuSite from "./pages/PlanDuSite";
+const Article = React.lazy(() => import("./pages/Article"));
+const Login = React.lazy(() => import("./pages/Login"));
+const Register = React.lazy(() => import("./pages/Register"));
+const About = React.lazy(() => import("./pages/About"));
+const Contact = React.lazy(() => import("./pages/Contact"));
+const Podcast = React.lazy(() => import("./pages/Podcast"));
+const PodcastDetail = React.lazy(() => import("./pages/PodcastDetail"));
+const Indices = React.lazy(() => import("./pages/Indices"));
+const BrvmLatest = React.lazy(() => import("./pages/BrvmLatest"));
+const Calculateur = React.lazy(() => import("./pages/Calculateur"));
+const GuideDebutant = React.lazy(() => import("./pages/GuideDebutant"));
+const ConvertisseurDevises = React.lazy(() => import("./pages/ConvertisseurDevises"));
+const Actualites = React.lazy(() => import("./pages/Actualites"));
+const Newsletter = React.lazy(() => import("./pages/Newsletter"));
+const Marche = React.lazy(() => import("./pages/Marche"));
+const Economie = React.lazy(() => import("./pages/Economie"));
+const EconomieNews = React.lazy(() => import("./pages/EconomieNews"));
+const Industrie = React.lazy(() => import("./pages/Industrie"));
+const Investissement = React.lazy(() => import("./pages/Investissement"));
+const Insights = React.lazy(() => import("./pages/Insights"));
+const Tech = React.lazy(() => import("./pages/Tech"));
+const ForgotPassword = React.lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = React.lazy(() => import("./pages/ResetPassword"));
+const SerperIntegration = React.lazy(() => import("./pages/SerperIntegration"));
+const PipelineMonitoring = React.lazy(() => import("./pages/PipelineMonitoring"));
+const ImportsManagement = React.lazy(() => import("./pages/ImportsManagement"));
+const Terms = React.lazy(() => import("./pages/Terms"));
+const Confidentialite = React.lazy(() => import("./pages/Confidentialite"));
+const MentionsLegales = React.lazy(() => import("./pages/MentionsLegales"));
+const CookiesPage = React.lazy(() => import("./pages/Cookies"));
+const PlanDuSite = React.lazy(() => import("./pages/PlanDuSite"));
 
-// Dashboard Pages
-import DashboardMain from "./pages/DashboardMain";
-import ContentManagement from "./pages/ContentManagement";
-import Articles from "./pages/Articles";
-import NewArticle from "./pages/NewArticle";
-import EditArticle from "./pages/EditArticle";
-import PodcastsManager from "./pages/PodcastsManager";
-import NewPodcast from "./pages/NewPodcast";
-import EditPodcast from "./pages/EditPodcast";
-import LegacyIndicesDisabled from "./pages/LegacyIndicesDisabled";
-import BrvmIndicesManagement from "./pages/BrvmIndicesManagement";
-import CommoditiesManagement from "./pages/CommoditiesManagement";
-import InvestmentOpportunitiesManagement from "./pages/InvestmentOpportunitiesManagement";
-import IndicesHelp from "./pages/IndicesHelp";
-import Analytics from "./pages/Analytics";
-import Moderation from "./pages/Moderation";
-import ReportsModeration from "./pages/ReportsModeration";
-import Settings from "./pages/Settings";
-import Profile from "./pages/Profile";
-import PermissionsManager from "./pages/PermissionsManager";
-import Users from "./pages/Users";
-import NewUser from "./pages/NewUser";
-import EditUser from "./pages/EditUser";
-import BannedUsers from "./pages/BannedUsers";
-import Notifications from "./pages/Notifications";
-import Logs from "./pages/Logs";
-import UserActivity from "./pages/UserActivity";
-import ReportsManager from "./pages/ReportsManager";
-import NewUserAdvanced from "./pages/NewUserAdvanced";
-import Integrations from "./pages/Integrations";
-import Pricing from "./pages/Pricing";
-import SubscriptionsManagement from "./pages/SubscriptionsManagement";
-import NewsletterManagement from "./pages/NewsletterManagement";
-import LegalPagesManagement from "./pages/LegalPagesManagement";
+// Dashboard Pages (Lazy loaded for maximum initial load performance)
+const DashboardMain = React.lazy(() => import("./pages/DashboardMain"));
+const ContentManagement = React.lazy(() => import("./pages/ContentManagement"));
+const Articles = React.lazy(() => import("./pages/Articles"));
+const NewArticle = React.lazy(() => import("./pages/NewArticle"));
+const EditArticle = React.lazy(() => import("./pages/EditArticle"));
+const PodcastsManager = React.lazy(() => import("./pages/PodcastsManager"));
+const NewPodcast = React.lazy(() => import("./pages/NewPodcast"));
+const EditPodcast = React.lazy(() => import("./pages/EditPodcast"));
+const LegacyIndicesDisabled = React.lazy(() => import("./pages/LegacyIndicesDisabled"));
+const BrvmIndicesManagement = React.lazy(() => import("./pages/BrvmIndicesManagement"));
+const CommoditiesManagement = React.lazy(() => import("./pages/CommoditiesManagement"));
+const InvestmentOpportunitiesManagement = React.lazy(() => import("./pages/InvestmentOpportunitiesManagement"));
+const IndicesHelp = React.lazy(() => import("./pages/IndicesHelp"));
+const Analytics = React.lazy(() => import("./pages/Analytics"));
+const Moderation = React.lazy(() => import("./pages/Moderation"));
+const ReportsModeration = React.lazy(() => import("./pages/ReportsModeration"));
+const Settings = React.lazy(() => import("./pages/Settings"));
+const Profile = React.lazy(() => import("./pages/Profile"));
+const PermissionsManager = React.lazy(() => import("./pages/PermissionsManager"));
+const Users = React.lazy(() => import("./pages/Users"));
+const NewUser = React.lazy(() => import("./pages/NewUser"));
+const EditUser = React.lazy(() => import("./pages/EditUser"));
+const BannedUsers = React.lazy(() => import("./pages/BannedUsers"));
+const Notifications = React.lazy(() => import("./pages/Notifications"));
+const Logs = React.lazy(() => import("./pages/Logs"));
+const UserActivity = React.lazy(() => import("./pages/UserActivity"));
+const ReportsManager = React.lazy(() => import("./pages/ReportsManager"));
+const NewUserAdvanced = React.lazy(() => import("./pages/NewUserAdvanced"));
+const Integrations = React.lazy(() => import("./pages/Integrations"));
+const Pricing = React.lazy(() => import("./pages/Pricing"));
+const SubscriptionsManagement = React.lazy(() => import("./pages/SubscriptionsManagement"));
+const NewsletterManagement = React.lazy(() => import("./pages/NewsletterManagement"));
+const LegalPagesManagement = React.lazy(() => import("./pages/LegalPagesManagement"));
 
 // Create a single instance of QueryClient with aggressive caching (5 min staleTime)
 const queryClient = new QueryClient({
@@ -209,106 +209,108 @@ const AppContent = () => {
     >
       <ScrollToTop />
       <Navigation />
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Index />} />
-        <Route path="/article/:id" element={<Article />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/podcast" element={<Podcast />} />
-        <Route path="/podcast/:id" element={<PodcastDetail />} />
-        <Route path="/indices" element={<Indices />} />
-        <Route path="/brvm-latest" element={<BrvmLatest />} />
-        <Route path="/calculateur" element={<Calculateur />} />
-        <Route path="/guide-debutant" element={<GuideDebutant />} />
-        <Route path="/guides/debutant" element={<GuideDebutant />} />
-        <Route path="/guide/debutant" element={<GuideDebutant />} />
-        <Route path="/convertisseur-devises" element={<ConvertisseurDevises />} />
-        <Route path="/convertisseur-devise" element={<ConvertisseurDevises />} />
-        <Route path="/convertisseur-cfa" element={<ConvertisseurDevises />} />
-        <Route path="/actualites" element={<Actualites />} />
-        <Route path="/newsletter" element={<Newsletter />} />
-        <Route path="/marche" element={<Marche />} />
-        <Route path="/economie" element={<Economie />} />
-        <Route path="/economie/news" element={<EconomieNews />} />
-        <Route path="/industrie" element={<Industrie />} />
-        <Route path="/investissement" element={<Investissement />} />
-        <Route path="/insights" element={<Insights />} />
-        <Route path="/tech" element={<Tech />} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="/abonnement" element={<Pricing />} />
+      <React.Suspense fallback={<LoadingSpinner />}>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Index />} />
+          <Route path="/article/:id" element={<Article />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/podcast" element={<Podcast />} />
+          <Route path="/podcast/:id" element={<PodcastDetail />} />
+          <Route path="/indices" element={<Indices />} />
+          <Route path="/brvm-latest" element={<BrvmLatest />} />
+          <Route path="/calculateur" element={<Calculateur />} />
+          <Route path="/guide-debutant" element={<GuideDebutant />} />
+          <Route path="/guides/debutant" element={<GuideDebutant />} />
+          <Route path="/guide/debutant" element={<GuideDebutant />} />
+          <Route path="/convertisseur-devises" element={<ConvertisseurDevises />} />
+          <Route path="/convertisseur-devise" element={<ConvertisseurDevises />} />
+          <Route path="/convertisseur-cfa" element={<ConvertisseurDevises />} />
+          <Route path="/actualites" element={<Actualites />} />
+          <Route path="/newsletter" element={<Newsletter />} />
+          <Route path="/marche" element={<Marche />} />
+          <Route path="/economie" element={<Economie />} />
+          <Route path="/economie/news" element={<EconomieNews />} />
+          <Route path="/industrie" element={<Industrie />} />
+          <Route path="/investissement" element={<Investissement />} />
+          <Route path="/insights" element={<Insights />} />
+          <Route path="/tech" element={<Tech />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/abonnement" element={<Pricing />} />
 
-        {/* Pages Légales & Réglementaires */}
-        <Route path="/terms" element={<Terms />} />
-        <Route path="/conditions-utilisation" element={<Terms />} />
-        <Route path="/confidentialite" element={<Confidentialite />} />
-        <Route path="/privacy" element={<Confidentialite />} />
-        <Route path="/mentions-legales" element={<MentionsLegales />} />
-        <Route path="/legal" element={<MentionsLegales />} />
-        <Route path="/cookies" element={<CookiesPage />} />
-        <Route path="/politique-cookies" element={<CookiesPage />} />
-        <Route path="/plan-du-site" element={<PlanDuSite />} />
-        <Route path="/sitemap" element={<PlanDuSite />} />
+          {/* Pages Légales & Réglementaires */}
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/conditions-utilisation" element={<Terms />} />
+          <Route path="/confidentialite" element={<Confidentialite />} />
+          <Route path="/privacy" element={<Confidentialite />} />
+          <Route path="/mentions-legales" element={<MentionsLegales />} />
+          <Route path="/legal" element={<MentionsLegales />} />
+          <Route path="/cookies" element={<CookiesPage />} />
+          <Route path="/politique-cookies" element={<CookiesPage />} />
+          <Route path="/plan-du-site" element={<PlanDuSite />} />
+          <Route path="/sitemap" element={<PlanDuSite />} />
 
-        {/* Protected Dashboard Routes (persistent layout with nested routes) */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardShell />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<DashboardMain />} />
-          <Route path="content" element={<ContentManagement />} />
-          <Route path="content-management" element={<ContentManagement />} />
-          <Route path="articles" element={<Articles />} />
-          <Route path="articles/new" element={<NewArticle />} />
-          <Route path="articles/edit/:id" element={<EditArticle />} />
-          <Route path="podcasts" element={<PodcastsManager />} />
-          <Route path="podcasts/new" element={<NewPodcast />} />
-          <Route path="podcasts/edit/:id" element={<EditPodcast />} />
-          <Route path="indices" element={<LegacyIndicesDisabled />} />
-          <Route path="indices/new" element={<LegacyIndicesDisabled />} />
-          <Route path="indices/edit/:id" element={<LegacyIndicesDisabled />} />
-          <Route path="indices-management" element={<BrvmIndicesManagement />} />
-          <Route path="commodities-management" element={<CommoditiesManagement />} />
-          <Route path="investment-opportunities" element={<InvestmentOpportunitiesManagement />} />
-          <Route path="indices-help" element={<IndicesHelp />} />
-          <Route path="analytics" element={<Analytics />} />
-          <Route path="moderation" element={<Moderation />} />
-          <Route path="reports-moderation" element={<ReportsModeration />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="permissions" element={<PermissionsManager />} />
-          <Route path="users" element={<Users />} />
-          <Route path="users/new" element={<NewUser />} />
-          <Route path="users/new-advanced" element={<NewUserAdvanced />} />
-          <Route path="subscriptions" element={<SubscriptionsManagement />} />
-          <Route path="newsletters" element={<NewsletterManagement />} />
-          <Route path="users/edit/:userId" element={<EditUser />} />
-          <Route path="user-activity" element={<UserActivity />} />
-          <Route path="reports" element={<ReportsManager />} />
-          <Route path="banned-users" element={<BannedUsers />} />
-          <Route path="notifications" element={<Notifications />} />
-          <Route path="logs" element={<Logs />} />
-          <Route path="integrations" element={<Integrations />} />
-          <Route path="legal-pages" element={<LegalPagesManagement />} />
-          <Route path="serper" element={<SerperIntegration />} />
-          <Route path="imports" element={<ImportsManagement />} />
-          <Route path="monitoring" element={<PipelineMonitoring />} />
-        </Route>
+          {/* Protected Dashboard Routes (persistent layout with nested routes) */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardShell />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<DashboardMain />} />
+            <Route path="content" element={<ContentManagement />} />
+            <Route path="content-management" element={<ContentManagement />} />
+            <Route path="articles" element={<Articles />} />
+            <Route path="articles/new" element={<NewArticle />} />
+            <Route path="articles/edit/:id" element={<EditArticle />} />
+            <Route path="podcasts" element={<PodcastsManager />} />
+            <Route path="podcasts/new" element={<NewPodcast />} />
+            <Route path="podcasts/edit/:id" element={<EditPodcast />} />
+            <Route path="indices" element={<LegacyIndicesDisabled />} />
+            <Route path="indices/new" element={<LegacyIndicesDisabled />} />
+            <Route path="indices/edit/:id" element={<LegacyIndicesDisabled />} />
+            <Route path="indices-management" element={<BrvmIndicesManagement />} />
+            <Route path="commodities-management" element={<CommoditiesManagement />} />
+            <Route path="investment-opportunities" element={<InvestmentOpportunitiesManagement />} />
+            <Route path="indices-help" element={<IndicesHelp />} />
+            <Route path="analytics" element={<Analytics />} />
+            <Route path="moderation" element={<Moderation />} />
+            <Route path="reports-moderation" element={<ReportsModeration />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="permissions" element={<PermissionsManager />} />
+            <Route path="users" element={<Users />} />
+            <Route path="users/new" element={<NewUser />} />
+            <Route path="users/new-advanced" element={<NewUserAdvanced />} />
+            <Route path="subscriptions" element={<SubscriptionsManagement />} />
+            <Route path="newsletters" element={<NewsletterManagement />} />
+            <Route path="users/edit/:userId" element={<EditUser />} />
+            <Route path="user-activity" element={<UserActivity />} />
+            <Route path="reports" element={<ReportsManager />} />
+            <Route path="banned-users" element={<BannedUsers />} />
+            <Route path="notifications" element={<Notifications />} />
+            <Route path="logs" element={<Logs />} />
+            <Route path="integrations" element={<Integrations />} />
+            <Route path="legal-pages" element={<LegalPagesManagement />} />
+            <Route path="serper" element={<SerperIntegration />} />
+            <Route path="imports" element={<ImportsManagement />} />
+            <Route path="monitoring" element={<PipelineMonitoring />} />
+          </Route>
 
-        {/* 404 route */}
-        <Route
-          path="*"
-          element={<NotFound />}
-        />
-      </Routes>
+          {/* 404 route */}
+          <Route
+            path="*"
+            element={<NotFound />}
+          />
+        </Routes>
+      </React.Suspense>
       <GlobalFooter />
       <GlobalAudioPlayer />
     </BrowserRouter>
