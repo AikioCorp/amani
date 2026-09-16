@@ -8,9 +8,9 @@ WORKDIR /app
 # Copier les fichiers de dépendances
 COPY package.json pnpm-lock.yaml* package-lock.json* ./
 
-# Installer pnpm si nécessaire et les dépendances
-RUN if [ -f pnpm-lock.yaml ]; then corepack enable && pnpm i --frozen-lockfile; \
-    else npm ci; fi
+# Installer pnpm et les dépendances sans blocage de scripts
+RUN if [ -f pnpm-lock.yaml ]; then corepack enable && pnpm i --ignore-scripts; \
+    else npm install --ignore-scripts; fi
 
 # Copier le reste du code source
 COPY . .
