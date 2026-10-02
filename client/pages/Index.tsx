@@ -948,7 +948,7 @@ export default function Index() {
                 <blockquote className="text-sm font-bold text-gray-900 mb-4 italic leading-relaxed">
                   "{item.title}"
                 </blockquote>
-                <p className="text-xs text-gray-500 mb-6 leading-relaxed">
+                <p className="text-xs text-gray-500 mb-6 leading-relaxed line-clamp-6">
                   {item.summary}
                 </p>
 
