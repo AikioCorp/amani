@@ -30,6 +30,7 @@ export default function Pricing() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { success: toastSuccess, error: toastError } = useToast();
+  const isUserPremium = Boolean(user?.is_premium || (user as any)?.isPremium || user?.role === "admin" || user?.role === "superadmin");
 
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("annual");
   const [submitting, setSubmitting] = useState(false);
@@ -264,10 +265,10 @@ export default function Pricing() {
           </div>
 
           <Link
-            to="/register"
+            to={user ? "/profile" : "/register"}
             className="w-full text-center bg-[#373B3A] hover:bg-[#464B49] text-white font-bold py-3.5 px-4 rounded-xl border border-stone-600 transition-all shadow-md block"
           >
-            Créer un Compte Gratuit
+            {user ? "Accéder à mon espace" : "Créer un Compte Gratuit"}
           </Link>
         </div>
 
@@ -328,12 +329,21 @@ export default function Pricing() {
             </ul>
           </div>
 
-          <Button
-            onClick={() => setSubscribeModalOpen(true)}
-            className="w-full bg-amber-500 hover:bg-amber-400 text-stone-950 font-black text-base py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
-          >
-            <Sparkles className="w-5 h-5" /> Activer mon Pass Premium
-          </Button>
+          {isUserPremium ? (
+            <Button
+              onClick={() => navigate("/profile")}
+              className="w-full bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold text-base py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 border border-stone-700"
+            >
+              <Check className="w-5 h-5 text-emerald-500" /> Pass Premium Actif
+            </Button>
+          ) : (
+            <Button
+              onClick={() => setSubscribeModalOpen(true)}
+              className="w-full bg-amber-500 hover:bg-amber-400 text-stone-950 font-black text-base py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+            >
+              <Sparkles className="w-5 h-5" /> Activer mon Pass Premium
+            </Button>
+          )}
         </div>
       </section>
 

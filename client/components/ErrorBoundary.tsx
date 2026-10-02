@@ -19,6 +19,19 @@ export default class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("[ErrorBoundary] Erreur non gérée:", error?.message, error?.stack, info.componentStack);
+
+    // Auto-reload the page if a chunk load error occurs (due to a new deployment while user is browsing)
+    const isChunkLoadError = 
+      error?.message?.includes("Failed to fetch dynamically imported module") || 
+      error?.message?.includes("Importing a module script failed");
+
+    if (isChunkLoadError) {
+      const reloadCount = parseInt(sessionStorage.getItem("chunk_reload_count") || "0");
+      if (reloadCount < 2) {
+        sessionStorage.setItem("chunk_reload_count", (reloadCount + 1).toString());
+        window.location.reload();
+      }
+    }
   }
 
   handleReset = () => {
