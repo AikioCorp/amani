@@ -221,7 +221,7 @@ export default function Article() {
                           CE QU'IL FAUT RETENIR
                         </h2>
                       </div>
-                      <p className="text-stone-800 text-base sm:text-lg leading-relaxed font-semibold">
+                      <p className="text-stone-800 text-base sm:text-lg leading-relaxed font-semibold line-clamp-4">
                         {article.summary}
                       </p>
                     </div>
@@ -327,7 +327,7 @@ export default function Article() {
                             __html: sanitizeHtml(
                               (article.content && article.content.trim().length > 10)
                                 ? article.content
-                                : `<p className="lead font-medium text-lg text-stone-800 leading-relaxed mb-6">${article.summary}</p><div className="bg-stone-50 border border-stone-200/80 rounded-2xl p-6 my-6 text-stone-700 font-sans text-sm space-y-3"><h4 className="font-bold text-stone-900 uppercase tracking-wider text-xs">Synthèse Rédactionnelle Amani Finance</h4><p>${article.summary}</p></div>`
+                                : `<p>${article.summary}</p>`
                             ),
                           }}
                         />

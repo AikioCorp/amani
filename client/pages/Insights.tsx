@@ -18,7 +18,7 @@ const Insights = () => {
   // Fetch real published insights articles
   const { articles: dbArticles, loading } = useArticles({
     status: 'published',
-    category: 'insights',
+    category: 'analyses-financieres',
     limit: 30
   });
 
