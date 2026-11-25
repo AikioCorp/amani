@@ -145,7 +145,7 @@ export const updateProfile = async (updates: Partial<UserProfile>) => {
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
-      throw new Error(errData.error || "Erreur de mise à jour du profil");
+      throw new Error(errData.details?.[0]?.message || errData.error || "Erreur de mise à jour du profil");
     }
 
     const result = await response.json();
@@ -168,7 +168,7 @@ export const forgotPassword = async (email: string) => {
 
     const result = await response.json();
     if (!response.ok) {
-      throw new Error(result.error || "Erreur lors de la demande de réinitialisation");
+      throw new Error(result.details?.[0]?.message || result.error || "Erreur lors de la demande de réinitialisation");
     }
 
     return result;
@@ -190,7 +190,7 @@ export const resetPassword = async (token: string, password: string) => {
 
     const result = await response.json();
     if (!response.ok) {
-      throw new Error(result.error || "Erreur lors de la réinitialisation du mot de passe");
+      throw new Error(result.details?.[0]?.message || result.error || "Erreur lors de la réinitialisation du mot de passe");
     }
 
     return result;

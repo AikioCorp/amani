@@ -27,8 +27,14 @@ export default function ResetPassword() {
       return;
     }
 
-    if (password.length < 6) {
-      setError("Le mot de passe doit contenir au moins 6 caractères.");
+    if (password.length < 8) {
+      setError("Le mot de passe doit contenir au moins 8 caractères.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+      setError("Le mot de passe doit contenir au moins une lettre et un chiffre.");
       setIsLoading(false);
       return;
     }
@@ -53,7 +59,7 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amani-secondary/20 via-white to-amani-primary/5 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#F4F1EA] flex items-center justify-center px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
@@ -140,6 +146,9 @@ export default function ResetPassword() {
                     )}
                   </button>
                 </div>
+                <p className="mt-1.5 text-xs text-gray-500">
+                  Minimum 8 caractères, avec au moins une lettre et un chiffre.
+                </p>
               </div>
 
               {/* Confirm Password */}

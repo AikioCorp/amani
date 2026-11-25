@@ -320,6 +320,10 @@ export default function Profile() {
       error("Erreur", "Le mot de passe doit contenir au moins 8 caractères.");
       return;
     }
+    if (!/[A-Za-z]/.test(passwordData.newPassword) || !/[0-9]/.test(passwordData.newPassword)) {
+      error("Erreur", "Le mot de passe doit contenir au moins une lettre et un chiffre.");
+      return;
+    }
 
     try {
       setIsSaving(true);
