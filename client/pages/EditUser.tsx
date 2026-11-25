@@ -19,6 +19,9 @@ import {
   Lock,
   X,
   FileText,
+  Key,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 export default function EditUser() {
@@ -32,6 +35,8 @@ export default function EditUser() {
 
   const [loading, setLoading] = useState(!passedUser);
   const [isSaving, setIsSaving] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     first_name: passedUser?.first_name || "",
@@ -113,16 +118,25 @@ export default function EditUser() {
     e.preventDefault();
     if (!userId) return;
 
+    if (newPassword.trim().length > 0 && newPassword.trim().length < 6) {
+      error("Mot de passe trop court", "Le nouveau mot de passe doit contenir au moins 6 caractères.");
+      return;
+    }
+
     setIsSaving(true);
     try {
       const token = getSessionToken();
+      const payload: Record<string, any> = { ...formData };
+      if (newPassword.trim().length >= 6) {
+        payload.password = newPassword.trim();
+      }
       const res = await fetch(`${API_BASE_URL}/users/${userId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       let json: any = null;
@@ -324,6 +338,28 @@ export default function EditUser() {
                 />
                 <span className="text-xs font-bold text-gray-700">Compte Actif (Décocher pour suspendre)</span>
               </label>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase text-gray-700 mb-1.5 flex items-center gap-1.5">
+              <Key className="w-3.5 h-3.5 text-amber-600" /> Nouveau mot de passe (optionnel)
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Laisser vide pour conserver le mot de passe actuel (min. 6 caractères)"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-xl text-sm text-gray-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 

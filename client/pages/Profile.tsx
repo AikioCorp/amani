@@ -308,6 +308,10 @@ export default function Profile() {
   };
 
   const handleChangePassword = async () => {
+    if (!passwordData.currentPassword) {
+      error("Erreur", "Veuillez saisir votre mot de passe actuel.");
+      return;
+    }
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       error("Erreur", "Les mots de passe ne correspondent pas.");
       return;
@@ -322,7 +326,10 @@ export default function Profile() {
 
       // Changer le mot de passe via l'API
       try {
-        await AuthService.updateProfile(user.id, { password: passwordData.newPassword });
+        await AuthService.updateProfile(user.id, {
+          currentPassword: passwordData.currentPassword,
+          password: passwordData.newPassword,
+        });
       } catch (err: any) {
         console.error("Erreur lors du changement de mot de passe:", err);
         error(
@@ -762,6 +769,7 @@ export default function Profile() {
                               className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amani-primary focus:border-transparent"
                             />
                             <button
+                              type="button"
                               onClick={() =>
                                 setShowCurrentPassword(!showCurrentPassword)
                               }
@@ -792,6 +800,7 @@ export default function Profile() {
                               className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amani-primary focus:border-transparent"
                             />
                             <button
+                              type="button"
                               onClick={() =>
                                 setShowNewPassword(!showNewPassword)
                               }

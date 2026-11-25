@@ -184,12 +184,48 @@ export default function Users() {
   };
 
   const confirmBulkRoleChange = async () => {
-    setUsers((prev) =>
-      prev.map((u) => (selectedUsers.includes(u.id) ? { ...u, roles: [newBulkRole] } : u))
-    );
-    success("Rôles Modifiés", `Rôle mis à jour pour ${selectedUsers.length} utilisateur(s).`);
-    setShowBulkRoleModal(false);
-    setSelectedUsers([]);
+    const roleMap: Record<string, string> = {
+      admin: "admin",
+      editeur: "editor",
+      editor: "editor",
+      analyste: "analyst",
+      analyst: "analyst",
+      moderateur: "moderator",
+      moderator: "moderator",
+      abonne: "subscriber",
+      subscriber: "subscriber",
+      visiteur: "subscriber",
+    };
+    const mappedRole = roleMap[newBulkRole] || "subscriber";
+    const token = getSessionToken();
+
+    try {
+      await Promise.all(
+        selectedUsers.map((id) =>
+          fetch(`${API_BASE_URL}/users/${id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ role: mappedRole }),
+          }).then(async (res) => {
+            if (!res.ok) {
+              const j = await res.json().catch(() => ({}));
+              throw new Error(j.error || `Erreur serveur (${res.status})`);
+            }
+          })
+        )
+      );
+      setUsers((prev) =>
+        prev.map((u) => (selectedUsers.includes(u.id) ? { ...u, role: mappedRole, roles: [mappedRole] } : u))
+      );
+      success("Rôles Modifiés", `Rôle mis à jour pour ${selectedUsers.length} utilisateur(s).`);
+      setShowBulkRoleModal(false);
+      setSelectedUsers([]);
+    } catch (err: any) {
+      error("Erreur", err.message || "Impossible de mettre à jour les rôles.");
+    }
   };
 
   const handleBulkDelete = () => {
@@ -205,8 +241,21 @@ export default function Users() {
     }
   };
 
-  const handleSendPasswordReset = (userEmail: string) => {
-    success("Email envoyé", `Lien de réinitialisation transmis à ${userEmail}`);
+  const handleSendPasswordReset = async (userEmail: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: userEmail }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Impossible d'envoyer l'e-mail de réinitialisation.");
+      }
+      success("Email envoyé", `Lien de réinitialisation transmis à ${userEmail}`);
+    } catch (err: any) {
+      error("Erreur", err.message || "Impossible d'envoyer le lien de réinitialisation.");
+    }
   };
 
   const roles = ["admin", "editeur", "analyste", "moderateur", "abonne", "visiteur"];

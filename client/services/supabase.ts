@@ -262,7 +262,10 @@ export class AuthService {
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(updates),
     });
-    if (!resp.ok) throw new Error("Erreur lors de la mise à jour du profil");
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || "Erreur lors de la mise à jour du profil");
+    }
     return (await resp.json()).data;
   }
 }
