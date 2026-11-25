@@ -1,11 +1,12 @@
 import { ReactNode, useEffect, useState, createContext, useContext, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
   Search,
   Settings,
   ChevronDown,
+  ChevronRight,
   PanelLeftClose,
   PanelLeftOpen,
   User as UserIcon,
@@ -33,6 +34,7 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const isNested = useContext(DashboardContext);
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
@@ -109,31 +111,67 @@ export default function DashboardLayout({
 
   const userInitials = `${user?.firstName?.[0] || user?.first_name?.[0] || 'A'}${user?.lastName?.[0] || user?.last_name?.[0] || ''}`;
 
+  const ROUTE_LABELS: Record<string, string> = {
+    dashboard: "Dashboard",
+    users: "Utilisateurs",
+    edit: "Édition",
+    new: "Nouveau",
+    articles: "Articles",
+    podcasts: "Podcasts",
+    imports: "Imports",
+    serper: "Serper",
+    subscriptions: "Abonnements",
+    moderation: "Modération",
+    permissions: "Permissions",
+    settings: "Paramètres",
+    analytics: "Analytique",
+    reports: "Rapports",
+    monitoring: "Monitoring",
+    profile: "Profil",
+    notifications: "Notifications",
+  };
+  const pathSegments = location.pathname
+    .split("/")
+    .filter(Boolean)
+    .slice(0, 3)
+    .map((seg) => ROUTE_LABELS[seg] || seg);
+
   return (
     <DashboardContext.Provider value={true}>
-      <div className="min-h-screen bg-[#E5DDD2] flex">
+      <div className="min-h-screen bg-[#F4F1EA] flex">
         {/* Sidebar */}
         <Sidebar collapsed={collapsed} />
 
         {/* Right column */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Top Header */}
-          <header className="bg-white shadow-xs border-b border-gray-200 px-4 sm:px-6 py-3 sticky top-0 z-40">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 flex-1">
+          <header className="bg-white/95 backdrop-blur-sm border-b border-stone-200/80 px-4 sm:px-6 h-14 flex items-center sticky top-0 z-40">
+            <div className="flex items-center justify-between gap-3 w-full">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
                 <button
                   onClick={() => setCollapsed((v) => !v)}
                   aria-label={collapsed ? "Ouvrir la sidebar" : "Réduire la sidebar"}
-                  className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
+                  className="p-2 rounded-lg hover:bg-stone-100 text-stone-600 transition-colors shrink-0"
                   title={collapsed ? "Déployer" : "Réduire"}
                 >
-                  {collapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
+                  {collapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
                 </button>
-                {title && (
-                  <div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-amani-primary">{title}</h1>
-                    {subtitle && <p className="text-gray-600 text-xs mt-0.5">{subtitle}</p>}
+                {title ? (
+                  <div className="min-w-0">
+                    <h1 className="text-base sm:text-lg font-bold text-[#373B3A] truncate">{title}</h1>
+                    {subtitle && <p className="text-stone-500 text-xs truncate">{subtitle}</p>}
                   </div>
+                ) : (
+                  <nav aria-label="Breadcrumb" className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-stone-500 truncate">
+                    {pathSegments.map((label, idx) => (
+                      <span key={idx} className="flex items-center gap-1.5">
+                        {idx > 0 && <ChevronRight className="w-3.5 h-3.5 text-stone-400" />}
+                        <span className={idx === pathSegments.length - 1 ? "text-stone-900 font-semibold" : "text-stone-500"}>
+                          {label}
+                        </span>
+                      </span>
+                    ))}
+                  </nav>
                 )}
               </div>
 

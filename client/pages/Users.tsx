@@ -32,6 +32,11 @@ import {
   Check,
   Building,
   Loader2,
+  Key,
+  Copy,
+  Send,
+  RefreshCw,
+  EyeOff,
 } from "lucide-react";
 
 export default function Users() {
@@ -49,7 +54,18 @@ export default function Users() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [userToDelete, setUserToDelete] = useState<any>(null);
   const [showBulkRoleModal, setShowBulkRoleModal] = useState(false);
-  const [newBulkRole, setNewBulkRole] = useState("user");
+  const [newBulkRole, setNewBulkRole] = useState("subscriber");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Modal Accès & Sécurité (rôle, mot de passe, lien de réinitialisation)
+  const [modalRole, setModalRole] = useState("subscriber");
+  const [modalActive, setModalActive] = useState(true);
+  const [modalPassword, setModalPassword] = useState("");
+  const [showModalPassword, setShowModalPassword] = useState(false);
+  const [generatedResetLink, setGeneratedResetLink] = useState("");
+  const [emailDeliveryStatus, setEmailDeliveryStatus] = useState<"idle" | "sent" | "failed">("idle");
+  const [modalBusy, setModalBusy] = useState(false);
 
   // Check permissions
   if (!user || !hasPermission("manage_users")) {
@@ -91,6 +107,10 @@ export default function Users() {
     return matchesSearch && matchesRole && matchesPremium;
   });
 
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedUsers = filteredUsers.slice((safePage - 1) * pageSize, safePage * pageSize);
+
   const handleSelectUser = (userId: string) => {
     setSelectedUsers((prev) =>
       prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
@@ -109,7 +129,120 @@ export default function Users() {
     const userToView = users.find((u) => u.id === userId);
     if (userToView) {
       setSelectedUser(userToView);
+      setModalRole(userToView.role || userToView.roles?.[0] || "subscriber");
+      setModalActive(userToView.is_active !== false);
+      setModalPassword("");
+      setShowModalPassword(false);
+      setGeneratedResetLink("");
+      setEmailDeliveryStatus("idle");
       setShowUserModal(true);
+    }
+  };
+
+  const handleGenerateTempPassword = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+    let pwd = "Am";
+    for (let i = 0; i < 8; i++) {
+      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setModalPassword(pwd);
+    setShowModalPassword(true);
+  };
+
+  const handleSaveAccessAndPassword = async () => {
+    if (!selectedUser) return;
+    if (modalPassword.trim().length > 0 && modalPassword.trim().length < 6) {
+      error("Mot de passe trop court", "Minimum 6 caractères requis.");
+      return;
+    }
+
+    setModalBusy(true);
+    try {
+      const token = getSessionToken();
+      const payload: Record<string, any> = {
+        role: modalRole,
+        is_active: modalActive,
+      };
+      if (modalPassword.trim().length >= 6) {
+        payload.password = modalPassword.trim();
+      }
+
+      const res = await fetch(`${API_BASE_URL}/users/${selectedUser.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || `Erreur serveur (${res.status})`);
+      }
+
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === selectedUser.id
+            ? { ...u, role: modalRole, roles: [modalRole], is_active: modalActive }
+            : u
+        )
+      );
+      setSelectedUser((prev: any) =>
+        prev ? { ...prev, role: modalRole, roles: [modalRole], is_active: modalActive } : prev
+      );
+
+      success(
+        "Accès mis à jour",
+        modalPassword.trim()
+          ? "Le rôle, le statut et le nouveau mot de passe ont été enregistrés."
+          : "Le rôle et le statut d'accès ont été enregistrés."
+      );
+      setModalPassword("");
+    } catch (err: any) {
+      error("Erreur", err.message || "Impossible d'enregistrer les modifications.");
+    } finally {
+      setModalBusy(false);
+    }
+  };
+
+  const handleGenerateOrSendResetLink = async (sendEmail: boolean) => {
+    if (!selectedUser) return;
+    setModalBusy(true);
+    setEmailDeliveryStatus("idle");
+    try {
+      const token = getSessionToken();
+      const res = await fetch(`${API_BASE_URL}/users/${selectedUser.id}/reset-link`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ sendEmail }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success || !json.data?.resetLink) {
+        throw new Error(json.error || "Impossible de générer le lien de réinitialisation.");
+      }
+
+      setGeneratedResetLink(json.data.resetLink);
+      if (sendEmail) {
+        if (json.data.emailSent) {
+          setEmailDeliveryStatus("sent");
+          success("Lien généré & envoyé", `E-mail transmis à ${selectedUser.email}`);
+        } else {
+          setEmailDeliveryStatus("failed");
+          warning(
+            "Lien généré (SMTP indisponible)",
+            "L'envoi par e-mail a échoué, mais vous pouvez copier le lien ci-dessous."
+          );
+        }
+      } else {
+        success("Lien généré", "Lien de réinitialisation prêt à être copié (valide 1h).");
+      }
+    } catch (err: any) {
+      error("Erreur", err.message || "Impossible de générer le lien.");
+    } finally {
+      setModalBusy(false);
     }
   };
 
@@ -332,20 +465,12 @@ export default function Users() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* Navigation & Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200 pb-5">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Link
-              to="/dashboard"
-              className="text-xs font-bold text-gray-400 hover:text-gray-900 transition-colors flex items-center gap-1"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" /> Dashboard
-            </Link>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-            <UsersIcon className="w-7 h-7 text-amber-600" /> Gestion des Utilisateurs
+          <h1 className="text-xl sm:text-2xl font-bold text-stone-900 tracking-tight flex items-center gap-2.5">
+            <UsersIcon className="w-6 h-6 text-[#9C8464]" /> Gestion des Utilisateurs
           </h1>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">
+          <p className="text-[13px] text-stone-500 mt-1">
             Supervisez les membres, gérez les rôles, permissions et statuts Pass Premium.
           </p>
         </div>
@@ -353,7 +478,7 @@ export default function Users() {
         <div className="flex items-center gap-2 flex-wrap">
           <Link
             to="/dashboard/users/new"
-            className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-black text-white font-bold text-xs sm:text-sm rounded-xl shadow-sm transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 bg-stone-900 hover:bg-stone-800 text-white font-semibold text-xs sm:text-[13px] rounded-xl shadow-xs transition-colors"
           >
             <UserPlus className="w-4 h-4 text-amber-400" /> Ajouter un Utilisateur
           </Link>
@@ -362,40 +487,40 @@ export default function Users() {
 
       {/* Cartes KPI Responsives */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-1">
-          <div className="flex items-center justify-between text-gray-400 mb-2">
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">Total</span>
-            <UsersIcon className="w-5 h-5 text-amber-600" />
+        <div className="bg-white border border-stone-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-1 hover:border-stone-300 transition-colors">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">Total</span>
+            <UsersIcon className="w-4 h-4 text-[#9C8464]" />
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-gray-900">{userStats.total}</p>
-          <p className="text-[11px] text-gray-400 font-medium">Comptes inscrits</p>
+          <p className="text-2xl font-bold text-stone-900 tabular-nums">{userStats.total}</p>
+          <p className="text-[11px] text-stone-400 font-medium">Comptes inscrits</p>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-1">
-          <div className="flex items-center justify-between text-gray-400 mb-2">
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">Actifs</span>
-            <CheckCircle className="w-5 h-5 text-emerald-600" />
+        <div className="bg-white border border-stone-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-1 hover:border-stone-300 transition-colors">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">Actifs</span>
+            <CheckCircle className="w-4 h-4 text-emerald-600" />
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-emerald-600">{userStats.active}</p>
-          <p className="text-[11px] text-gray-400 font-medium">Connexions récentes</p>
+          <p className="text-2xl font-bold text-emerald-600 tabular-nums">{userStats.active}</p>
+          <p className="text-[11px] text-stone-400 font-medium">Connexions récentes</p>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-1">
-          <div className="flex items-center justify-between text-gray-400 mb-2">
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">Admins</span>
-            <Shield className="w-5 h-5 text-indigo-600" />
+        <div className="bg-white border border-stone-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-1 hover:border-stone-300 transition-colors">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">Admins</span>
+            <Shield className="w-4 h-4 text-indigo-600" />
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-indigo-600">{userStats.admins}</p>
-          <p className="text-[11px] text-gray-400 font-medium">Rôle Administrateur</p>
+          <p className="text-2xl font-bold text-indigo-600 tabular-nums">{userStats.admins}</p>
+          <p className="text-[11px] text-stone-400 font-medium">Rôle Administrateur</p>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-1">
-          <div className="flex items-center justify-between text-gray-400 mb-2">
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">Premium</span>
-            <Crown className="w-5 h-5 text-amber-500" />
+        <div className="bg-white border border-stone-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-1 hover:border-stone-300 transition-colors">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">Premium</span>
+            <Crown className="w-4 h-4 text-amber-500" />
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-amber-600">{userStats.premium}</p>
-          <p className="text-[11px] text-gray-400 font-medium">Pass Premium Amani</p>
+          <p className="text-2xl font-bold text-amber-600 tabular-nums">{userStats.premium}</p>
+          <p className="text-[11px] text-stone-400 font-medium">Pass Premium Amani</p>
         </div>
       </div>
 
@@ -437,11 +562,14 @@ export default function Users() {
 
             <select
               value={premiumFilter}
-              onChange={(e) => setPremiumFilter(e.target.value)}
+              onChange={(e) => {
+                setPremiumFilter(e.target.value);
+                setCurrentPage(1);
+              }}
               className="flex-1 sm:w-48 px-3 py-2.5 border border-gray-300 rounded-xl text-xs sm:text-sm bg-white font-semibold focus:ring-2 focus:ring-amber-500 focus:outline-none"
             >
               <option value="all">Tous les Statuts</option>
-              <option value="premium">Membres Premium 👑</option>
+              <option value="premium">Membres Premium</option>
               <option value="free">Membres Standard</option>
             </select>
           </div>
@@ -482,7 +610,7 @@ export default function Users() {
         <>
           {/* Vue Mobile / Tablette (< lg) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:hidden">
-            {filteredUsers.map((u) => {
+            {paginatedUsers.map((u) => {
               const userRole = u.roles?.[0] || "user";
               const isSelected = selectedUsers.includes(u.id);
 
@@ -588,8 +716,8 @@ export default function Users() {
                     <th className="p-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 text-xs text-gray-700">
-                  {filteredUsers.map((u) => {
+                <tbody className="divide-y divide-stone-100 text-[13px] text-stone-700">
+                  {paginatedUsers.map((u) => {
                     const userRole = u.roles?.[0] || "user";
                     const isSelected = selectedUsers.includes(u.id);
 
@@ -653,16 +781,16 @@ export default function Users() {
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => handleViewUser(u.id)}
-                              className="p-1.5 border border-gray-200 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
-                              title="Voir l'utilisateur"
+                              className="px-2.5 py-1.5 border border-stone-200 rounded-lg hover:bg-stone-100 text-stone-700 transition-colors text-xs font-semibold inline-flex items-center gap-1"
+                              title="Accès & Mot de passe"
                             >
-                              <Eye className="w-4 h-4" />
+                              <Key className="w-3.5 h-3.5 text-[#9C8464]" /> Accès
                             </button>
 
                             <button
                               onClick={() => handleEditUser(u.id)}
-                              className="p-1.5 border border-gray-200 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
-                              title="Éditer l'utilisateur"
+                              className="p-1.5 border border-stone-200 rounded-lg hover:bg-stone-100 text-stone-600 transition-colors"
+                              title="Éditer le profil complet"
                             >
                               <Edit className="w-4 h-4" />
                             </button>
@@ -683,76 +811,253 @@ export default function Users() {
               </table>
             </div>
           </div>
+
+          {/* Pagination (10 / 25 / 50 / 100) */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white border border-stone-200/90 rounded-2xl px-4 py-3 text-xs text-stone-600 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <span>Afficher</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="px-2.5 py-1 border border-stone-300 rounded-lg bg-white font-semibold text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#9C8464]"
+              >
+                {[10, 25, 50, 100].map((size) => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
+              <span>sur <strong className="text-stone-900 tabular-nums">{filteredUsers.length}</strong> utilisateur(s)</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={safePage <= 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="px-3 py-1.5 border border-stone-200 rounded-lg font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Précédent
+              </button>
+              <span className="px-2 font-medium tabular-nums">
+                Page <strong className="text-stone-900">{safePage}</strong> / {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={safePage >= totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="px-3 py-1.5 border border-stone-200 rounded-lg font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Suivant
+              </button>
+            </div>
+          </div>
         </>
       )}
 
-      {/* Modal de Détails Utilisateur */}
+      {/* Modal Accès, Rôle & Mot de passe */}
       {showUserModal && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-6">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-stone-200 space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gray-900 text-white rounded-2xl flex items-center justify-center font-bold text-lg">
+                <div className="w-11 h-11 bg-stone-900 text-white rounded-xl flex items-center justify-center font-bold text-sm">
                   {selectedUser.first_name?.charAt(0) || "U"}
                   {selectedUser.last_name?.charAt(0) || ""}
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">
+                  <h3 className="text-base font-bold text-stone-900">
                     {selectedUser.first_name} {selectedUser.last_name}
                   </h3>
-                  <p className="text-xs text-gray-500">{selectedUser.email}</p>
+                  <p className="text-xs text-stone-500">{selectedUser.email}</p>
                 </div>
               </div>
-              <button onClick={() => setShowUserModal(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                <div>
-                  <span className="text-gray-400 font-bold block mb-1">Rôle Actuel :</span>
-                  <span className={`px-2.5 py-0.5 rounded-full font-bold ${getRoleColor(selectedUser.roles?.[0] || 'user')}`}>
-                    {getRoleDisplayName(selectedUser.roles?.[0] || 'user')}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-400 font-bold block mb-1">Pass Premium :</span>
-                  <span className={`font-bold ${selectedUser.is_premium ? "text-amber-600" : "text-gray-500"}`}>
-                    {selectedUser.is_premium ? "Actif 👑" : "Inactif"}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between py-1.5 border-b border-gray-100">
-                  <span className="text-gray-500 font-medium">Organisation :</span>
-                  <span className="font-bold text-gray-900">{selectedUser.organization || "Non renseigné"}</span>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-gray-100">
-                  <span className="text-gray-500 font-medium">Date d'inscription :</span>
-                  <span className="font-bold text-gray-900">
-                    {new Date(selectedUser.created_at || Date.now()).toLocaleDateString("fr-FR")}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
               <button
-                onClick={() => handleSendPasswordReset(selectedUser.email)}
-                className="px-4 py-2 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50"
+                type="button"
+                onClick={() => setShowUserModal(false)}
+                className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100"
               >
-                Réinitialiser MDP
+                <X className="w-5 h-5" />
               </button>
+            </div>
+
+            {/* Section 1 : Rôle & Statut d'accès */}
+            <div className="space-y-3 bg-stone-50 p-4 rounded-xl border border-stone-200/80">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-stone-600 flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-[#9C8464]" /> Rôle & Accès
+                </span>
+                <span className={`font-semibold text-xs inline-flex items-center gap-1 ${selectedUser.is_premium ? "text-amber-600" : "text-stone-500"}`}>
+                  {selectedUser.is_premium ? (
+                    <>
+                      Pass Premium Actif <Crown className="w-3.5 h-3.5 text-amber-500" />
+                    </>
+                  ) : "Compte Standard"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-stone-600 mb-1">Rôle système</label>
+                  <select
+                    value={modalRole}
+                    onChange={(e) => setModalRole(e.target.value)}
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg text-xs font-semibold text-stone-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#9C8464]"
+                  >
+                    <option value="subscriber">Abonné (Standard)</option>
+                    <option value="analyst">Analyste financier</option>
+                    <option value="editor">Éditeur de contenu</option>
+                    <option value="moderator">Modérateur</option>
+                    <option value="admin">Administrateur</option>
+                  </select>
+                </div>
+
+                <div className="flex items-end">
+                  <label className="w-full flex items-center gap-2 cursor-pointer px-3 py-2 bg-white border border-stone-300 rounded-lg text-xs font-semibold text-stone-800">
+                    <input
+                      type="checkbox"
+                      checked={modalActive}
+                      onChange={(e) => setModalActive(e.target.checked)}
+                      className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                    />
+                    Compte actif (accès autorisé)
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 2 : Définir ou Générer un Mot de passe */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-stone-600 flex items-center gap-1.5">
+                  <Key className="w-3.5 h-3.5 text-[#9C8464]" /> Nouveau mot de passe direct
+                </label>
+                <button
+                  type="button"
+                  onClick={handleGenerateTempPassword}
+                  className="text-[11px] font-semibold text-[#9C8464] hover:text-stone-900 inline-flex items-center gap-1"
+                >
+                  <RefreshCw className="w-3 h-3" /> Générer un mot de passe
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type={showModalPassword ? "text" : "password"}
+                    value={modalPassword}
+                    onChange={(e) => setModalPassword(e.target.value)}
+                    placeholder="Laisser vide pour ne pas modifier (min. 6 car.)"
+                    className="w-full px-3 py-2 pr-9 border border-stone-300 rounded-lg text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#9C8464]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowModalPassword((v) => !v)}
+                    className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-stone-400 hover:text-stone-700"
+                  >
+                    {showModalPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {modalPassword && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(modalPassword);
+                      success("Copié", "Mot de passe copié dans le presse-papiers.");
+                    }}
+                    className="px-3 py-2 border border-stone-300 rounded-lg text-xs font-semibold text-stone-700 hover:bg-stone-50 inline-flex items-center gap-1"
+                    title="Copier le mot de passe"
+                  >
+                    <Copy className="w-3.5 h-3.5" /> Copier
+                  </button>
+                )}
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  disabled={modalBusy}
+                  onClick={handleSaveAccessAndPassword}
+                  className="px-4 py-2 bg-stone-900 hover:bg-stone-800 disabled:opacity-50 text-white rounded-lg text-xs font-semibold inline-flex items-center gap-1.5"
+                >
+                  {modalBusy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  Enregistrer accès & mot de passe
+                </button>
+              </div>
+            </div>
+
+            {/* Section 3 : Lien de réinitialisation */}
+            <div className="space-y-2.5 pt-3 border-t border-stone-100">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-stone-600 flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-[#9C8464]" /> Lien de réinitialisation (1h)
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={modalBusy}
+                    onClick={() => handleGenerateOrSendResetLink(false)}
+                    className="px-3 py-1.5 border border-stone-300 rounded-lg text-xs font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-50"
+                  >
+                    Générer le lien
+                  </button>
+                  <button
+                    type="button"
+                    disabled={modalBusy}
+                    onClick={() => handleGenerateOrSendResetLink(true)}
+                    className="px-3 py-1.5 bg-[#9C8464] hover:bg-[#8A7355] text-white rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <Send className="w-3 h-3" /> Envoyer par e-mail
+                  </button>
+                </div>
+              </div>
+
+              {generatedResetLink && (
+                <div className="bg-stone-50 border border-stone-200 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={generatedResetLink}
+                      className="flex-1 bg-white border border-stone-200 rounded-lg px-2.5 py-1.5 text-[11px] font-mono text-stone-700"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(generatedResetLink);
+                        success("Copié", "Lien de réinitialisation copié !");
+                      }}
+                      className="px-3 py-1.5 bg-stone-900 text-white rounded-lg text-xs font-semibold inline-flex items-center gap-1 shrink-0"
+                    >
+                      <Copy className="w-3.5 h-3.5" /> Copier
+                    </button>
+                  </div>
+                  {emailDeliveryStatus === "sent" && (
+                    <p className="text-[11px] font-medium text-emerald-700">
+                      E-mail envoyé avec succès à {selectedUser.email}.
+                    </p>
+                  )}
+                  {emailDeliveryStatus === "failed" && (
+                    <p className="text-[11px] font-medium text-amber-700">
+                      Le serveur SMTP n'a pas répondu. Copiez et transmettez ce lien directement à l'utilisateur.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-between items-center pt-3 border-t border-stone-100 text-xs">
+              <span className="text-stone-400">
+                Inscrit le {new Date(selectedUser.created_at || Date.now()).toLocaleDateString("fr-FR")}
+              </span>
               <button
+                type="button"
                 onClick={() => {
                   setShowUserModal(false);
                   handleEditUser(selectedUser.id);
                 }}
-                className="px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-xl text-xs font-bold"
+                className="text-stone-700 hover:text-stone-950 font-semibold underline"
               >
-                Modifier Profil
+                Édition complète du profil →
               </button>
             </div>
           </div>

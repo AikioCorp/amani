@@ -45,7 +45,7 @@ interface Section {
 
 const SECTIONS: Section[] = [
   {
-    title: "📝 Édition",
+    title: "Édition",
     items: [
       {
         label: "Articles",
@@ -79,7 +79,7 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: "📈 Marchés & Données",
+    title: "Marchés & Données",
     items: [
       { label: "Matières premières", to: "/dashboard/commodities-management", icon: LineChart, permission: "create_indices" },
       { label: "Indices BRVM", to: "/dashboard/indices-management", icon: BarChart3, permission: "create_indices" },
@@ -87,7 +87,7 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: "📊 Analytique",
+    title: "Analytique",
     items: [
       { label: "Tableaux de bord", to: "/dashboard/analytics", icon: BarChart2, permission: "view_analytics" },
       { label: "Rapports", to: "/dashboard/reports", icon: FileText, permission: "view_analytics" },
@@ -95,13 +95,13 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: "👑 Abonnements",
+    title: "Abonnements",
     items: [
       { label: "Abonnés & Premium", to: "/dashboard/subscriptions", icon: Crown, permission: "manage_users" },
     ],
   },
   {
-    title: "👥 Communauté",
+    title: "Communauté",
     items: [
       { label: "Utilisateurs", to: "/dashboard/users", icon: Users, permission: "manage_users" },
       { label: "Modération", to: "/dashboard/moderation", icon: Shield, permission: "manage_users" },
@@ -109,7 +109,7 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: "⚙️ Réglages",
+    title: "Réglages",
     items: [
       { label: "Mon Profil", to: "/dashboard/profile", icon: UserIcon, permission: "view_dashboard" },
       { label: "Notifications", to: "/dashboard/notifications", icon: Bell, permission: "view_dashboard" },
@@ -123,14 +123,14 @@ const SECTIONS: Section[] = [
 
 const SUBSCRIBER_SECTIONS: Section[] = [
   {
-    title: "💼 Investissements",
+    title: "Investissements",
     items: [
       { label: "Mon Suivi de Dossiers", to: "/dashboard", icon: LayoutDashboard },
       { label: "Explorer les Projets", to: "/investissement", icon: LineChart },
     ],
   },
   {
-    title: "📰 Espace Médias",
+    title: "Espace Médias",
     items: [
       { label: "Analyses & Articles", to: "/actualites", icon: FileText },
       { label: "Podcasts Financiers", to: "/podcast", icon: Mic },
@@ -138,7 +138,7 @@ const SUBSCRIBER_SECTIONS: Section[] = [
     ],
   },
   {
-    title: "⚙️ Mon Compte",
+    title: "Mon Compte",
     items: [
       { label: "Mon Profil", to: "/dashboard/profile", icon: UserIcon },
       { label: "Offres & Abonnement", to: "/pricing", icon: Crown },

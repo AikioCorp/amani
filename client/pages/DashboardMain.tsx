@@ -114,7 +114,10 @@ export default function DashboardMain() {
 
         const fetchDashboardStats = async () => {
           try {
-            const resp = await fetch(`${API_BASE}/contents/dashboard-stats`);
+            const token = getSessionToken();
+            const resp = await fetch(`${API_BASE}/contents/dashboard-stats`, {
+              headers: token ? { Authorization: `Bearer ${token}` } : {},
+            });
             if (resp.ok) {
               const resJson = await resp.json();
               if (resJson.success && resJson.data) {
