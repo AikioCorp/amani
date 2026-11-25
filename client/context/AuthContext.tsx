@@ -173,7 +173,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     init();
 
+    // Synchroniser connexion/déconnexion entre tous les onglets et fenêtres ouverts
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === SESSION_KEY || e.key === null) {
+        if (!e.newValue) {
+          setUser(null);
+          setIsLoading(false);
+        } else {
+          try {
+            const parsed = JSON.parse(e.newValue);
+            if (parsed?.access_token && parsed?.user) {
+              setUser(buildUserFromSession(parsed.user));
+            } else {
+              setUser(null);
+            }
+          } catch {
+            setUser(null);
+          }
+        }
+      }
+    };
+
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === "hidden") return;
+      const current = getStoredSession();
+      if (!current?.access_token) {
+        setUser(null);
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("focus", handleVisibilityOrFocus);
+    document.addEventListener("visibilitychange", handleVisibilityOrFocus);
+
     return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("focus", handleVisibilityOrFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityOrFocus);
       if (safetyTimeoutRef.current) {
         clearTimeout(safetyTimeoutRef.current);
         safetyTimeoutRef.current = null;
